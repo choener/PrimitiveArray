@@ -5,9 +5,7 @@
 -- | Primitive arrays with a small set of operations. Modelled after repa
 -- arrays and indexing.
 --
--- Array indexing starts ALWAYS at 0. The extend of the array is the number
--- elements per dimension. A dimension with valid indices [0 .. n] (including 0
--- and n) needs an extends (n+1).
+-- Array indexing is between [i..j] per dimension.
 --
 -- All operations are UNSAFE. In interpreted code, "assert" provides a safety
 -- net.
@@ -23,18 +21,18 @@ import Control.Exception (assert)
 class Shape sh => PrimArrayOps sh elm where
   data PrimArray sh elm :: *
   unsafeIndex :: PrimArray sh elm -> sh -> elm
-  bounds :: PrimArray sh elm -> sh
+  bounds :: PrimArray sh elm -> (sh,sh)
   inBounds :: PrimArray sh elm -> sh -> Bool
-  fromAssocs :: sh -> elm -> [(sh,elm)] -> PrimArray sh elm
+  fromAssocs :: sh -> sh -> elm -> [(sh,elm)] -> PrimArray sh elm
 
 class (PrimMonad m, Shape sh) => PrimArrayOpsM sh elm m where
   data PrimArrayM sh elm m :: *
   readM :: PrimArrayM sh elm m -> sh -> m elm
   writeM :: PrimArrayM sh elm m -> sh -> elm -> m ()
   -- | Create a monadic array from a list of associations
-  fromAssocsM :: sh -> elm -> [(sh,elm)] -> m (PrimArrayM sh elm m)
+  fromAssocsM :: sh -> sh -> elm -> [(sh,elm)] -> m (PrimArrayM sh elm m)
   unsafeFreezeM :: PrimArrayM sh elm m -> m (PrimArray sh elm)
-  boundsM :: PrimArrayM sh elm m -> sh
+  boundsM :: PrimArrayM sh elm m -> (sh,sh)
   inBoundsM :: PrimArrayM sh elm m -> sh -> Bool
 
 
