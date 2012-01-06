@@ -18,12 +18,14 @@ import Data.PrimitiveArray
 
 instance (VU.Unbox elm, Shape sh) => PrimArrayOps sh elm where
   data PrimArray sh elm = PrimArray sh (VU.Vector elm)
-  unsafeIndex (PrimArray sh v) idx = assert (inShapeRange zeroDim sh idx) $ v `VU.unsafeIndex` (toIndex sh sh)
+  unsafeIndex (PrimArray sh v) idx = assert (inShapeRange zeroDim sh idx) $ v `VU.unsafeIndex` (toIndex sh idx)
   bounds (PrimArray sh _) = sh
   inBounds (PrimArray sh _) idx = inShapeRange zeroDim sh idx
+  fromAssocs xtnd def xs = PrimArray xtnd $ VU.replicate (size xtnd) def VU.// map (\(k,v) -> (toIndex xtnd k,v)) xs
   {-# INLINE unsafeIndex #-}
   {-# INLINE bounds #-}
   {-# INLINE inBounds #-}
+  {-# INLINE fromAssocs #-}
 
 deriving instance (Show elm, Show sh, VU.Unbox elm) => Show (PrimArray sh elm)
 

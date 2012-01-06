@@ -1,5 +1,5 @@
 Name:           PrimitiveArray
-Version:        0.1.0.0
+Version:        0.1.1.0
 License:        BSD3
 License-file:   LICENSE
 Author:         Christian Hoener zu Siederdissen
@@ -33,4 +33,8 @@ Library
   ghc-options:
     -Odph
     -funbox-strict-fields
+
+source-repository head
+  type: git
+  location: git://github.com/choener/PrimitiveArray
 

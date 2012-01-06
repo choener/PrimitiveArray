@@ -25,6 +25,7 @@ class Shape sh => PrimArrayOps sh elm where
   unsafeIndex :: PrimArray sh elm -> sh -> elm
   bounds :: PrimArray sh elm -> sh
   inBounds :: PrimArray sh elm -> sh -> Bool
+  fromAssocs :: sh -> elm -> [(sh,elm)] -> PrimArray sh elm
 
 class (PrimMonad m, Shape sh) => PrimArrayOpsM sh elm m where
   data PrimArrayM sh elm m :: *
