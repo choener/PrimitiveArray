@@ -24,6 +24,7 @@ class Shape sh => PrimArrayOps sh elm where
   bounds :: PrimArray sh elm -> (sh,sh)
   inBounds :: PrimArray sh elm -> sh -> Bool
   fromAssocs :: sh -> sh -> elm -> [(sh,elm)] -> PrimArray sh elm
+  assocs :: PrimArray sh elm -> [(sh,elm)]
 
 class (PrimMonad m, Shape sh) => PrimArrayOpsM sh elm m where
   data PrimArrayM sh elm m :: *

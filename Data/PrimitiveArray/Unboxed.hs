@@ -16,15 +16,19 @@ import Data.PrimitiveArray
 
 
 
-instance (VU.Unbox elm, Shape sh) => PrimArrayOps sh elm where
+instance (VU.Unbox elm, Shape sh, Show elm, Show sh) => PrimArrayOps sh elm where
   data PrimArray sh elm = PrimArray sh sh (VU.Vector elm)
   unsafeIndex (PrimArray lsh ush v) idx = assert (inShapeRange lsh ush idx)
                                         $ v `VU.unsafeIndex` (toIndex ush idx - toIndex ush lsh)
   bounds (PrimArray lsh ush _) = (lsh,ush)
   inBounds (PrimArray lsh ush _) idx = inShapeRange lsh ush idx
-  fromAssocs lsh ush def xs = PrimArray lsh ush
+  fromAssocs lsh ush def xs = PrimArray lsh (ush `addDim` unitDim)
                             $ VU.replicate (size ush - size lsh) def
-                            VU.// map (\(k,v) -> (toIndex ush k - toIndex ush lsh,v)) xs
+                            VU.// map (\(k,v) -> if (inShapeRange lsh ush k) then (toIndex ush k - toIndex ush lsh,v) else error $ show (lsh,ush,k,v)) xs
+  assocs (PrimArray lsh ush v) = map (\(k,v) -> (fromIndex ush $ k + toIndex lsh ush, v))
+                               . VU.toList
+                               . VU.indexed
+                               $ v
   {-# INLINE unsafeIndex #-}
   {-# INLINE bounds #-}
   {-# INLINE inBounds #-}

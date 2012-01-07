@@ -9,7 +9,7 @@ Homepage:       http://www.tbi.univie.ac.at/~choener/
 Stability:      Experimental
 Category:       Data
 Build-type:     Simple
-Cabal-version:  >=1.2
+Cabal-version:  >=1.6
 Synopsis:
                 Efficient multidimensional arrays
 Description:
