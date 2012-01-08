@@ -55,21 +55,44 @@ deriving instance (Read elm, Read sh, VU.Unbox elm) => Read (PrimArray sh elm)
 
 
 instance (VUM.Unbox elm, Shape sh) => PrimArrayOpsM sh elm (ST s) where
-  data PrimArrayM sh elm (ST s) = PrimArrayM sh sh sh (VUM.STVector s elm)
-  readM (PrimArrayM lsh ush ush' v) sh = VUM.unsafeRead v (toIndex ush sh - toIndex ush lsh)
-  writeM (PrimArrayM lsh ush suh' v) sh e = VUM.unsafeWrite v (toIndex ush sh - toIndex ush lsh) e
+  data PrimArrayM sh elm (ST s) = PrimArrayST sh sh sh (VUM.STVector s elm)
+  readM (PrimArrayST lsh ush ush' v) sh = VUM.unsafeRead v (toIndex ush sh - toIndex ush lsh)
+  writeM (PrimArrayST lsh ush suh' v) sh e = VUM.unsafeWrite v (toIndex ush sh - toIndex ush lsh) e
   fromAssocsM lsh ush' def xs = do
     let ush = ush' `addDim` unitDim
     v <- VUM.new (size ush - size lsh)
     VUM.set v def
     forM_ xs $ \(k,e) -> assert (inShapeRange lsh ush k)
                       $ VUM.unsafeWrite v (toIndex ush k - toIndex ush lsh) e
-    return $ PrimArrayM lsh ush ush' v
-  unsafeFreezeM (PrimArrayM lsh ush ush' v) = do
+    return $ PrimArrayST lsh ush ush' v
+  unsafeFreezeM (PrimArrayST lsh ush ush' v) = do
     v' <- VU.unsafeFreeze v
     return $ PrimArray lsh ush ush' v'
-  boundsM (PrimArrayM lsh ush ush' _) = (lsh,ush')
-  inBoundsM (PrimArrayM lsh ush ush' _) idx = inShapeRange lsh ush idx
+  boundsM (PrimArrayST lsh ush ush' _) = (lsh,ush')
+  inBoundsM (PrimArrayST lsh ush ush' _) idx = inShapeRange lsh ush idx
+  {-# INLINE readM #-}
+  {-# INLINE writeM #-}
+  {-# INLINE fromAssocsM #-}
+  {-# INLINE unsafeFreezeM #-}
+  {-# INLINE boundsM #-}
+  {-# INLINE inBoundsM #-}
+
+instance (VUM.Unbox elm, Shape sh) => PrimArrayOpsM sh elm IO where
+  data PrimArrayM sh elm IO = PrimArrayIO sh sh sh (VUM.IOVector elm)
+  readM (PrimArrayIO lsh ush ush' v) sh = VUM.unsafeRead v (toIndex ush sh - toIndex ush lsh)
+  writeM (PrimArrayIO lsh ush suh' v) sh e = VUM.unsafeWrite v (toIndex ush sh - toIndex ush lsh) e
+  fromAssocsM lsh ush' def xs = do
+    let ush = ush' `addDim` unitDim
+    v <- VUM.new (size ush - size lsh)
+    VUM.set v def
+    forM_ xs $ \(k,e) -> assert (inShapeRange lsh ush k)
+                      $ VUM.unsafeWrite v (toIndex ush k - toIndex ush lsh) e
+    return $ PrimArrayIO lsh ush ush' v
+  unsafeFreezeM (PrimArrayIO lsh ush ush' v) = do
+    v' <- VU.unsafeFreeze v
+    return $ PrimArray lsh ush ush' v'
+  boundsM (PrimArrayIO lsh ush ush' _) = (lsh,ush')
+  inBoundsM (PrimArrayIO lsh ush ush' _) idx = inShapeRange lsh ush idx
   {-# INLINE readM #-}
   {-# INLINE writeM #-}
   {-# INLINE fromAssocsM #-}
