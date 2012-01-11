@@ -16,11 +16,6 @@ import Data.PrimitiveArray
 
 import Data.Array.Repa.Index
 
-arr = fromAssocs lb ub def []
-lb = Z:.0:.0 :: DIM2
-ub = Z:.2:.2 :: DIM2
-def = 0 :: Int
-
 
 
 instance (VU.Unbox elm, Shape sh, Show elm, Show sh) => PrimArrayOps sh elm where
