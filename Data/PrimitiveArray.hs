@@ -39,7 +39,8 @@ class (PrimMonad m, Shape sh) => PrimArrayOpsM sh elm m where
   inBoundsM :: PrimArrayM sh elm m -> sh -> Bool
   fromListM :: sh -> sh -> [elm] -> m (PrimArrayM sh elm m)
 
-
+instance (Shape sh, Eq elm, PrimArrayOps sh elm) => Eq (PrimArray sh elm) where
+  arr == brr = bounds arr == bounds brr && (and $ zipWith (==) (toList arr) (toList brr))
 
 -- * Helper functions
 
