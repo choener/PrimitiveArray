@@ -39,10 +39,17 @@ instance (Prim elm, Shape sh, Show elm, Show sh) => PrimArrayOps sh elm where
       unsafeFreezeM vM
   assocs (PrimArray0 ush ush' v) = map (\k -> (fromIndex ush k, indexByteArray v k))
                                  $ [0 .. toIndex ush ush']
+  fromList lsh ush' xs = assert (lsh == zeroDim) $
+    runST $ do
+      vM <- fromListM lsh ush' xs
+      unsafeFreezeM vM
+  toList (PrimArray0 ush ush' v) = [indexByteArray v k | k <- [0 .. toIndex ush ush']]
   {-# INLINE unsafeIndex #-}
   {-# INLINE bounds #-}
   {-# INLINE inBounds #-}
   {-# INLINE fromAssocs #-}
+  {-# INLINE fromList #-}
+  {-# INLINE toList #-}
 
 instance (Show elm, Show sh, Prim elm) => Show (PrimArray sh elm) where
   show _ = error "not implemented"
@@ -67,12 +74,18 @@ instance (Prim elm, Shape sh) => PrimArrayOpsM sh elm (ST s) where
     return $ PrimArray0 ush ush' v'
   boundsM (PrimArrayST0 ush ush' _) = (zeroDim,ush')
   inBoundsM (PrimArrayST0 ush ush' _) idx = inShapeRange zeroDim ush idx
+  fromListM lsh ush' xs = do
+    let ush = ush' `addDim` unitDim
+    v <- newByteArray (size ush * sizeOf (undefined `asTypeOf` (head xs)))
+    zipWithM_ (\k x -> writeByteArray v k x) [0..] xs
+    return $ PrimArrayST0 ush ush' v
   {-# INLINE readM #-}
   {-# INLINE writeM #-}
   {-# INLINE fromAssocsM #-}
   {-# INLINE unsafeFreezeM #-}
   {-# INLINE boundsM #-}
   {-# INLINE inBoundsM #-}
+  {-# INLINE fromListM #-}
 
 instance (Prim elm, Shape sh) => PrimArrayOpsM sh elm IO where
   data PrimArrayM sh elm IO = PrimArrayIO0 !sh !sh !(MutableByteArray RealWorld)
@@ -88,9 +101,15 @@ instance (Prim elm, Shape sh) => PrimArrayOpsM sh elm IO where
     return $ PrimArray0 ush ush' v'
   boundsM (PrimArrayIO0 ush ush' _) = (zeroDim,ush')
   inBoundsM (PrimArrayIO0 ush ush' _) idx = inShapeRange zeroDim ush idx
+  fromListM lsh ush' xs = do
+    let ush = ush' `addDim` unitDim
+    v <- newByteArray (size ush * sizeOf (undefined `asTypeOf` (head xs)))
+    zipWithM_ (\k x -> writeByteArray v k x) [0..] xs
+    return $ PrimArrayIO0 ush ush' v
   {-# INLINE readM #-}
   {-# INLINE writeM #-}
   {-# INLINE fromAssocsM #-}
   {-# INLINE unsafeFreezeM #-}
   {-# INLINE boundsM #-}
   {-# INLINE inBoundsM #-}
+  {-# INLINE fromListM #-}
