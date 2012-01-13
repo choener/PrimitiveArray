@@ -68,6 +68,7 @@ instance (Prim elm, Shape sh) => PrimArrayOpsM sh elm (ST s) where
     let ush = ush' `addDim` unitDim
     v <- newByteArray (size ush * sizeOf def)
     forM_ [0 .. toIndex ush ush'] $ \k -> writeByteArray v k def
+    forM_ xs $ \(k,e) -> writeByteArray v (toIndex ush k) e
     return $ PrimArrayST0 ush ush' v
   unsafeFreezeM (PrimArrayST0 ush ush' v) = do
     v' <- unsafeFreezeByteArray v
