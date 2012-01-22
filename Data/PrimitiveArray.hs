@@ -34,7 +34,7 @@ class (Shape sh, ExtShape sh) => MPrimArrayOps marr sh elm where
   -- | Return the bounds of the array. All bounds are inclusive, as in
   -- @[lb..ub]@
 
-  boundsM :: PrimMonad m => marr (PrimState m) sh elm -> (sh,sh)
+  boundsM :: marr s sh elm -> (sh,sh)
 
   -- | Given lower and upper bounds and a list of /all/ elements, produce a
   -- mutable array.
@@ -91,7 +91,7 @@ class (Shape sh, ExtShape sh, MPrimArrayOps (MutArray arr) sh elm) => PrimArrayO
 --
 -- TODO can't give a typedef
 
---inBoundsM :: (PrimMonad m, MPrimArrayOps marr sh elm) => marr (PrimState m) sh elm -> sh -> Bool
+inBoundsM :: MPrimArrayOps marr sh elm => marr s sh elm -> sh -> Bool
 inBoundsM marr idx = let (lb,ub) = boundsM marr in inShapeRange lb ub idx
 {-# INLINE inBoundsM #-}
 
