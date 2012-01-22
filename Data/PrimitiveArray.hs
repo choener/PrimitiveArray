@@ -9,7 +9,7 @@
 -- system. There are eight flavors of arrays among three axes: mutable/pure +
 -- boxed/unboxed + zero-based/lower-bound.
 --
--- NOTE all operations in OpsM and Ops are highly unsafe. No bounds-checking is
+-- NOTE all operations in MPrimArrayOps and PrimArrayOps are highly unsafe. No bounds-checking is
 -- performed at all.
 
 module Data.PrimitiveArray where
@@ -27,21 +27,73 @@ import Data.ExtShape
 
 
 
-class (Shape sh, ExtShape sh) => OpsM arrm sh elm where
-  boundsM :: PrimMonad m => arrm (PrimState m) sh elm -> (sh,sh)
-  fromListM :: PrimMonad m => sh -> sh -> [elm] -> m (arrm (PrimState m) sh elm)
-  inBoundsM :: PrimMonad m => arrm (PrimState m) sh elm -> sh -> Bool
-  newM :: PrimMonad m => sh -> sh -> m (arrm (PrimState m) sh elm)
-  newWithM :: PrimMonad m => sh -> sh -> elm -> m (arrm (PrimState m) sh elm)
-  readM :: PrimMonad m => arrm (PrimState m) sh elm -> sh -> m elm
-  writeM :: PrimMonad m => arrm (PrimState m) sh elm -> sh -> elm -> m ()
+-- | The core set of operations for monadic arrays.
 
-type family Mut (v :: * -> * -> * ) :: * -> * -> * -> *
+class (Shape sh, ExtShape sh) => MPrimArrayOps marr sh elm where
 
-class (Shape sh, ExtShape sh, OpsM (Mut arr) sh elm) => Ops arr sh elm where
+  -- | Return the bounds of the array. All bounds are inclusive, as in
+  -- @[lb..ub]@
+
+  boundsM :: PrimMonad m => marr (PrimState m) sh elm -> (sh,sh)
+
+  -- | Given lower and upper bounds and a list of /all/ elements, produce a
+  -- mutable array.
+
+  fromListM :: PrimMonad m => sh -> sh -> [elm] -> m (marr (PrimState m) sh elm)
+
+  -- | Creates a new array with the given bounds with each element within the
+  -- array being in a random state.
+
+  newM :: PrimMonad m => sh -> sh -> m (marr (PrimState m) sh elm)
+
+  -- | Creates a new array with all elements being equal to 'elm'.
+
+  newWithM :: PrimMonad m => sh -> sh -> elm -> m (marr (PrimState m) sh elm)
+
+  -- | Reads a single element in the array.
+
+  readM :: PrimMonad m => marr (PrimState m) sh elm -> sh -> m elm
+
+  -- | Writes a single element in the array.
+
+  writeM :: PrimMonad m => marr (PrimState m) sh elm -> sh -> elm -> m ()
+
+
+
+-- | Used to connect each immutable array with one mutable array.
+
+type family MutArray (v :: * -> * -> * ) :: * -> * -> * -> *
+
+
+
+-- | The core set of functions on immutable arrays.
+
+class (Shape sh, ExtShape sh, MPrimArrayOps (MutArray arr) sh elm) => PrimArrayOps arr sh elm where
+
+  -- | Returns the bounds of an immutable array, again inclusive bounds: @ [lb..ub] @.
+
   bounds :: arr sh elm -> (sh,sh)
-  freeze :: PrimMonad m => Mut arr (PrimState m) sh elm -> m (arr sh elm)
+
+  -- | Freezes a mutable array an returns its immutable version. This operation
+  -- is /O(1)/ and both arrays share the same memory. Do not use the mutable
+  -- array afterwards.
+
+  freeze :: PrimMonad m => MutArray arr (PrimState m) sh elm -> m (arr sh elm)
+
+  -- | Extract a single element from the array. Generally unsafe as not
+  -- bounds-checking is performed.
+
   index :: arr sh elm -> sh -> elm
+
+
+
+-- | Returns true if the index is valid for the array.
+--
+-- TODO can't give a typedef
+
+--inBoundsM :: (PrimMonad m, MPrimArrayOps marr sh elm) => marr (PrimState m) sh elm -> sh -> Bool
+inBoundsM marr idx = let (lb,ub) = boundsM marr in inShapeRange lb ub idx
+{-# INLINE inBoundsM #-}
 
 -- | Given two arrays with the same dimensionality, their respective starting
 -- index, and how many steps to go in each dimension (in terms of a dimension
@@ -50,7 +102,7 @@ class (Shape sh, ExtShape sh, OpsM (Mut arr) sh elm) => Ops arr sh elm where
 --
 -- TODO specialize for DIM1 (and maybe higher dim's) to use memcmp
 
-sliceEq :: (Eq elm, Ops arr sh elm) => arr sh elm -> sh -> arr sh elm -> sh -> sh -> Bool
+sliceEq :: (Eq elm, PrimArrayOps arr sh elm) => arr sh elm -> sh -> arr sh elm -> sh -> sh -> Bool
 sliceEq arr1 k1 arr2 k2 xtnd = and res where
   res = zipWith (==) xs ys
   xs = map (index arr1) $ rangeList k1 xtnd
@@ -61,8 +113,8 @@ sliceEq arr1 k1 arr2 k2 xtnd = and res where
 -- default element, and a list of associations.
 
 fromAssocsM
-  :: (PrimMonad m, OpsM arrm sh elm)
-  => sh -> sh -> elm -> [(sh,elm)] -> m (arrm (PrimState m) sh elm)
+  :: (PrimMonad m, MPrimArrayOps marr sh elm)
+  => sh -> sh -> elm -> [(sh,elm)] -> m (marr (PrimState m) sh elm)
 fromAssocsM lb ub def xs = do
   ma <- newWithM lb ub def
   forM_ xs $ \(k,v) -> writeM ma k v
@@ -71,77 +123,34 @@ fromAssocsM lb ub def xs = do
 
 -- | Return all associations from an array.
 
-assocs :: Ops arr sh elm => arr sh elm -> [(sh,elm)]
+assocs :: PrimArrayOps arr sh elm => arr sh elm -> [(sh,elm)]
 assocs arr = map (\k -> (k,index arr k)) $ rangeList lb (ub `subDim` lb) where
   (lb,ub) = bounds arr
 {-# INLINE assocs #-}
 
-fromList :: Ops arr sh elm => sh -> sh -> [elm] -> arr sh elm
+-- | Creates an immutable array from lower and upper bounds and a complete list
+-- of elements.
+
+fromList :: PrimArrayOps arr sh elm => sh -> sh -> [elm] -> arr sh elm
 fromList lb ub xs = runST $ fromListM lb ub xs >>= freeze
 {-# INLINE fromList #-}
 
-fromAssocs :: Ops arr sh elm => sh -> sh -> elm -> [(sh,elm)] -> arr sh elm
+-- | Creates an immutable array from lower and upper bounds, a default element,
+-- and a list of associations.
+
+fromAssocs :: PrimArrayOps arr sh elm => sh -> sh -> elm -> [(sh,elm)] -> arr sh elm
 fromAssocs lb ub def xs = runST $ fromAssocsM lb ub def xs >>= freeze
 {-# INLINE fromAssocs #-}
 
-inBounds :: Ops arr sh elm => arr sh elm -> sh -> Bool
+-- | Determines if an index is valid for a given immutable array.
+
+inBounds :: PrimArrayOps arr sh elm => arr sh elm -> sh -> Bool
 inBounds arr idx = let (lb,ub) = bounds arr in inShapeRange lb ub idx
 {-# INLINE inBounds #-}
 
-toList :: Ops arr sh elm =>  arr sh elm -> [elm]
+-- | Returns all elements of an immutable array as a list.
+
+toList :: PrimArrayOps arr sh elm =>  arr sh elm -> [elm]
 toList arr = let (lb,ub) = bounds arr in map (index arr) $ rangeList lb $ ub `subDim` lb
 {-# INLINE toList #-}
-
-
-
-data MArr0 s sh elm = MArr0 sh (MutableByteArray s)
-
-data Arr0 sh elm = Arr0 sh ByteArray
-
-type instance Mut Arr0 = MArr0
-
-instance (Shape sh, ExtShape sh, Prim elm) => OpsM MArr0 sh elm where
-  boundsM (MArr0 ub _) = (zeroDim,ub `subDim` unitDim)
-  fromListM lb ub xs = do
-    ma <- newM lb ub
-    let (MArr0 _ mba) = ma
-    zipWithM_ (\k x -> writeByteArray mba k x) [0..] xs
-    return ma
-  inBoundsM (MArr0 ub _) idx = inShapeRange zeroDim ub idx
-  newM lb ub' = let ub = ub' `addDim` unitDim in
-    unless (lb == zeroDim) (error "MArr0 lb/=zeroDim") >>
-    MArr0 ub `liftM` newByteArray (size ub * sizeOf (undefined :: elm))
-  newWithM lb ub def = do
-    let ubreal = ub `addDim` unitDim
-    ma <- newM lb ub
-    let (MArr0 _ mba) = ma
-    forM_ [0 .. (toIndex ubreal ub)] $ \k -> writeByteArray mba k def
-    return ma
-  readM (MArr0 ub mba) idx = readByteArray mba (toIndex ub idx)
-  writeM (MArr0 ub mba) idx elm = writeByteArray mba (toIndex ub idx) elm
-
-instance (Shape sh, ExtShape sh, Prim elm) => Ops Arr0 sh elm where
-  bounds (Arr0 ub _) = (zeroDim,ub)
-  freeze (MArr0 ub mba) = Arr0 ub `liftM` unsafeFreezeByteArray mba
-  index (Arr0 ub ba) idx = indexByteArray ba (toIndex ub idx)
-
-test :: Arr0 DIM2 Int
-test = fromList zeroDim unitDim [0,1,2,3]
-
-{-
-data MArr s sh elm = MArr sh sh (MutableByteArray s)
-
-data Arr sh elm = Arr sh sh ByteArray
-
-type instance Mut Arr = MArr
-
-instance (Shape sh, Prim elm) => OpsM MArr sh elm where
-  unsafeNewM lb ub' = let ub = ub' `addDim` unitDim in
-    MArr lb ub `liftM` newByteArray ((size ub - size lb) * sizeOf (undefined :: elm))
-
-instance (Shape sh, Prim elm) => Ops Arr sh elm where
-  unsafeIndex (Arr lb ub ba) idx = undefined
-  unsafeFreeze (MArr lb ub mba) = Arr lb ub `liftM` unsafeFreezeByteArray mba
--}
-
 

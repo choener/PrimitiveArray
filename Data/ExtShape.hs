@@ -6,14 +6,26 @@
 module Data.ExtShape where
 
 import Data.Array.Repa.Index
+import Data.Array.Repa.Shape
 
 
 
-class Eq sh => ExtShape sh where
+-- | A number of additional operations that are useful together with
+-- 'PrimitiveArray's.
+
+class (Eq sh, Shape sh) => ExtShape sh where
+
   -- | subtract the right coordinates from the left. Does not check if the
   -- resulting shape make sense.
+
   subDim :: sh -> sh -> sh
+
+  -- | Given an index and an extend, return a list of all indices. For
+  -- @rangeList (Z:.3) (Z:.2)@ this returns @[(Z:.3), (Z:.4), (Z:.5)]@.
+
   rangeList :: sh -> sh -> [sh]
+
+
 
 instance ExtShape Z where
   subDim _ _ = Z
