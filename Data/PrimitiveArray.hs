@@ -22,6 +22,7 @@ import Control.Monad.ST
 import Control.Monad
 import Control.Monad.Primitive
 import System.IO.Unsafe
+import Control.Exception (assert)
 
 import Data.ExtShape
 
@@ -86,6 +87,13 @@ class (Shape sh, ExtShape sh, MPrimArrayOps (MutArray arr) sh elm) => PrimArrayO
   index :: arr sh elm -> sh -> elm
 
 
+
+-- | Infix index operator. Performs minimal bounds-checking using assert in
+-- non-optimized code.
+
+(!) :: PrimArrayOps arr sh elm => arr sh elm -> sh -> elm
+(!) arr idx = assert (inBounds arr idx) $ index arr idx
+{-# INLINE (!) #-}
 
 -- | Returns true if the index is valid for the array.
 --
