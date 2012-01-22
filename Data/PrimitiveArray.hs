@@ -41,9 +41,7 @@ type family Mut (v :: * -> * -> * ) :: * -> * -> * -> *
 class (Shape sh, ExtShape sh, OpsM (Mut arr) sh elm) => Ops arr sh elm where
   bounds :: arr sh elm -> (sh,sh)
   freeze :: PrimMonad m => Mut arr (PrimState m) sh elm -> m (arr sh elm)
-  inBounds :: arr sh elm -> sh -> Bool
   index :: arr sh elm -> sh -> elm
-  toList :: arr sh elm -> [elm]
 
 -- | Given two arrays with the same dimensionality, their respective starting
 -- index, and how many steps to go in each dimension (in terms of a dimension
@@ -86,6 +84,14 @@ fromAssocs :: Ops arr sh elm => sh -> sh -> elm -> [(sh,elm)] -> arr sh elm
 fromAssocs lb ub def xs = runST $ fromAssocsM lb ub def xs >>= freeze
 {-# INLINE fromAssocs #-}
 
+inBounds :: Ops arr sh elm => arr sh elm -> sh -> Bool
+inBounds arr idx = let (lb,ub) = bounds arr in inShapeRange lb ub idx
+{-# INLINE inBounds #-}
+
+toList :: Ops arr sh elm =>  arr sh elm -> [elm]
+toList arr = let (lb,ub) = bounds arr in map (index arr) $ rangeList lb $ ub `subDim` lb
+{-# INLINE toList #-}
+
 
 
 data MArr0 s sh elm = MArr0 sh (MutableByteArray s)
@@ -115,6 +121,7 @@ instance (Shape sh, ExtShape sh, Prim elm) => OpsM MArr0 sh elm where
   writeM (MArr0 ub mba) idx elm = writeByteArray mba (toIndex ub idx) elm
 
 instance (Shape sh, ExtShape sh, Prim elm) => Ops Arr0 sh elm where
+  bounds (Arr0 ub _) = (zeroDim,ub)
   freeze (MArr0 ub mba) = Arr0 ub `liftM` unsafeFreezeByteArray mba
   index (Arr0 ub ba) idx = indexByteArray ba (toIndex ub idx)
 
