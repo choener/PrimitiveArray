@@ -1,5 +1,5 @@
 Name:           PrimitiveArray
-Version:        0.1.2.0
+Version:        0.2.0.0
 License:        BSD3
 License-file:   LICENSE
 Author:         Christian Hoener zu Siederdissen
@@ -13,18 +13,20 @@ Cabal-version:  >=1.6
 Synopsis:
                 Efficient multidimensional arrays
 Description:
-                This library provides efficient multidimensional arrays. All
-                arrays are 0-based and indexed using repa-shapes.
+                This library provides efficient multidimensional arrays.
                 .
-                Please note that this version only has the name (and author) in
-                common with the previous 0.0.4.0 version. The basic idea of the
-                library remains the same: provide efficient access to immutable
-                arrays.
+                In general all operations are (highly) unsafe, no
+                bounds-checking or other sanity-checking is performed.
+                Operations are aimed toward efficiency as much as possible.
+                Goals of the library are to have arrays according to three
+                ideas: immutable/mutable arrays, strict/lazy arrays,
+                zero-based/lower-bound arrays. Zero-based arrays save one
+                addition on each access if the lower bound or the array is
+                always zero.
 
 Library
   Exposed-modules:
     Data.PrimitiveArray
---    Data.PrimitiveArray.Unboxed
     Data.PrimitiveArray.Unboxed.Zero
   Build-depends:
     base >= 4 && <5,
