@@ -18,6 +18,8 @@ import Control.Exception (assert)
 
 
 
+
+
 class Shape sh => PrimArrayOps sh elm where
   data PrimArray sh elm :: *
   unsafeIndex :: PrimArray sh elm -> sh -> elm
