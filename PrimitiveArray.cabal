@@ -26,6 +26,7 @@ Description:
 
 Library
   Exposed-modules:
+    Data.ExtShape
     Data.PrimitiveArray
     Data.PrimitiveArray.Unboxed.Zero
   Build-depends:
