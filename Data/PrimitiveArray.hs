@@ -111,7 +111,7 @@ inBoundsM marr idx = let (lb,ub) = boundsM marr in inShapeRange lb ub idx
 -- TODO specialize for DIM1 (and maybe higher dim's) to use memcmp
 
 sliceEq :: (Eq elm, PrimArrayOps arr sh elm) => arr sh elm -> sh -> arr sh elm -> sh -> sh -> Bool
-sliceEq arr1 k1 arr2 k2 xtnd = and res where
+sliceEq arr1 k1 arr2 k2 xtnd = assert ((inBounds arr1 $ k1 `addDim` xtnd) && (inBounds arr2 $ k2 `addDim` xtnd)) $ and res where
   res = zipWith (==) xs ys
   xs = map (index arr1) $ rangeList k1 xtnd
   ys = map (index arr2) $ rangeList k2 xtnd
