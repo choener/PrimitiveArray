@@ -57,7 +57,7 @@ instance (Shape sh, ExtShape sh, Prim elm) => MPrimArrayOps MArr0 sh elm where
   {-# INLINE writeM #-}
 
 instance (Shape sh, ExtShape sh, Prim elm) => PrimArrayOps Arr0 sh elm where
-  bounds (Arr0 ub _) = (zeroDim,ub)
+  bounds (Arr0 ub _) = (zeroDim,ub `subDim` unitDim)
   freeze (MArr0 ub mba) = Arr0 ub `liftM` unsafeFreezeByteArray mba
   index (Arr0 ub ba) idx = indexByteArray ba (toIndex ub idx)
   {-# INLINE bounds #-}

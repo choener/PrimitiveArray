@@ -159,6 +159,6 @@ inBounds arr idx = let (lb,ub) = bounds arr in inShapeRange lb ub idx
 -- | Returns all elements of an immutable array as a list.
 
 toList :: PrimArrayOps arr sh elm =>  arr sh elm -> [elm]
-toList arr = let (lb,ub) = bounds arr in map (index arr) $ rangeList lb $ ub `subDim` lb
+toList arr = let (lb,ub) = bounds arr in map ((!) arr) $ rangeList lb $ ub `subDim` lb
 {-# INLINE toList #-}
 
