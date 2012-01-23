@@ -34,8 +34,9 @@ instance (Shape sh, ExtShape sh, Prim elm) => MPrimArrayOps MArr0 sh elm where
   boundsM (MArr0 ub _) = (zeroDim,ub `subDim` unitDim)
   fromListM lb ub xs = do
     ma <- newM lb ub
+    let ubreal = ub `addDim` unitDim
     let (MArr0 _ mba) = ma
-    zipWithM_ (\k x -> writeByteArray mba k x) [0..] xs
+    zipWithM_ (\k x -> writeByteArray mba k x) [0.. size ubreal] xs
     return ma
   newM lb ub' = let ub = ub' `addDim` unitDim in
     unless (lb == zeroDim) (error "MArr0 lb/=zeroDim") >>
