@@ -9,8 +9,8 @@
 -- system. There are eight flavors of arrays among three axes: mutable/pure +
 -- boxed/unboxed + zero-based/lower-bound.
 --
--- NOTE all operations in MPrimArrayOps and PrimArrayOps are highly unsafe. No bounds-checking is
--- performed at all.
+-- NOTE all operations in MPrimArrayOps and PrimArrayOps are highly unsafe. No
+-- bounds-checking is performed at all.
 
 module Data.PrimitiveArray where
 

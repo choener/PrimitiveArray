@@ -23,17 +23,20 @@ Description:
                 zero-based/lower-bound arrays. Zero-based arrays save one
                 addition on each access if the lower bound or the array is
                 always zero.
+                .
+                We have forked two repa modules: Shape and Index.
 
 Library
   Exposed-modules:
+    Data.Array.Repa.Index
+    Data.Array.Repa.Shape
     Data.ExtShape
     Data.PrimitiveArray
     Data.PrimitiveArray.Unboxed.Zero
   Build-depends:
     base >= 4 && <5,
     primitive >= 0.4,
-    vector >= 0.9,
-    repa >= 2.0
+    vector >= 0.9
   ghc-options:
     -Odph
     -funbox-strict-fields
