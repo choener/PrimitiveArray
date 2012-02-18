@@ -43,7 +43,7 @@ class (Shape sh, ExtShape sh) => MPrimArrayOps marr sh elm where
   fromListM :: PrimMonad m => sh -> sh -> [elm] -> m (marr (PrimState m) sh elm)
 
   -- | Creates a new array with the given bounds with each element within the
-  -- array being in a random state.
+  -- array being in an undefined state.
 
   newM :: PrimMonad m => sh -> sh -> m (marr (PrimState m) sh elm)
 
@@ -96,8 +96,6 @@ class (Shape sh, ExtShape sh, MPrimArrayOps (MutArray arr) sh elm) => PrimArrayO
 {-# INLINE (!) #-}
 
 -- | Returns true if the index is valid for the array.
---
--- TODO can't give a typedef
 
 inBoundsM :: MPrimArrayOps marr sh elm => marr s sh elm -> sh -> Bool
 inBoundsM marr idx = let (lb,ub) = boundsM marr in inShapeRange lb ub idx
