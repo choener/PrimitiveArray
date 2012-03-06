@@ -33,6 +33,8 @@ Library
     Data.ExtShape
     Data.PrimitiveArray
     Data.PrimitiveArray.Unboxed.Zero
+    Data.PrimitiveArray.Zero
+    Data.PrimitiveArray.Zero.Vector
   Build-depends:
     base >= 4 && <5,
     primitive >= 0.4,
