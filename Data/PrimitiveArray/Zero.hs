@@ -35,7 +35,7 @@ type instance MutArray Arr0 = MArr0
 -- NOTE inLb, inUb is including bound, while exUb is excluding upper bound.
 -- Differentiates between largest included index, first excluded index.
 
-instance (Shape sh, ExtShape sh, Prim elm) => MPrimArrayOps MArr0 sh elm where
+instance (Shape sh, ExtShape sh) => MPrimArrayOps MArr0 sh elm where
   boundsM (MArr0 exUb _) = (zeroDim,exUb `subDim` unitDim)
   fromListM inLb inUb xs = do
     ma <- newM inLb inUb
@@ -61,7 +61,7 @@ instance (Shape sh, ExtShape sh, Prim elm) => MPrimArrayOps MArr0 sh elm where
   {-# INLINE readM #-}
   {-# INLINE writeM #-}
 
-instance (Shape sh, ExtShape sh, Prim elm) => PrimArrayOps Arr0 sh elm where
+instance (Shape sh, ExtShape sh) => PrimArrayOps Arr0 sh elm where
   bounds (Arr0 exUb _) = (zeroDim,exUb `subDim` unitDim)
   freeze (MArr0 exUb mba) = Arr0 exUb `liftM` unsafeFreezeArray mba
   index (Arr0 exUb ba) idx = assert (inShape exUb idx) $ indexArray ba (toIndex exUb idx)
