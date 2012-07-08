@@ -151,7 +151,7 @@ fromAssocs lb ub def xs = runST $ fromAssocsM lb ub def xs >>= freeze
 -- | Determines if an index is valid for a given immutable array.
 
 inBounds :: PrimArrayOps arr sh elm => arr sh elm -> sh -> Bool
-inBounds arr idx = let (lb,ub) = bounds arr in inShapeRange lb ub idx
+inBounds arr idx = let (lb,ub) = bounds arr in inShapeRange lb (ub `addDim` unitDim) idx
 {-# INLINE inBounds #-}
 
 -- | Returns all elements of an immutable array as a list.
