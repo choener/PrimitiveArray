@@ -21,11 +21,11 @@ import Data.PrimitiveArray
 
 -- | Monadic arrays of primitive type.
 
-data MArr0 s sh elm = MArr0 !sh {-# UNPACK #-} !(MutableByteArray s)
+data MArr0 s sh elm = MArr0 !sh !(MutableByteArray s)
 
 -- | Immutable arrays of primitive type.
 
-data Arr0 sh elm = Arr0 !sh {-# UNPACK #-} !ByteArray
+data Arr0 sh elm = Arr0 !sh !ByteArray
 
 
 
