@@ -27,9 +27,10 @@ Description:
                 We have forked two repa modules: Shape and Index.
                 .
                 Unboxed vectors are available with implementations based on
-                "primitive" and "vector". For some reason, we loose 50%
-                performance with RNAfold if we use "vector" as the underlying
-                data type, while Nussinov78 does not suffer.
+                "primitive" and "vector". The "primitive" version is probably
+                obsolete now, as I don't see any slowdowns anymore. If this
+                continues into GHC 7.6.1, I'll remove the old code (This will
+                probably not break user code using Unboxed.Zero).
 
 Library
   Exposed-modules:
