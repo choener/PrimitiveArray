@@ -6,7 +6,7 @@
 -- | Strict, unboxed arrays of primitive type. Uses unboxed vectors internally
 -- to provide tuple instances.
 
-module Data.PrimitiveArray.Unboxed.VectorZero where
+module Data.PrimitiveArray.Zero.Unboxed where
 
 import Control.Monad
 import Data.Array.Repa.Index

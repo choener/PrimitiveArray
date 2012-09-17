@@ -1,5 +1,5 @@
 Name:           PrimitiveArray
-Version:        0.3.0.0
+Version:        0.4.0.0
 License:        BSD3
 License-file:   LICENSE
 Author:         Christian Hoener zu Siederdissen
@@ -25,12 +25,6 @@ Description:
                 always zero.
                 .
                 We have forked two repa modules: Shape and Index.
-                .
-                Unboxed vectors are available with implementations based on
-                "primitive" and "vector". The "primitive" version is probably
-                obsolete now, as I don't see any slowdowns anymore. If this
-                continues into GHC 7.6.1, I'll remove the old code (This will
-                probably not break user code using Unboxed.Zero).
 
 Library
   Exposed-modules:
@@ -38,9 +32,11 @@ Library
     Data.Array.Repa.Shape
     Data.ExtShape
     Data.PrimitiveArray
-    Data.PrimitiveArray.Unboxed.Zero
-    Data.PrimitiveArray.Unboxed.VectorZero
     Data.PrimitiveArray.Zero
+    Data.PrimitiveArray.Zero.Unboxed
+    Data.PrimitiveArray.UpperTriangular
+    Data.PrimitiveArray.UpperTriangular.Unboxed
+    Data.PrimitiveArray.FillTable
   Build-depends:
     base >= 4 && <5,
     primitive >= 0.4,
