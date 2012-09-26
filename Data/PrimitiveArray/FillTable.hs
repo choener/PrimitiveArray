@@ -1,3 +1,4 @@
+{-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
@@ -15,6 +16,9 @@ module Data.PrimitiveArray.FillTable where
 
 import Data.Array.Repa.Index
 import Data.Array.Repa.Shape
+import Data.PrimitiveArray
+import Control.Monad
+import Control.Monad.Primitive (PrimState (..))
 
 
 
@@ -25,6 +29,11 @@ import Data.Array.Repa.Shape
 --
 -- NOTE All elements in the diagonal should be independent. Especially if you
 -- use fillDiagonalP.
+--
+-- TODO fillDiagonalP stuff should take an 'Int' as last parameter. This param
+-- goes "[0 .. n-1]" where "n" is the number of threads using Repa gangs. Each
+-- action that fills many diagonal elements figures out which elements to fill
+-- using this parameter in a modulo-style way.
 
 class (Monad m) => FillDiagonal m t where
   -- | Fill a table serially, by diagonals, where each is filled serially. The
@@ -34,20 +43,12 @@ class (Monad m) => FillDiagonal m t where
   -- The order is again unspecified.
   fillDiagonalP :: t -> m ()
 
--- | Base case for triangular tables.
-
-instance (Monad m) => FillDiagonal m Z where
-  fillDiagonalS Z = return ()
+instance (Monad m, PrimMonad m, s ~ PrimState m, MPrimArrayOps tbl DIM2 e) => FillDiagonal m (tbl s DIM2 e, DIM2 -> e) where
+  fillDiagonalS (t,f) = do let (lb,Z:.r:.c) = boundsM t
+                           forM_ [0..c] $ \d -> do
+                           forM_ [0..r-d] $ \k -> do
+                             let i = d+k
+                             let j = k
+                             writeM t (Z:.i:.j) (f $ Z:.i:.j)
   {-# INLINE fillDiagonalS #-}
-  fillDiagonalP Z = return ()
-  {-# INLINE fillDiagonalP #-}
-
--- | Fill a stack of triangular tables by first filling the tail, then the
--- head. The head is a table and a function to fill the table.
-
-instance (Monad m, FillDiagonal m tail, Shape sh, FillDiagonal m (tbl,sh -> e)) => FillDiagonal m (tail:.(tbl,sh -> e)) where
-  fillDiagonalS (tail:.(tbl,func)) = fillDiagonalS tail >> fillDiagonalS (tbl,func)
-  {-# INLINE fillDiagonalS #-}
-  fillDiagonalP (tail:.(tbl,func)) = fillDiagonalP tail >> fillDiagonalP (tbl,func)
-  {-# INLINE fillDiagonalP #-}
 
