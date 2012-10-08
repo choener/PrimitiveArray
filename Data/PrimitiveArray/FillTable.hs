@@ -52,3 +52,16 @@ instance (Monad m, PrimMonad m, s ~ PrimState m, MPrimArrayOps tbl DIM2 e) => Fi
                              writeM t (Z:.i:.j) (f $ Z:.i:.j)
   {-# INLINE fillDiagonalS #-}
 
+
+
+-- | Fill a table 't' using rule 'r'. Allows us to have one type class which
+-- changes behaviour based on rules. 'fillTableS' and 'fillTableP' fill the
+-- table serially or in parallel, depending on the rule chosen.
+--
+-- TODO and yes, 'fillTableP' is missing until we connect to repa3.
+--
+-- TODO preferable, we'd like to be polymorphic over dimensions.
+
+class (Monad m) => FillTable m r t where
+  fillTableS :: r -> t -> m ()
+
