@@ -34,13 +34,13 @@ Library
     Data.PrimitiveArray
     Data.PrimitiveArray.Zero
     Data.PrimitiveArray.Zero.Unboxed
-    Data.PrimitiveArray.UpperTriangular
-    Data.PrimitiveArray.UpperTriangular.Unboxed
-    Data.PrimitiveArray.FillTable
+--    Data.PrimitiveArray.UpperTriangular
+--    Data.PrimitiveArray.UpperTriangular.Unboxed
+--    Data.PrimitiveArray.FillTable
   Build-depends:
     base >= 4 && <5,
-    primitive >= 0.4,
-    vector >= 0.9
+    primitive == 0.5  ,
+    vector    == 0.10
   ghc-options:
     -O2
     -funbox-strict-fields
