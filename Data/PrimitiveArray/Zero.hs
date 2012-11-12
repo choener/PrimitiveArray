@@ -10,23 +10,22 @@ module Data.PrimitiveArray.Zero where
 import Control.Monad
 import Data.Array.Repa.Index
 import Data.Array.Repa.Shape
-import Data.Primitive
-import Data.Primitive.Array
-import Data.Primitive.Types
 import Control.Exception (assert)
+import Data.Vector as VU hiding (forM_, length, zipWithM_)
+import Data.Vector.Mutable as VUM hiding (length)
 
 import Data.ExtShape
 import Data.PrimitiveArray
 
 
 
--- | Monadic arrays of primitive type.
+-- | Monadic arrays of boxed type.
 
-data MArr0 s sh elm = MArr0 !sh !(MutableArray s elm)
+data MArr0 s sh elm = MArr0 !sh !(MVector s elm)
 
--- | Immutable arrays of primitive type.
+-- | Immutable arrays of boxed type.
 
-data Arr0 sh elm = Arr0 !sh !(Array elm)
+data Arr0 sh elm = Arr0 !sh !(Vector elm)
 
 
 
@@ -41,19 +40,19 @@ instance (Shape sh, ExtShape sh) => MPrimArrayOps MArr0 sh elm where
     ma <- newM inLb inUb
     let exUb = inUb `addDim` unitDim
     let (MArr0 _ mba) = ma
-    zipWithM_ (\k x -> assert (length xs == size exUb) $ writeArray mba k x) [0.. toIndex exUb inUb] xs
+    zipWithM_ (\k x -> assert (length xs == size exUb) $ unsafeWrite mba k x) [0.. toIndex exUb inUb] xs
     return ma
   newM inLb inUb = let exUb = inUb `addDim` unitDim in
     unless (inLb == zeroDim) (error "MArr0 lb/=zeroDim") >>
-    MArr0 exUb `liftM` newArray (size exUb) undefined
+    MArr0 exUb `liftM` new (size exUb)
   newWithM inLb inUb def = do
     let exUb = inUb `addDim` unitDim
     ma <- newM inLb inUb
     let (MArr0 _ mba) = ma
-    forM_ [0 .. toIndex exUb inUb] $ \k -> writeArray mba k def
+    forM_ [0 .. toIndex exUb inUb] $ \k -> unsafeWrite mba k def
     return ma
-  readM (MArr0 exUb mba) idx = assert (inShape exUb idx) $ readArray mba (toIndex exUb idx)
-  writeM (MArr0 exUb mba) idx elm = assert (inShape exUb idx) $ writeArray mba (toIndex exUb idx) elm
+  readM (MArr0 exUb mba) idx = assert (inShape exUb idx) $ unsafeRead mba (toIndex exUb idx)
+  writeM (MArr0 exUb mba) idx elm = assert (inShape exUb idx) $ unsafeWrite mba (toIndex exUb idx) elm
   {-# INLINE boundsM #-}
   {-# INLINE fromListM #-}
   {-# INLINE newM #-}
@@ -63,8 +62,8 @@ instance (Shape sh, ExtShape sh) => MPrimArrayOps MArr0 sh elm where
 
 instance (Shape sh, ExtShape sh) => PrimArrayOps Arr0 sh elm where
   bounds (Arr0 exUb _) = (zeroDim,exUb `subDim` unitDim)
-  freeze (MArr0 exUb mba) = Arr0 exUb `liftM` unsafeFreezeArray mba
-  index (Arr0 exUb ba) idx = assert (inShape exUb idx) $ indexArray ba (toIndex exUb idx)
+  freeze (MArr0 exUb mba) = Arr0 exUb `liftM` unsafeFreeze mba
+  index (Arr0 exUb ba) idx = assert (inShape exUb idx) $ unsafeIndex ba (toIndex exUb idx)
   {-# INLINE bounds #-}
   {-# INLINE freeze #-}
   {-# INLINE index #-}
