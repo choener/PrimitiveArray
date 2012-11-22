@@ -1,5 +1,5 @@
 Name:           PrimitiveArray
-Version:        0.4.0.0
+Version:        0.4.0.1
 License:        BSD3
 License-file:   LICENSE
 Author:         Christian Hoener zu Siederdissen
@@ -38,9 +38,8 @@ Library
 --    Data.PrimitiveArray.UpperTriangular.Unboxed
 --    Data.PrimitiveArray.FillTable
   Build-depends:
-    base >= 4 && <5,
-    primitive == 0.5  ,
-    vector    == 0.10
+    base      >= 4 && <5     ,
+    vector    == 0.10.*
   ghc-options:
     -O2
     -funbox-strict-fields
