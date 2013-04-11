@@ -3,7 +3,7 @@
 
 -- | Additional functions on shapes
 
-module Data.ExtShape where
+module Data.Array.Repa.ExtShape where
 
 import Data.Array.Repa.Index
 import Data.Array.Repa.Shape
