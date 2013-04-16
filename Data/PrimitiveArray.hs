@@ -88,7 +88,6 @@ class (Shape sh, ExtShape sh) => PrimArrayMap arr sh e e' where
   map :: (e -> e') -> arr sh e -> arr sh e'
 
 
-{-
 
 -- | Infix index operator. Performs minimal bounds-checking using assert in
 -- non-optimized code.
@@ -97,6 +96,7 @@ class (Shape sh, ExtShape sh) => PrimArrayMap arr sh e e' where
 (!) arr idx = assert (inBounds arr idx) $ index arr idx
 {-# INLINE (!) #-}
 
+{-
 -- | Returns true if the index is valid for the array.
 
 inBoundsM :: MPrimArrayOps marr sh elm => marr s sh elm -> sh -> Bool
@@ -153,13 +153,13 @@ fromAssocs :: (PrimArrayOps arr sh elm, MPrimArrayOps arr sh elm) => sh -> sh ->
 fromAssocs lb ub def xs = runST $ fromAssocsM lb ub def xs >>= freeze
 {-# INLINE fromAssocs #-}
 
-{-
 -- | Determines if an index is valid for a given immutable array.
 
 inBounds :: PrimArrayOps arr sh elm => arr sh elm -> sh -> Bool
 inBounds arr idx = let (lb,ub) = bounds arr in inShapeRange lb (ub `addDim` unitDim) idx
 {-# INLINE inBounds #-}
 
+{-
 -- | Returns all elements of an immutable array as a list.
 
 toList :: PrimArrayOps arr sh elm =>  arr sh elm -> [elm]
