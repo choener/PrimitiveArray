@@ -33,12 +33,13 @@ Library
     Data.PrimitiveArray.FillTables
     Data.PrimitiveArray.Zero
   Build-depends:
-    base        >= 4 && <5  ,
-    deepseq     >= 1.3      ,
-    primitive   >= 0.5.0.1  ,
-    vector      >= 0.10.0.1 ,
-    repa        >= 3.2.3    ,
-    QuickCheck  >= 2.5
+    base            >= 4 && <5  ,
+    deepseq         >= 1.3      ,
+    primitive       >= 0.5.0.1  ,
+    vector          >= 0.10.0.1 ,
+    vector-th-unbox >= 0.2      ,
+    repa            >= 3.2.3    ,
+    QuickCheck      >= 2.5
   ghc-options:
     -O2
     -funbox-strict-fields

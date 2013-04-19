@@ -1,3 +1,6 @@
+{-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE TypeOperators #-}
 
@@ -24,6 +27,8 @@ import Data.Array.Repa.Shape
 import GHC.Base (quotInt, remInt)
 import Test.QuickCheck
 import Test.QuickCheck.All
+import qualified Data.Vector.Unboxed as VU
+import Data.Vector.Unboxed.Deriving
 
 import Data.Array.Repa.ExtShape
 
@@ -41,6 +46,11 @@ stage = "Data.Array.Repa.Index.Subword"
 
 newtype Subword = Subword (Int:.Int)
   deriving (Eq,Ord,Show)
+
+derivingUnbox "Subword"
+  [t| Subword -> (Int,Int) |]
+  [| \ (Subword (i:.j)) -> (i,j) |]
+  [| \ (i,j) -> Subword (i:.j) |]
 
 subword :: Int -> Int -> Subword
 subword i j = Subword (i:.j)
