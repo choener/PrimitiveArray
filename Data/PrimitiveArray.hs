@@ -6,26 +6,29 @@
 
 -- | Vastly extended primitive arrays. Some basic ideas are now modeled after
 -- the vector package, especially the monadic mutable / pure immutable array
--- system. There are eight flavors of arrays among three axes: mutable/pure +
--- boxed/unboxed + zero-based/lower-bound.
+-- system.
 --
 -- NOTE all operations in MPrimArrayOps and PrimArrayOps are highly unsafe. No
 -- bounds-checking is performed at all.
 
 module Data.PrimitiveArray where
 
-import Data.Array.Repa.Index
-import Data.Array.Repa.Shape
-import Data.Primitive.Types
-import Data.Primitive
-import Control.Monad.ST
+import Control.Exception (assert)
 import Control.Monad
 import Control.Monad.Primitive
+import Control.Monad.ST
+import Data.Array.Repa.Index
+import Data.Array.Repa.Shape
+import Data.Primitive
+import Data.Primitive.Types
+import Prelude as P
 import System.IO.Unsafe
-import Control.Exception (assert)
 
 import Data.Array.Repa.ExtShape
 
+
+
+-- | Mutable version of an array.
 
 data family MutArr (m :: * -> *) (arr :: *) :: *
 
@@ -96,10 +99,9 @@ class (Shape sh, ExtShape sh) => PrimArrayMap arr sh e e' where
 (!) arr idx = assert (inBounds arr idx) $ index arr idx
 {-# INLINE (!) #-}
 
-{-
 -- | Returns true if the index is valid for the array.
 
-inBoundsM :: MPrimArrayOps marr sh elm => marr s sh elm -> sh -> Bool
+inBoundsM :: (Monad m, MPrimArrayOps arr sh elm) => MutArr m (arr sh elm) -> sh -> Bool
 inBoundsM marr idx = let (lb,ub) = boundsM marr in inShapeRange lb ub idx
 {-# INLINE inBoundsM #-}
 
@@ -113,10 +115,9 @@ inBoundsM marr idx = let (lb,ub) = boundsM marr in inShapeRange lb ub idx
 sliceEq :: (Eq elm, PrimArrayOps arr sh elm) => arr sh elm -> sh -> arr sh elm -> sh -> sh -> Bool
 sliceEq arr1 k1 arr2 k2 xtnd = assert ((inBounds arr1 k1) && (inBounds arr2 k2) && (inBounds arr1 $ k1 `addDim` xtnd) && (inBounds arr2 $ k2 `addDim` xtnd)) $ and res where
   res = zipWith (==) xs ys
-  xs = map (index arr1) $ rangeList k1 xtnd
-  ys = map (index arr2) $ rangeList k2 xtnd
+  xs = P.map (index arr1) $ rangeList k1 xtnd
+  ys = P.map (index arr2) $ rangeList k2 xtnd
 {-# INLINE sliceEq #-}
--}
 
 -- | Construct a mutable primitive array from a lower and an upper bound, a
 -- default element, and a list of associations.
@@ -130,21 +131,19 @@ fromAssocsM lb ub def xs = do
   return ma
 {-# INLINE fromAssocsM #-}
 
-{-
 -- | Return all associations from an array.
 
 assocs :: PrimArrayOps arr sh elm => arr sh elm -> [(sh,elm)]
-assocs arr = map (\k -> (k,index arr k)) $ rangeList lb (ub `subDim` lb) where
+assocs arr = P.map (\k -> (k,index arr k)) $ rangeList lb (ub `subDim` lb) where
   (lb,ub) = bounds arr
 {-# INLINE assocs #-}
 
 -- | Creates an immutable array from lower and upper bounds and a complete list
 -- of elements.
 
-fromList :: PrimArrayOps arr sh elm => sh -> sh -> [elm] -> arr sh elm
+fromList :: (PrimArrayOps arr sh elm, MPrimArrayOps arr sh elm) => sh -> sh -> [elm] -> arr sh elm
 fromList lb ub xs = runST $ fromListM lb ub xs >>= freeze
 {-# INLINE fromList #-}
--}
 
 -- | Creates an immutable array from lower and upper bounds, a default element,
 -- and a list of associations.
@@ -159,12 +158,9 @@ inBounds :: PrimArrayOps arr sh elm => arr sh elm -> sh -> Bool
 inBounds arr idx = let (lb,ub) = bounds arr in inShapeRange lb (ub `addDim` unitDim) idx
 {-# INLINE inBounds #-}
 
-{-
 -- | Returns all elements of an immutable array as a list.
 
 toList :: PrimArrayOps arr sh elm =>  arr sh elm -> [elm]
-toList arr = let (lb,ub) = bounds arr in map ((!) arr) $ rangeList lb $ ub `subDim` lb
+toList arr = let (lb,ub) = bounds arr in P.map ((!) arr) $ rangeList lb $ ub `subDim` lb
 {-# INLINE toList #-}
-
--}
 
