@@ -13,7 +13,7 @@ import Data.Array.Repa.Shape
 -- | A number of additional operations that are useful together with
 -- 'PrimitiveArray's.
 
-class (Eq sh, Shape sh) => ExtShape sh where
+class ExtShape sh where
 
   -- | subtract the right coordinates from the left. Does not check if the
   -- resulting shape make sense.
