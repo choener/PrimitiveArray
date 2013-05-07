@@ -77,7 +77,48 @@ instance (Shape sh, ExtShape sh, VUM.Unbox e, VUM.Unbox e') => PrimArrayMap Unbo
 
 -- * Boxed, multidimensional arrays.
 
--- data Boxed sh e = Boxed !sh !(V.Vector e)
+data Boxed sh e = Boxed !sh !(V.Vector e)
+  deriving (Read,Show,Eq)
+
+data instance MutArr m (Boxed sh e) = MBoxed !sh (V.MVector (PrimState m) e)
+
+instance (Shape sh, ExtShape sh, VUM.Unbox elm) => MPrimArrayOps Boxed sh elm where
+  boundsM (MBoxed exUb _) = (zeroDim,exUb `subDim` unitDim)
+  fromListM inLb inUb xs = do
+    ma <- newM inLb inUb
+    let exUb = inUb `addDim` unitDim
+    let (MBoxed _ mba) = ma
+    zipWithM_ (\k x -> assert (length xs == size exUb) $ unsafeWrite mba k x) [0.. toIndex exUb inUb] xs
+    return ma
+  newM inLb inUb = let exUb = inUb `addDim` unitDim in
+    unless (inLb == zeroDim) (error "MArr0 lb/=zeroDim") >>
+    MBoxed exUb `liftM` new (size exUb)
+  newWithM inLb inUb def = do
+    let exUb = inUb `addDim` unitDim
+    ma <- newM inLb inUb
+    let (MBoxed _ mba) = ma
+    forM_ [0 .. toIndex exUb inUb] $ \k -> unsafeWrite mba k def
+    return ma
+  readM (MBoxed exUb mba) idx = assert (inShape exUb idx) $ unsafeRead mba (toIndex exUb idx)
+  writeM (MBoxed exUb mba) idx elm = assert (inShape exUb idx) $ unsafeWrite mba (toIndex exUb idx) elm
+  {-# INLINE boundsM #-}
+  {-# INLINE fromListM #-}
+  {-# INLINE newM #-}
+  {-# INLINE newWithM #-}
+  {-# INLINE readM #-}
+  {-# INLINE writeM #-}
+
+instance (Shape sh, ExtShape sh, VUM.Unbox elm) => PrimArrayOps Boxed sh elm where
+  bounds (Boxed exUb _) = (zeroDim,exUb `subDim` unitDim)
+  freeze (MBoxed exUb mba) = Boxed exUb `liftM` unsafeFreeze mba
+  index (Boxed exUb ba) idx = assert (inShape exUb idx) $ unsafeIndex ba (toIndex exUb idx)
+  {-# INLINE bounds #-}
+  {-# INLINE freeze #-}
+  {-# INLINE index #-}
+
+instance (Shape sh, ExtShape sh) => PrimArrayMap Boxed sh e e' where
+  map f (Boxed sh xs) = Boxed sh (V.map f xs)
+  {-# INLINE map #-}
 
 
 {-
