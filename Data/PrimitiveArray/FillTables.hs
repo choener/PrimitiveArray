@@ -36,9 +36,9 @@ class UpperTriS m stack where
 instance
   ( Monad m
   , MPrimArrayOps arr Subword e
-  , Stack m Subword (xs:.MutArr m (arr Subword e))
-  ) => UpperTriS m (xs:.MutArr m (arr Subword e)) where
-  upperTriS xs@(_:.x) = do
+  , Stack m Subword (xs :. SingleNonTerminal m arr Subword e)
+  ) => UpperTriS m  (xs :. SingleNonTerminal m arr Subword e) where
+  upperTriS xs@(_:.(x,f)) = do
     -- TODO missing extends check
     let (Subword (l:._),Subword (u:._)) = boundsM x
     S.mapM_ (go xs) $ unfolder l u
@@ -63,7 +63,7 @@ instance
 
 
 -- | Defines how a single index in a stack of arrays + evaluation functions is
--- handled.
+-- handled. The instances *should* work for any index @ix@.
 
 class Stack m sh xs where
   writeStack :: xs -> sh -> m ()
@@ -74,9 +74,15 @@ instance (Monad m) => Stack m sh Z where
 
 instance
   ( PrimMonad m
-  , Stack m Subword xs
-  , MPrimArrayOps arr Subword e
-  ) => Stack m Subword (xs:.(MutArr m (arr Subword e),(Subword -> m e))) where
+  , Stack m ix xs
+  , MPrimArrayOps arr ix e
+  ) => Stack m ix (xs :. SingleNonTerminal m arr ix e) where
   writeStack (xs:.(x,f)) i = writeStack xs i >> f i >>= writeM x i
   {-# INLINE writeStack #-}
+
+
+
+-- | Wrap non-terminal symbol type, corresponding rule type.
+
+type SingleNonTerminal m arr ix e = (MutArr m (arr ix e), ix -> m e)
 
