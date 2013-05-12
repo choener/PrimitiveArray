@@ -21,6 +21,8 @@ import Data.Array.Repa.Index.Subword
 
 
 
+-- * Driver classes for table filling system.
+
 -- Upper triangular table filling. Right now, only a serial option 'upperTriS'
 -- is available.
 --
@@ -29,18 +31,28 @@ import Data.Array.Repa.Index.Subword
 class UpperTriS m stack where
   upperTriS :: stack -> m ()
 
--- |
---
+-- | Defines how a single index in a stack of arrays + evaluation functions is
+-- handled. The instances *should* work for any index @ix@.
+
+class Stack m sh xs where
+  writeStack :: xs -> sh -> m ()
+
+
+
+-- * Instances
+
+-- ** 1-tape grammars with 'Subword' indices.
+
 -- TODO Insert check that all extends are the same!
 
 instance
   ( Monad m
-  , MPrimArrayOps arr Subword e
-  , Stack m Subword (xs :. SingleNonTerminal m arr Subword e)
-  ) => UpperTriS m  (xs :. SingleNonTerminal m arr Subword e) where
+  , MPrimArrayOps arr (Z:.Subword) e
+  , Stack m Subword (xs :. SubwordNonTerminal m arr e)
+  ) => UpperTriS m  (xs :. SubwordNonTerminal m arr e) where
   upperTriS xs@(_:.(x,f)) = do
     -- TODO missing extends check
-    let (Subword (l:._),Subword (u:._)) = boundsM x
+    let (Z:.Subword (l:._),Z:.Subword (u:._)) = boundsM x
     S.mapM_ (go xs) $ unfolder l u
     where
       -- Write all table values at a certain subword. Note that tables are
@@ -60,13 +72,15 @@ instance
       {-# INLINE unfolder #-}
   {-# INLINE upperTriS #-}
 
+instance
+  ( PrimMonad m
+  , Stack m Subword xs
+  , MPrimArrayOps arr (Z:.Subword) e
+  ) => Stack m Subword (xs :. SubwordNonTerminal m arr e) where
+  writeStack (xs:.(x,f)) i = writeStack xs i >> f i >>= writeM x (Z:.i)
+  {-# INLINE writeStack #-}
 
-
--- | Defines how a single index in a stack of arrays + evaluation functions is
--- handled. The instances *should* work for any index @ix@.
-
-class Stack m sh xs where
-  writeStack :: xs -> sh -> m ()
+-- ** Multi-tape indices.
 
 instance (Monad m) => Stack m sh Z where
   writeStack _ _ = return ()
@@ -76,13 +90,14 @@ instance
   ( PrimMonad m
   , Stack m ix xs
   , MPrimArrayOps arr ix e
-  ) => Stack m ix (xs :. SingleNonTerminal m arr ix e) where
+  ) => Stack m ix (xs :. GeneralNonTerminal m arr ix e) where
   writeStack (xs:.(x,f)) i = writeStack xs i >> f i >>= writeM x i
   {-# INLINE writeStack #-}
 
 
 
--- | Wrap non-terminal symbol type, corresponding rule type.
+-- Wrap non-terminal symbol type, corresponding rule type.
 
-type SingleNonTerminal m arr ix e = (MutArr m (arr ix e), ix -> m e)
+type SubwordNonTerminal m arr e = (MutArr m (arr (Z:.Subword) e), Subword -> m e)
+type GeneralNonTerminal m arr ix e = (MutArr m (arr ix e), ix -> m e)
 
