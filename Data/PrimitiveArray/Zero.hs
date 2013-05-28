@@ -41,7 +41,7 @@ instance (Shape sh, ExtShape sh, VUM.Unbox elm) => MPrimArrayOps Unboxed sh elm 
     ma <- newM inLb inUb
     let exUb = inUb `addDim` unitDim
     let (MUnboxed _ mba) = ma
-    zipWithM_ (\k x -> assert (length xs == size exUb) $ unsafeWrite mba k x) [0.. toIndex exUb inUb] xs
+    zipWithM_ (\k x -> assert (length xs == size exUb) $ unsafeWrite mba k x) [0.. size exUb -1] xs
     return ma
   newM inLb inUb = let exUb = inUb `addDim` unitDim in
     unless (inLb == zeroDim) (error "MArr0 lb/=zeroDim") >>
@@ -50,7 +50,7 @@ instance (Shape sh, ExtShape sh, VUM.Unbox elm) => MPrimArrayOps Unboxed sh elm 
     let exUb = inUb `addDim` unitDim
     ma <- newM inLb inUb
     let (MUnboxed _ mba) = ma
-    forM_ [0 .. toIndex exUb inUb] $ \k -> unsafeWrite mba k def
+    forM_ [0 .. size exUb -1] $ \k -> unsafeWrite mba k def
     return ma
   readM (MUnboxed exUb mba) idx = assert (inShape exUb idx) $ unsafeRead mba (toIndex exUb idx)
   writeM (MUnboxed exUb mba) idx elm = assert (inShape exUb idx) $ unsafeWrite mba (toIndex exUb idx) elm
@@ -88,7 +88,7 @@ instance (Shape sh, ExtShape sh, VUM.Unbox elm) => MPrimArrayOps Boxed sh elm wh
     ma <- newM inLb inUb
     let exUb = inUb `addDim` unitDim
     let (MBoxed _ mba) = ma
-    zipWithM_ (\k x -> assert (length xs == size exUb) $ unsafeWrite mba k x) [0.. toIndex exUb inUb] xs
+    zipWithM_ (\k x -> assert (length xs == size exUb) $ unsafeWrite mba k x) [0 .. size exUb - 1] xs -- [0.. toIndex exUb inUb] xs
     return ma
   newM inLb inUb = let exUb = inUb `addDim` unitDim in
     unless (inLb == zeroDim) (error "MArr0 lb/=zeroDim") >>
@@ -97,7 +97,7 @@ instance (Shape sh, ExtShape sh, VUM.Unbox elm) => MPrimArrayOps Boxed sh elm wh
     let exUb = inUb `addDim` unitDim
     ma <- newM inLb inUb
     let (MBoxed _ mba) = ma
-    forM_ [0 .. toIndex exUb inUb] $ \k -> unsafeWrite mba k def
+    forM_ [0 .. size exUb -1] $ \k -> unsafeWrite mba k def
     return ma
   readM (MBoxed exUb mba) idx = assert (inShape exUb idx) $ unsafeRead mba (toIndex exUb idx)
   writeM (MBoxed exUb mba) idx elm = assert (inShape exUb idx) $ unsafeWrite mba (toIndex exUb idx) elm
