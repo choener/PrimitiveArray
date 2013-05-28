@@ -26,6 +26,7 @@ Library
     Data.Array.Repa.Index.Subword
     Data.PrimitiveArray
     Data.PrimitiveArray.FillTables
+    Data.PrimitiveArray.QuickCheck
     Data.PrimitiveArray.Zero
   Build-depends:
     base            >= 4 && <5  ,
