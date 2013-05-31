@@ -23,6 +23,7 @@ Library
   Exposed-modules:
     Data.Array.Repa.ExtShape
     Data.Array.Repa.Index.Point
+    Data.Array.Repa.Index.Points
     Data.Array.Repa.Index.Subword
     Data.PrimitiveArray
     Data.PrimitiveArray.FillTables
