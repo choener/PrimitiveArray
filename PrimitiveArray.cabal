@@ -1,5 +1,5 @@
 Name:           PrimitiveArray
-Version:        0.5.1.0
+Version:        0.5.2.0
 License:        BSD3
 License-file:   LICENSE
 Author:         Christian Hoener zu Siederdissen
@@ -22,6 +22,7 @@ Description:
 Library
   Exposed-modules:
     Data.Array.Repa.ExtShape
+    Data.Array.Repa.Index.Outside
     Data.Array.Repa.Index.Point
     Data.Array.Repa.Index.Points
     Data.Array.Repa.Index.Subword
