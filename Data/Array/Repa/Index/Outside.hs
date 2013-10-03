@@ -9,6 +9,8 @@
 -- usual grammars. This remains true if grammars are transformed to Chomsky
 -- normal form, only that in said form it is easier to write down the
 -- recursions.
+--
+-- TODO basically untested!
 
 module Data.Array.Repa.Index.Outside where
 
