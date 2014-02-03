@@ -19,6 +19,9 @@ Description:
                 bounds-checking or other sanity-checking is performed.
                 Operations are aimed toward efficiency as much as possible.
 
+extra-source-files
+  changelog
+
 Library
   Exposed-modules:
     Data.Array.Repa.ExtShape
@@ -41,7 +44,6 @@ Library
   ghc-options:
     -O2
     -funbox-strict-fields
-
 
 source-repository head
   type: git
