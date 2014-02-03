@@ -12,16 +12,16 @@
 
 module Data.PrimitiveArray.Zero where
 
-import Control.Monad
-import Data.Array.Repa.Index
-import Data.Array.Repa.Shape
-import Control.Exception (assert)
-import qualified Data.Vector.Unboxed as VU hiding (forM_, length, zipWithM_)
+import           Control.Exception (assert)
+import           Control.Monad
+import           Control.Monad.Primitive (PrimState)
+import           Data.Array.Repa.Index
+import           Data.Array.Repa.Shape
+import           Data.Vector.Generic as G hiding (forM_, length, zipWithM_, new)
+import           Data.Vector.Generic.Mutable as GM hiding (length)
 import qualified Data.Vector as V hiding (forM_, length, zipWithM_)
+import qualified Data.Vector.Unboxed as VU hiding (forM_, length, zipWithM_)
 import qualified Data.Vector.Unboxed.Mutable as VUM hiding (length)
-import Data.Vector.Generic as G hiding (forM_, length, zipWithM_, new)
-import Data.Vector.Generic.Mutable as GM hiding (length)
-import Control.Monad.Primitive (PrimState)
 
 import Data.Array.Repa.ExtShape
 import Data.PrimitiveArray

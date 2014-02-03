@@ -12,18 +12,20 @@
 
 module Data.Array.Repa.Index.Points where
 
-import Control.Applicative
-import Control.DeepSeq
-import Data.Array.Repa.Index
-import Data.Array.Repa.Shape
-import Data.Vector.Unboxed.Deriving
-import GHC.Base (quotInt, remInt)
+import           Control.Applicative
+import           Control.DeepSeq
+import           Data.Array.Repa.Index
+import           Data.Array.Repa.Shape
+import           Data.Vector.Unboxed.Deriving
+import           GHC.Base (quotInt, remInt)
+import qualified Data.Vector.Generic.Base
+import qualified Data.Vector.Generic.Mutable
 import qualified Data.Vector.Unboxed as VU
-import Test.QuickCheck
-import Test.QuickCheck.All
+import           Test.QuickCheck
+import           Test.QuickCheck.All
 
-import Data.Array.Repa.ExtShape
-import Data.Array.Repa.Index.Subword
+import           Data.Array.Repa.ExtShape
+import           Data.Array.Repa.Index.Subword
 
 
 
