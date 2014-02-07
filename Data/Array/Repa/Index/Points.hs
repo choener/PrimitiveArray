@@ -47,6 +47,7 @@ pointL i j = PointL (i:.j)
 -- | A point in right-linear grammars.
 
 newtype PointR = PointR (Int:.Int)
+  deriving (Eq,Read,Show)
 
 pointR :: Int -> Int -> PointR
 pointR i j = PointR (i:.j)
@@ -54,17 +55,12 @@ pointR i j = PointR (i:.j)
 
 
 
--- * Instances
+-- * Instances: PointL
 
 derivingUnbox "PointL"
   [t| PointL -> (Int,Int) |]
   [| \ (PointL (i:.j)) -> (i,j) |]
   [| \ (i,j) -> PointL (i:.j) |]
-
-derivingUnbox "PointR"
-  [t| PointR -> (Int,Int) |]
-  [| \ (PointR (i:.j)) -> (i,j) |]
-  [| \ (i,j) -> PointR (i:.j) |]
 
 instance Shape sh => Shape (sh :. PointL) where
   {-# INLINE [1] rank #-}
@@ -148,6 +144,96 @@ instance Arbitrary PointL where
     | otherwise = []
 
 instance Arbitrary z => Arbitrary (z:.PointL) where
+  arbitrary = (:.) <$> arbitrary <*> arbitrary
+  shrink (z:.s) = (:.) <$> shrink z <*> shrink s
+
+
+
+-- * Instances: PointR
+
+derivingUnbox "PointR"
+  [t| PointR -> (Int,Int) |]
+  [| \ (PointR (i:.j)) -> (i,j) |]
+  [| \ (i,j) -> PointR (i:.j) |]
+
+instance Shape sh => Shape (sh :. PointR) where
+  {-# INLINE [1] rank #-}
+  rank   (sh  :. _)
+    = rank sh + 1
+
+  {-# INLINE [1] zeroDim #-}
+  zeroDim = zeroDim :. PointR (0:.0)
+
+  {-# INLINE [1] unitDim #-}
+  unitDim = unitDim :. PointR (0:.1)
+
+  {-# INLINE [1] intersectDim #-}
+  intersectDim (sh1 :. PointR (i:.j)) (sh2 :. PointR (k:.l))
+    = (intersectDim sh1 sh2 :. PointR (max i k :. min j l))
+
+  {-# INLINE [1] addDim #-}
+  addDim (sh1 :. PointR (i:.j)) (sh2 :. PointR (k:.l))
+    = addDim sh1 sh2 :. PointR (i+k:.j+l)
+
+  -- NOTE size is calculated NOT as upper-triangular, but linear!
+  {-# INLINE [1] size #-}
+  size  (sh1 :. PointR (i:.j)) = size sh1 * (j-i)
+
+  {-# INLINE [1] sizeIsValid #-}
+  sizeIsValid (sh1 :. PointR (i:.j))
+    | size sh1 > 0
+    = i>=0 && i<=j && j <= maxBound `div` size sh1
+    | otherwise
+    = False
+
+  -- NOTE only the @i@ coordinate is used for indexing NTs, @j@ is just for
+  -- convenience. @l@ however restricts the NT to some value @>0@ if desired.
+  {-# INLINE [1] toIndex #-}
+  toIndex (sh1 :. PointR(l:.r)) (sh1' :. PointR(i:.j))
+    = toIndex sh1 sh1' * (r-l) + i
+
+  {-# INLINE [1] fromIndex #-}
+  fromIndex (ds :. d) n  = undefined -- fromIndex ds (n `quotInt` d) :. r
+    where
+      r = undefined
+
+  -- | TODO fix for lower bounds check!
+  {-# INLINE [1] inShapeRange #-}
+  inShapeRange (zs :. PointR (_:._)) (sh1 :. PointR (l:.n)) (sh2 :. PointR (i:.j))
+    = i<=j && l<=i && j<n && (inShapeRange zs sh1 sh2)
+
+  {-# NOINLINE listOfShape #-}
+  listOfShape (sh :. PointR (i:.j)) = i : j : listOfShape sh
+
+  {-# NOINLINE shapeOfList #-}
+  shapeOfList xx
+   = case xx of
+    []     -> error $ stage ++ ".toList: empty list when converting to  (_ :. Int)"
+    [x]    -> error $ stage ++ ".toList: only single element remaining!"
+    i:j:xs -> shapeOfList xs :. PointR (i:.j)
+
+  {-# INLINE deepSeq #-}
+  deepSeq (sh :. n) x = deepSeq sh (n `seq` x)
+
+instance ExtShape sh => ExtShape (sh:.PointR) where
+  {-# INLINE [1] subDim #-}
+  subDim (sh1:.PointR (i:.j)) (sh2:.PointR (k:.l)) = subDim sh1 sh2 :. PointR (i-k:.j-l)
+  {-# INLINE [1] rangeList #-}
+  rangeList _ _ = error "PointR:rangeList not implemented"
+
+instance NFData PointR where
+  rnf (PointR (i:.j)) = i `seq` rnf j
+  {-# INLINE rnf #-}
+
+instance Arbitrary PointR where
+  arbitrary = do
+    b <- choose (0,100)
+    return $ pointR b 100
+  shrink (PointR (i:.j))
+    | i<j = [pointR (i+1) $ j]
+    | otherwise = []
+
+instance Arbitrary z => Arbitrary (z:.PointR) where
   arbitrary = (:.) <$> arbitrary <*> arbitrary
   shrink (z:.s) = (:.) <$> shrink z <*> shrink s
 
