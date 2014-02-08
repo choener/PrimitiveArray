@@ -27,7 +27,7 @@ import           Test.QuickCheck
 import           Test.QuickCheck.All
 
 import           Data.Array.Repa.ExtShape
-import           Data.Array.Repa.Index.Subword hiding (upperTri, subwordIndex, subwordFromIndex)
+import           Data.Array.Repa.Index.Subword hiding (upperTri, subwordIndex, subwordFromIndex,stage)
 import qualified Data.Array.Repa.Index.Subword as SW
 
 
