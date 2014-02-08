@@ -19,7 +19,7 @@ Description:
                 bounds-checking or other sanity-checking is performed.
                 Operations are aimed toward efficiency as much as possible.
 
-extra-source-files
+extra-source-files:
   changelog
 
 Library
