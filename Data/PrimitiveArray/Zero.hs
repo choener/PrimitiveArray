@@ -33,7 +33,7 @@ import Data.PrimitiveArray
 data Unboxed sh e = Unboxed !sh !(VU.Vector e)
   deriving (Read,Show,Eq)
 
-data instance MutArr m (Unboxed sh e) = MUnboxed !sh (VU.MVector (PrimState m) e)
+data instance MutArr m (Unboxed sh e) = MUnboxed !sh !(VU.MVector (PrimState m) e)
 
 instance (Shape sh, ExtShape sh, VUM.Unbox elm) => MPrimArrayOps Unboxed sh elm where
   boundsM (MUnboxed exUb _) = (zeroDim,exUb `subDim` unitDim)
@@ -80,7 +80,7 @@ instance (Shape sh, ExtShape sh, VUM.Unbox e, VUM.Unbox e') => PrimArrayMap Unbo
 data Boxed sh e = Boxed !sh !(V.Vector e)
   deriving (Read,Show,Eq)
 
-data instance MutArr m (Boxed sh e) = MBoxed !sh (V.MVector (PrimState m) e)
+data instance MutArr m (Boxed sh e) = MBoxed !sh !(V.MVector (PrimState m) e)
 
 instance (Shape sh, ExtShape sh, VUM.Unbox elm) => MPrimArrayOps Boxed sh elm where
   boundsM (MBoxed exUb _) = (zeroDim,exUb `subDim` unitDim)

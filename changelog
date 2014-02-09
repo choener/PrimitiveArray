@@ -2,6 +2,8 @@
 
 - actually implemented PointR
 
+- added the rather important strictness annotation for mutable arrays in .Zero
+
 0.5.3.0
 
 - fixed vector-th-unbox problem
