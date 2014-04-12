@@ -1,5 +1,5 @@
 Name:           PrimitiveArray
-Version:        0.5.4.0
+Version:        0.5.5.0
 License:        BSD3
 License-file:   LICENSE
 Author:         Christian Hoener zu Siederdissen
@@ -13,7 +13,8 @@ Cabal-version:  >=1.6
 Synopsis:
                 Efficient multidimensional arrays
 Description:
-                This library provides efficient multidimensional arrays.
+                This library provides efficient multidimensional arrays. Import
+                @Data.PrimitiveArray@ for indices, lenses, and arrays.
                 .
                 In general all operations are (highly) unsafe, no
                 bounds-checking or other sanity-checking is performed.
@@ -25,11 +26,13 @@ extra-source-files:
 Library
   Exposed-modules:
     Data.Array.Repa.ExtShape
+    Data.Array.Repa.Index.Lens
     Data.Array.Repa.Index.Outside
     Data.Array.Repa.Index.Point
     Data.Array.Repa.Index.Points
     Data.Array.Repa.Index.Subword
     Data.PrimitiveArray
+    Data.PrimitiveArray.Class
     Data.PrimitiveArray.FillTables
     Data.PrimitiveArray.QuickCheck
     Data.PrimitiveArray.Zero
@@ -37,10 +40,10 @@ Library
     base            >= 4 && <5  ,
     deepseq         >= 1.3      ,
     primitive       >= 0.5.0.1  ,
-    vector          >= 0.10.0.1 ,
-    vector-th-unbox >= 0.2      ,
+    QuickCheck      >= 2.5      ,
     repa            >= 3.2.3    ,
-    QuickCheck      >= 2.5
+    vector          >= 0.10.0.1 ,
+    vector-th-unbox >= 0.2      
   ghc-options:
     -O2
     -funbox-strict-fields

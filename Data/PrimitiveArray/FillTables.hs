@@ -16,7 +16,7 @@ import Data.Array.Repa.Index
 import Data.Array.Repa.Shape
 import Data.Vector.Fusion.Stream.Monadic as S
 
-import Data.PrimitiveArray
+import Data.PrimitiveArray.Class
 import Data.Array.Repa.Index.Subword
 
 

@@ -25,6 +25,7 @@ import           Test.QuickCheck
 import           Test.QuickCheck.All
 
 import           Data.Array.Repa.ExtShape
+import           Data.Array.Repa.Index.Lens
 import           Data.Array.Repa.Index.Subword
 
 
@@ -147,6 +148,12 @@ instance Arbitrary z => Arbitrary (z:.PointL) where
   arbitrary = (:.) <$> arbitrary <*> arbitrary
   shrink (z:.s) = (:.) <$> shrink z <*> shrink s
 
+instance IndexLens PointL where
+  _from f (PointL (i:.j)) = fmap (\i' -> pointL i' j ) (f i)
+  _to   f (PointL (i:.j)) = fmap (\j' -> pointL i  j') (f j)
+  {-# INLINE _from #-}
+  {-# INLINE _to   #-}
+
 
 
 -- * Instances: PointR
@@ -236,4 +243,10 @@ instance Arbitrary PointR where
 instance Arbitrary z => Arbitrary (z:.PointR) where
   arbitrary = (:.) <$> arbitrary <*> arbitrary
   shrink (z:.s) = (:.) <$> shrink z <*> shrink s
+
+instance IndexLens PointR where
+  _from f (PointR (i:.j)) = fmap (\i' -> pointR i' j ) (f i)
+  _to   f (PointR (i:.j)) = fmap (\j' -> pointR i  j') (f j)
+  {-# INLINE _from #-}
+  {-# INLINE _to   #-}
 

@@ -23,8 +23,8 @@ import qualified Data.Vector as V hiding (forM_, length, zipWithM_)
 import qualified Data.Vector.Unboxed as VU hiding (forM_, length, zipWithM_)
 import qualified Data.Vector.Unboxed.Mutable as VUM hiding (length)
 
-import Data.Array.Repa.ExtShape
-import Data.PrimitiveArray
+import           Data.Array.Repa.ExtShape
+import           Data.PrimitiveArray.Class
 
 
 
