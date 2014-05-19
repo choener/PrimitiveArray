@@ -33,7 +33,7 @@ import           Test.QuickCheck
 import           Test.QuickCheck.All
 
 import           Data.Array.Repa.ExtShape
-import           Data.Array.Repa.Index.Lens
+--import           Data.Array.Repa.Index.Lens
 
 
 
@@ -187,9 +187,11 @@ instance Arbitrary z => Arbitrary (z:.Subword) where
   arbitrary = (:.) <$> arbitrary <*> arbitrary
   shrink (z:.s) = (:.) <$> shrink z <*> shrink s
 
+{-
 instance IndexLens Subword where
   _from f (Subword (i:.j)) = fmap (\i' -> subword i' j ) (f i)
   _to   f (Subword (i:.j)) = fmap (\j' -> subword i  j') (f j)
   {-# INLINE _from #-}
   {-# INLINE _to   #-}
+-}
 
