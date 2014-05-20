@@ -21,7 +21,7 @@ Description:
                 Operations are aimed toward efficiency as much as possible.
 
 extra-source-files:
-  changelog
+  changelog.md
 
 Library
   Exposed-modules:
