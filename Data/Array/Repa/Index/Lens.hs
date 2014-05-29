@@ -5,6 +5,9 @@
 -- | Lenses for index fields
 --
 -- TODO isos to and from tuples?
+--
+-- TODO should the guy @x@ in @(Z:.x:.y)@ be at @_1@ or should @y@ be at
+-- @_1@?
 
 module Data.Array.Repa.Index.Lens where
 
