@@ -28,10 +28,15 @@ import Data.PrimitiveArray.Zero
 
 -- * High-level table filling system.
 
--- | Run the forward phase of algorithms.
+-- | Run the forward phase of algorithms. Is *really* unsafe for now if
+-- tables have different sizes.
+--
+-- TODO Need to run min/max on the bounds for all tables, not just the last
+-- table. Otherwise we don't really need the distinction between save and
+-- unsafe.
 
 runFillTables (ts:.t) = S.mapM_ (unsafeWriteCell (ts:.t)) $ fillTables from to where
-  (from,to) = boundsM t
+  (from,to) = boundsM t -- TODO min/max over all tables
 {-# INLINE runFillTables #-}
 
 -- | Captures creating the indices filling tables in the correct order. We
