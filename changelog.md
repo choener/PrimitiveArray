@@ -2,7 +2,8 @@
 
 - moved primitive array classes to Data.PrimitiveArray.Class
 - added _from / _to lenses
-- Field2 .. Field7 lenses for indices (Z:.a:.b...) (with Z being Field1)
+- Field1 .. Field6 lenses for indices (Z:.a:.b...) (with Z being Field0)
+- FillTables should work now (with PointL)
 
 0.5.4.0
 
