@@ -15,7 +15,8 @@ module Data.PrimitiveArray.FillTables where
 import Control.Monad.Primitive
 import Data.Array.Repa.Index
 import Data.Array.Repa.Shape
-import Data.Vector.Fusion.Stream.Monadic as S
+import Data.Vector.Fusion.Stream.Monadic as M
+import Data.Vector.Fusion.Stream as S
 import Data.Vector.Fusion.Stream.Size
 import Control.Monad (when)
 
@@ -35,7 +36,16 @@ import Data.PrimitiveArray.Zero
 -- table. Otherwise we don't really need the distinction between save and
 -- unsafe.
 
-runFillTables (ts:.t) = S.mapM_ (unsafeWriteCell (ts:.t)) $ fillTables from to where
+runFillTables
+  :: ( GenerateIndices a
+     , WriteCell m (tail :. (MutArr m (arr a elm), t)) a
+     , MPrimArrayOps arr a elm
+     , Monad m
+     , PrimMonad m
+     )
+  => (tail :. (MutArr m (arr a elm), t)) -> m ()
+
+runFillTables (ts:.(t,f)) = M.mapM_ (unsafeWriteCell (ts:.(t,f))) $ generateIndices from to where
   (from,to) = boundsM t -- TODO min/max over all tables
 {-# INLINE runFillTables #-}
 
@@ -44,12 +54,12 @@ runFillTables (ts:.t) = S.mapM_ (unsafeWriteCell (ts:.t)) $ fillTables from to w
 -- you need to fill tables in a sequential order, bind to s.th. like
 -- @(Z:.s:.t)@ and then run @runFillTables (Z:.s) >> runFillTables (Z:.t)@.
 
-class FillTables sh where
-    fillTables :: Monad m => sh -> sh -> S.Stream m sh
+class GenerateIndices sh where
+    generateIndices :: Monad m => sh -> sh -> M.Stream m sh
 
-instance FillTables Z where
-    fillTables _ _ = S.singleton Z
-    {-# INLINE fillTables #-}
+instance GenerateIndices Z where
+    generateIndices _ _ = M.singleton Z
+    {-# INLINE generateIndices #-}
 
 -- | Create index stream with an active @PointL 0 m@. Note that we
 -- currently assume that the first index is indeed 0.
@@ -58,15 +68,15 @@ instance FillTables Z where
 -- Will require some changes to @step@. (We can't just do @[t,t-1,..f]@ as
 -- we have the dependency that @k@ requires @k-1@.
 
-instance FillTables is => FillTables (is:.PointL) where
-    fillTables (fs:.PointL (0:.f)) (ts:.PointL (0:.t)) = S.flatten mk step Unknown $ fillTables fs ts where
+instance GenerateIndices is => GenerateIndices (is:.PointL) where
+    generateIndices (fs:.PointL (0:.f)) (ts:.PointL (0:.t)) = M.flatten mk step Unknown $ generateIndices fs ts where
       mk is = return (is:.f)
       step (is:.k)
-        | k>t       = return $ S.Done
-        | otherwise = return $ S.Yield (is:.pointL 0 k) (is:.(k+1))
+        | k>t       = return $ M.Done
+        | otherwise = return $ M.Yield (is:.pointL 0 k) (is:.(k+1))
       {-# INLINE [1] mk #-}
       {-# INLINE [1] step #-}
-    {-# INLINE fillTables #-}
+    {-# INLINE generateIndices #-}
 
 
 
@@ -75,9 +85,9 @@ instance FillTables is => FillTables (is:.PointL) where
 -- | 'WriteCell' provides methods to fill all cells with a specific index
 -- @sh@ in a stack of non-terminal tables @c@.
 
-class WriteCell m c sh where
+class (Monad m) => WriteCell m c sh where
     unsafeWriteCell :: c -> sh -> m ()
-    writeCell :: c -> sh -> m ()
+    writeCell       :: c -> sh -> m ()
 
 instance (Monad m) => WriteCell m Z sh where
     unsafeWriteCell _ _ = return ()
@@ -85,9 +95,9 @@ instance (Monad m) => WriteCell m Z sh where
     {-# INLINE unsafeWriteCell #-}
     {-# INLINE writeCell #-}
 
-instance (f ~ (sh -> m a), t ~ MutArr m (arr sh a), WriteCell m cs sh, Monad m, MPrimArrayOps arr sh a, PrimMonad m) => WriteCell m (cs:.(t,f)) sh where
-    unsafeWriteCell (cs:.(t,f)) sh = unsafeWriteCell cs sh >> f sh >>= writeM t sh
-    writeCell (cs:.(t,f)) sh = writeCell cs sh >> when (inBoundsM t sh) (f sh >>= writeM t sh)
+instance (WriteCell m cs sh, Monad m, MPrimArrayOps arr sh a, PrimMonad m) => WriteCell m (cs:.(MutArr m (arr sh a), sh -> m a)) sh where
+    unsafeWriteCell (cs:.(t,f)) sh = unsafeWriteCell cs sh >> (f sh >>= writeM t sh)
+    writeCell (cs:.(t,f)) sh = writeCell cs sh >> (when (inBoundsM t sh) (f sh >>= writeM t sh))
     {-# INLINE unsafeWriteCell #-}
     {-# INLINE writeCell #-}
 
