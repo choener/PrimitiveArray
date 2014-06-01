@@ -3,6 +3,7 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE TypeOperators #-}
 
 -- | Vastly extended primitive arrays. Some basic ideas are now modeled after
 -- the vector package, especially the monadic mutable / pure immutable array
@@ -13,6 +14,7 @@
 
 module Data.PrimitiveArray.Class where
 
+import Control.Applicative
 import Control.Exception (assert)
 import Control.Monad
 import Control.Monad.Primitive
@@ -163,4 +165,24 @@ inBounds arr idx = let (lb,ub) = bounds arr in inShapeRange lb (ub `addDim` unit
 toList :: PrimArrayOps arr sh elm =>  arr sh elm -> [elm]
 toList arr = let (lb,ub) = bounds arr in P.map ((!) arr) $ rangeList lb $ ub `subDim` lb
 {-# INLINE toList #-}
+
+
+
+-- * Freeze an inductive stack of tables with a 'Z' at the bottom.
+
+-- | 'freezeTables' freezes a stack of tables.
+
+class FreezeTables m t where
+    type Frozen t :: *
+    freezeTables :: t -> m (Frozen t)
+
+instance Applicative m => FreezeTables m Z where
+    type Frozen Z = Z
+    freezeTables Z = pure Z
+    {-# INLINE freezeTables #-}
+
+instance (Functor m, Applicative m, Monad m, PrimMonad m, FreezeTables m ts, PrimArrayOps arr sh elm) => FreezeTables m (ts:.MutArr m (arr sh elm)) where
+    type Frozen (ts:.MutArr m (arr sh elm)) = Frozen ts :. arr sh elm
+    freezeTables (ts:.t) = (:.) <$> freezeTables ts <*> freeze t
+    {-# INLINE freezeTables #-}
 

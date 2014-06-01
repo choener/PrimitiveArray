@@ -4,6 +4,7 @@
 - added _from / _to lenses
 - Field1 .. Field6 lenses for indices (Z:.a:.b...) (with Z being Field0)
 - FillTables should work now (with PointL)
+- freezing of whole stacks of (Z:.mutarr:.mutarr:. ...) tables
 
 0.5.4.0
 
