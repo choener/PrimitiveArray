@@ -1,4 +1,4 @@
-0.5.5.0
+0.6.0.0
 
 - moved primitive array classes to Data.PrimitiveArray.Class
 - added _from / _to lenses
