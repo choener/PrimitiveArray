@@ -30,13 +30,13 @@ import Data.PrimitiveArray.Zero
 -- * High-level table filling system.
 
 -- | Run the forward phase of algorithms. Is *really* unsafe for now if
--- tables have different sizes.
+-- tables have different sizes, as in its broken.
 --
 -- TODO Need to run min/max on the bounds for all tables, not just the last
 -- table. Otherwise we don't really need the distinction between save and
--- unsafe.
+-- unsafe. This will have to be in @runFillTables@.
 
-runFillTables
+unsafeRunFillTables
   :: ( GenerateIndices a
      , WriteCell m (tail :. (MutArr m (arr a elm), t)) a
      , MPrimArrayOps arr a elm
@@ -45,9 +45,9 @@ runFillTables
      )
   => (tail :. (MutArr m (arr a elm), t)) -> m ()
 
-runFillTables (ts:.(t,f)) = M.mapM_ (unsafeWriteCell (ts:.(t,f))) $ generateIndices from to where
+unsafeRunFillTables (ts:.(t,f)) = M.mapM_ (unsafeWriteCell (ts:.(t,f))) $ generateIndices from to where
   (from,to) = boundsM t -- TODO min/max over all tables
-{-# INLINE runFillTables #-}
+{-# INLINE unsafeRunFillTables #-}
 
 -- | Captures creating the indices filling tables in the correct order. We
 -- assume that it does *not* matter which of the tables is filled first. If
@@ -74,6 +74,21 @@ instance GenerateIndices is => GenerateIndices (is:.PointL) where
       step (is:.k)
         | k>t       = return $ M.Done
         | otherwise = return $ M.Yield (is:.pointL 0 k) (is:.(k+1))
+      {-# INLINE [1] mk #-}
+      {-# INLINE [1] step #-}
+    {-# INLINE generateIndices #-}
+
+-- | An index stream for subwords.
+--
+-- TODO from/to for subwords??? (currently starting at (0:.0) always)
+
+instance GenerateIndices is => GenerateIndices (is:.Subword) where
+    generateIndices (fs:.Subword (0:.0)) (ts:.Subword (0:.t)) = M.flatten mk step Unknown $ generateIndices fs ts where
+      mk is = return (is:.t:.t)
+      step (is:.k:.l)
+        | k<0       = return $ M.Done
+        | l>t       = return $ M.Skip                    (is:.k-1:.k-1)
+        | otherwise = return $ M.Yield (is:.subword k l) (is:.k  :.l+1)
       {-# INLINE [1] mk #-}
       {-# INLINE [1] step #-}
     {-# INLINE generateIndices #-}
