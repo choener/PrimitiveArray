@@ -90,6 +90,12 @@ subwordFromIndex :: Subword -> Int -> Subword
 subwordFromIndex = error "not implemented"
 {-# INLINE subwordFromIndex #-}
 
+
+
+-- * 'Shape' instances
+
+-- ** The common 'Shape' instance for @(:.Subword)@
+
 -- | Some weird things are going on here. Adding subwords (i,j) and (k,l)
 -- yields (i+k,j+l). Normally i==k==0 when calculating space requirements. If
 -- you have a subword (3,10) and want the next outer one add (-1,1) and you get
@@ -166,6 +172,47 @@ instance ExtShape sh => ExtShape (sh:.Subword) where
   {-# INLINE subDim #-}
   rangeList (sh1:.Subword (i:.j)) (sh2:.Subword (k:.l)) = error "not implemented" -- [sh:.Subword (m,n) | sh <- rangeList sh1 sh2, m <- [i .. [i+k], n <- [ n <- [n1 .. (n1+n2) ] ]
   {-# INLINE rangeList #-}
+
+-- ** Use 'Subword' directly without the need for @(:.)@.
+
+instance Shape Subword where
+    {-# INLINE [1] rank #-}
+    rank _ = 1
+    {-# INLINE [1] zeroDim #-}
+    zeroDim = subword 0 0
+    {-# INLINE [1] unitDim #-}
+    unitDim = subword 0 1
+    {-# INLINE [1] intersectDim #-}
+    intersectDim (Subword (i:.j)) (Subword (k:.l)) = subword (max i k) (min j l)
+    {-# INLINE [1] addDim #-}
+    addDim (Subword (i:.j)) (Subword (k:.l)) = subword (i+k) (j+l)
+    {-# INLINE [1] size #-}
+    size = upperTri
+    {-# INLINE [1] sizeIsValid #-}
+    sizeIsValid (Subword (i:.j)) = 0<=i && i<=j
+    {-# INLINE [1] toIndex #-}
+    toIndex = subwordIndex
+    {-# INLINE [1] fromIndex #-}
+    fromIndex = undefined
+    {-# INLINE [1] inShapeRange #-}
+    inShapeRange _ (Subword (l:.n)) (Subword (i:.j)) = l<=i && i<=j && j<n
+    {-# NOINLINE listOfShape #-}
+    listOfShape (Subword (i:.j)) = [i,j]
+    {-# NOINLINE shapeOfList #-}
+    shapeOfList xs = case xs of [i,j] -> subword i j
+                                es    -> error $ stage ++ " toList: " ++ show es
+    {-# INLINE deepSeq #-}
+    deepSeq sw n = sw `seq` n
+
+instance ExtShape Subword where
+    {-# INLINE [1] subDim #-}
+    subDim (Subword (i:.j)) (Subword (k:.l)) = subword (i-k) (j-l)
+    {-# INLINE rangeList #-}
+    rangeList _ _ = error "not implemented" -- TODO should rangeList better be stream? would simplify table filling!
+
+
+
+-- * NFData, Arbitrary
 
 -- |
 

@@ -93,6 +93,18 @@ instance GenerateIndices is => GenerateIndices (is:.Subword) where
       {-# INLINE [1] step #-}
     {-# INLINE generateIndices #-}
 
+-- | Index stream for just subwords. Mainly for RNAfold-type grammars.
+
+instance GenerateIndices Subword where
+    generateIndices (Subword (0:.0)) (Subword (0:.t)) = M.flatten mk step Unknown $ M.enumFromStepN t (-1) (t+1) where
+      mk k = return (k:.k)
+      step (k:.l)
+        | l>t       = return $ M.Done
+        | otherwise = return $ M.Yield (subword k l) (k:.l+1)
+      {-# INLINE [1] mk #-}
+      {-# INLINE [1] step #-}
+    {-# INLINE generateIndices #-}
+
 
 
 -- * Write to individuel cells.

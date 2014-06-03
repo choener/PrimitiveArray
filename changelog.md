@@ -5,6 +5,9 @@
 - Field1 .. Field6 lenses for indices (Z:.a:.b...) (with Z being Field0)
 - FillTables should work now (with PointL)
 - freezing of whole stacks of (Z:.mutarr:.mutarr:. ...) tables
+- explicit 'Shape Subword'; this allows for simpler code in a number of places
+  and is especially useful for CYK-style algorithms that have a
+  single-dimensional upper-triangular matrix.
 
 0.5.4.0
 
