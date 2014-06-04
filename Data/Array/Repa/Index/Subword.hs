@@ -24,8 +24,10 @@ import           Control.Applicative
 import           Control.DeepSeq
 import           Data.Array.Repa.Index
 import           Data.Array.Repa.Shape
+import           Data.Vector.Fusion.Stream.Size
 import           Data.Vector.Unboxed.Deriving
 import           GHC.Base (quotInt, remInt)
+import qualified Data.Vector.Fusion.Stream.Monadic as M
 import qualified Data.Vector.Generic.Base
 import qualified Data.Vector.Generic.Mutable
 import qualified Data.Vector.Unboxed as VU
@@ -46,6 +48,9 @@ stage = "Data.Array.Repa.Index.Subword"
 -- index, while (0,0) and (N,N) both point to the smallest. We do, however, use
 -- (0,0) as the smallest as (0,k) gives successively smaller upper triangular
 -- parts.
+--
+-- TODO Experiment with @ExtShape Subword@ index generation following
+-- larger to smaller diagonals.
 
 newtype Subword = Subword (Int:.Int)
   deriving (Eq,Ord,Show)
@@ -172,6 +177,17 @@ instance ExtShape sh => ExtShape (sh:.Subword) where
   {-# INLINE subDim #-}
   rangeList (sh1:.Subword (i:.j)) (sh2:.Subword (k:.l)) = error "not implemented" -- [sh:.Subword (m,n) | sh <- rangeList sh1 sh2, m <- [i .. [i+k], n <- [ n <- [n1 .. (n1+n2) ] ]
   {-# INLINE rangeList #-}
+  {-# INLINE rangeStream #-}
+  rangeStream (fs:.Subword (0:.0)) (ts:.Subword (0:.t)) = M.flatten mk step Unknown $ rangeStream fs ts where
+    mk is = return (is:.t:.t)
+    step (is:.k:.l)
+      | k<0       = return $ M.Done
+      | l>t       = return $ M.Skip                    (is:.k-1:.k-1)
+      | otherwise = return $ M.Yield (is:.subword k l) (is:.k  :.l+1)
+    {-# INLINE [1] mk #-}
+    {-# INLINE [1] step #-}
+
+
 
 -- ** Use 'Subword' directly without the need for @(:.)@.
 
@@ -209,6 +225,14 @@ instance ExtShape Subword where
     subDim (Subword (i:.j)) (Subword (k:.l)) = subword (i-k) (j-l)
     {-# INLINE rangeList #-}
     rangeList _ _ = error "not implemented" -- TODO should rangeList better be stream? would simplify table filling!
+    {-# INLINE rangeStream #-}
+    rangeStream (Subword (0:.0)) (Subword (0:.t)) = M.flatten mk step Unknown $ M.enumFromStepN t (-1) (t+1) where
+      mk k = return (k:.k)
+      step (k:.l)
+        | l>t       = return $ M.Done
+        | otherwise = return $ M.Yield (subword k l) (k:.l+1)
+      {-# INLINE [1] mk #-}
+      {-# INLINE [1] step #-}
 
 
 

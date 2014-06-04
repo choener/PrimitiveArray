@@ -1,28 +1,30 @@
-{-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE TypeOperators #-}
-{-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE RankNTypes #-}
+{-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE TypeOperators #-}
+{-# LANGUAGE UndecidableInstances #-}
 
 -- | Operations to fill primitive arrays. Arrays are combined just like
 -- indices using 'Z' and '(:.)'. This allows filling an unlimited number of
--- tables.
+-- tables. 'ExtShape' provides the 'rangeStream' function with generates
+-- a stream of indices in (generally) the right order.
 
 module Data.PrimitiveArray.FillTables where
 
 import Control.Monad.Primitive
+import Control.Monad (when)
 import Data.Array.Repa.Index
 import Data.Array.Repa.Shape
-import Data.Vector.Fusion.Stream.Monadic as M
 import Data.Vector.Fusion.Stream as S
+import Data.Vector.Fusion.Stream.Monadic as M
 import Data.Vector.Fusion.Stream.Size
-import Control.Monad (when)
 
-import Data.PrimitiveArray.Class
-import Data.Array.Repa.Index.Subword
+import Data.Array.Repa.ExtShape
 import Data.Array.Repa.Index.Points
+import Data.Array.Repa.Index.Subword
+import Data.PrimitiveArray.Class
 import Data.PrimitiveArray.Zero
 
 
@@ -37,73 +39,17 @@ import Data.PrimitiveArray.Zero
 -- unsafe. This will have to be in @runFillTables@.
 
 unsafeRunFillTables
-  :: ( GenerateIndices a
-     , WriteCell m (tail :. (MutArr m (arr a elm), t)) a
-     , MPrimArrayOps arr a elm
+  :: ( ExtShape sh
+     , WriteCell m (tail :. (MutArr m (arr sh elm), t)) sh
+     , MPrimArrayOps arr sh elm
      , Monad m
      , PrimMonad m
      )
-  => (tail :. (MutArr m (arr a elm), t)) -> m ()
+  => (tail :. (MutArr m (arr sh elm), t)) -> m ()
 
-unsafeRunFillTables (ts:.(t,f)) = M.mapM_ (unsafeWriteCell (ts:.(t,f))) $ generateIndices from to where
-  (from,to) = boundsM t -- TODO min/max over all tables
+unsafeRunFillTables (ts:.(t,f)) = M.mapM_ (unsafeWriteCell (ts:.(t,f))) $ rangeStream from to where -- generateIndices from to where
+  (from,to) = boundsM t -- TODO min/max over all tables [for the safe version, the unsafe version *always* assumes equal-size tables; we still should check this during runtime]
 {-# INLINE unsafeRunFillTables #-}
-
--- | Captures creating the indices filling tables in the correct order. We
--- assume that it does *not* matter which of the tables is filled first. If
--- you need to fill tables in a sequential order, bind to s.th. like
--- @(Z:.s:.t)@ and then run @runFillTables (Z:.s) >> runFillTables (Z:.t)@.
-
-class GenerateIndices sh where
-    generateIndices :: Monad m => sh -> sh -> M.Stream m sh
-
-instance GenerateIndices Z where
-    generateIndices _ _ = M.singleton Z
-    {-# INLINE generateIndices #-}
-
--- | Create index stream with an active @PointL 0 m@. Note that we
--- currently assume that the first index is indeed 0.
---
--- TODO Rewrite to use the @HERMIT in the stream@ trick of stopping at 0.
--- Will require some changes to @step@. (We can't just do @[t,t-1,..f]@ as
--- we have the dependency that @k@ requires @k-1@.
-
-instance GenerateIndices is => GenerateIndices (is:.PointL) where
-    generateIndices (fs:.PointL (0:.f)) (ts:.PointL (0:.t)) = M.flatten mk step Unknown $ generateIndices fs ts where
-      mk is = return (is:.f)
-      step (is:.k)
-        | k>t       = return $ M.Done
-        | otherwise = return $ M.Yield (is:.pointL 0 k) (is:.(k+1))
-      {-# INLINE [1] mk #-}
-      {-# INLINE [1] step #-}
-    {-# INLINE generateIndices #-}
-
--- | An index stream for subwords.
---
--- TODO from/to for subwords??? (currently starting at (0:.0) always)
-
-instance GenerateIndices is => GenerateIndices (is:.Subword) where
-    generateIndices (fs:.Subword (0:.0)) (ts:.Subword (0:.t)) = M.flatten mk step Unknown $ generateIndices fs ts where
-      mk is = return (is:.t:.t)
-      step (is:.k:.l)
-        | k<0       = return $ M.Done
-        | l>t       = return $ M.Skip                    (is:.k-1:.k-1)
-        | otherwise = return $ M.Yield (is:.subword k l) (is:.k  :.l+1)
-      {-# INLINE [1] mk #-}
-      {-# INLINE [1] step #-}
-    {-# INLINE generateIndices #-}
-
--- | Index stream for just subwords. Mainly for RNAfold-type grammars.
-
-instance GenerateIndices Subword where
-    generateIndices (Subword (0:.0)) (Subword (0:.t)) = M.flatten mk step Unknown $ M.enumFromStepN t (-1) (t+1) where
-      mk k = return (k:.k)
-      step (k:.l)
-        | l>t       = return $ M.Done
-        | otherwise = return $ M.Yield (subword k l) (k:.l+1)
-      {-# INLINE [1] mk #-}
-      {-# INLINE [1] step #-}
-    {-# INLINE generateIndices #-}
 
 
 

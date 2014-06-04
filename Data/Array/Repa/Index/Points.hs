@@ -16,8 +16,10 @@ import           Control.Applicative
 import           Control.DeepSeq
 import           Data.Array.Repa.Index
 import           Data.Array.Repa.Shape
+import           Data.Vector.Fusion.Stream.Size
 import           Data.Vector.Unboxed.Deriving
 import           GHC.Base (quotInt, remInt)
+import qualified Data.Vector.Fusion.Stream.Monadic as M
 import qualified Data.Vector.Generic.Base
 import qualified Data.Vector.Generic.Mutable
 import qualified Data.Vector.Unboxed as VU
@@ -127,6 +129,15 @@ instance ExtShape sh => ExtShape (sh:.PointL) where
   subDim (sh1:.PointL (i:.j)) (sh2:.PointL (k:.l)) = subDim sh1 sh2 :. PointL (i-k:.j-l)
   {-# INLINE [1] rangeList #-}
   rangeList _ _ = error "PointL:rangeList not implemented"
+  {-# INLINE rangeStream #-}
+  rangeStream (fs:.PointL (0:.f)) (ts:.PointL (0:.t)) = M.flatten mk step Unknown $ rangeStream fs ts where
+    mk is = return (is:.f)
+    step (is:.k)
+      | k>t       = return $ M.Done
+      | otherwise = return $ M.Yield (is:.pointL 0 k) (is:.(k+1))
+    {-# INLINE [1] mk #-}
+    {-# INLINE [1] step #-}
+
 
 instance NFData PointL where
   rnf (PointL (i:.j)) = i `seq` rnf j
@@ -231,6 +242,8 @@ instance ExtShape sh => ExtShape (sh:.PointR) where
   subDim (sh1:.PointR (i:.j)) (sh2:.PointR (k:.l)) = subDim sh1 sh2 :. PointR (i-k:.j-l)
   {-# INLINE [1] rangeList #-}
   rangeList _ _ = error "PointR:rangeList not implemented"
+  {-# INLINE rangeStream #-}
+  rangeStream _ _ = error "PointR:rangeStream not implemented"
 
 instance NFData PointR where
   rnf (PointR (i:.j)) = i `seq` rnf j

@@ -16,6 +16,13 @@ Description:
                 This library provides efficient multidimensional arrays. Import
                 @Data.PrimitiveArray@ for indices, lenses, and arrays.
                 .
+                For ADPfusion users, the library also provides the machinary to
+                fill tables in the correct order required by usual CYK-style
+                parsers, or regular grammars (used e.g. in alignment
+                algorithms). This means that unless your grammar require a
+                strange order in which parsing is to be performed, it will
+                mostly "just work".
+                .
                 In general all operations are (highly) unsafe, no
                 bounds-checking or other sanity-checking is performed.
                 Operations are aimed toward efficiency as much as possible.

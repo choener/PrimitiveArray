@@ -3,11 +3,12 @@
 - moved primitive array classes to Data.PrimitiveArray.Class
 - added _from / _to lenses
 - Field1 .. Field6 lenses for indices (Z:.a:.b...) (with Z being Field0)
-- FillTables should work now (with PointL)
+- FillTables should work now (with PointL, Subword)
 - freezing of whole stacks of (Z:.mutarr:.mutarr:. ...) tables
 - explicit 'Shape Subword'; this allows for simpler code in a number of places
   and is especially useful for CYK-style algorithms that have a
   single-dimensional upper-triangular matrix.
+- rangeStream of Extshape is new and used by the FillTables module
 
 0.5.4.0
 
