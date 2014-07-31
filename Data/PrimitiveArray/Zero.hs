@@ -1,10 +1,12 @@
-{-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE TemplateHaskell #-}
-{-# LANGUAGE StandaloneDeriving #-}
-{-# LANGUAGE DeriveDataTypeable #-}
+
 {-# LANGUAGE CPP #-}
-{-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE DeriveDataTypeable #-}
+{-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE StandaloneDeriving #-}
+{-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TypeFamilies #-}
 
 -- | Primitive arrays where the lower index is zero (or the equivalent of zero
@@ -15,13 +17,19 @@ module Data.PrimitiveArray.Zero where
 import           Control.Exception (assert)
 import           Control.Monad
 import           Control.Monad.Primitive (PrimState)
+import           Data.Aeson
 import           Data.Array.Repa.Index
 import           Data.Array.Repa.Shape
+import           Data.Binary
+import           Data.Serialize
 import           Data.Vector.Generic as G hiding (forM_, length, zipWithM_, new)
 import           Data.Vector.Generic.Mutable as GM hiding (length)
+import           GHC.Generics
 import qualified Data.Vector as V hiding (forM_, length, zipWithM_)
 import qualified Data.Vector.Unboxed as VU hiding (forM_, length, zipWithM_)
 import qualified Data.Vector.Unboxed.Mutable as VUM hiding (length)
+import           Data.Vector.Binary
+import           Data.Vector.Cereal
 
 import           Data.Array.Repa.ExtShape
 import           Data.PrimitiveArray.Class
@@ -31,7 +39,12 @@ import           Data.PrimitiveArray.Class
 -- * Unboxed, multidimensional arrays.
 
 data Unboxed sh e = Unboxed !sh !(VU.Vector e)
-  deriving (Read,Show,Eq)
+  deriving (Read,Show,Eq,Generic)
+
+instance (Binary sh, Binary e, VUM.Unbox e) => Binary (Unboxed sh e)
+instance (Serialize sh, Serialize e, VUM.Unbox e) => Serialize (Unboxed sh e)
+instance (ToJSON sh, ToJSON e, VUM.Unbox e) => ToJSON (Unboxed sh e)
+instance (FromJSON sh, FromJSON e, VUM.Unbox e) => FromJSON (Unboxed sh e)
 
 data instance MutArr m (Unboxed sh e) = MUnboxed !sh !(VU.MVector (PrimState m) e)
 
@@ -78,7 +91,12 @@ instance (Shape sh, ExtShape sh, VUM.Unbox e, VUM.Unbox e') => PrimArrayMap Unbo
 -- * Boxed, multidimensional arrays.
 
 data Boxed sh e = Boxed !sh !(V.Vector e)
-  deriving (Read,Show,Eq)
+  deriving (Read,Show,Eq,Generic)
+
+instance (Binary sh, Binary e) => Binary (Boxed sh e)
+instance (Serialize sh, Serialize e) => Serialize (Boxed sh e)
+instance (ToJSON sh, ToJSON e) => ToJSON (Boxed sh e)
+instance (FromJSON sh, FromJSON e) => FromJSON (Boxed sh e)
 
 data instance MutArr m (Boxed sh e) = MBoxed !sh !(V.MVector (PrimState m) e)
 

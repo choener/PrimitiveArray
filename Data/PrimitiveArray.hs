@@ -1,6 +1,8 @@
 
 module Data.PrimitiveArray 
-  ( module Data.Array.Repa.ExtShape
+  ( module Data.Array.Repa.Index
+  , module Data.Array.Repa.Bytes
+  , module Data.Array.Repa.ExtShape
   , module Data.Array.Repa.Index.Lens
   , module Data.Array.Repa.Index.Outside
   , module Data.Array.Repa.Index.Point
@@ -12,6 +14,9 @@ module Data.PrimitiveArray
   , module Data.PrimitiveArray.Zero
   ) where
 
+import Data.Array.Repa.Index ( (:.) (..), Z (..) )
+
+import Data.Array.Repa.Bytes
 import Data.Array.Repa.ExtShape
 import Data.Array.Repa.Index.Lens
 import Data.Array.Repa.Index.Outside hiding (stage,upperTri,subwordIndex,subwordFromIndex)

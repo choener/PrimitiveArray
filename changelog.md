@@ -9,6 +9,8 @@
   and is especially useful for CYK-style algorithms that have a
   single-dimensional upper-triangular matrix.
 - rangeStream of Extshape is new and used by the FillTables module
+- Binary, Cereal, Aeson instances for indices and immutable tables
+- orphan instances of Binary, Cereal, Aeson for Z, and (:.)
 
 0.5.4.0
 
