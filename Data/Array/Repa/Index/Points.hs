@@ -137,6 +137,8 @@ instance ExtShape sh => ExtShape (sh:.PointL) where
       | otherwise = return $ M.Yield (is:.pointL 0 k) (is:.(k+1))
     {-# INLINE [1] mk #-}
     {-# INLINE [1] step #-}
+  topmostIndex (sh1:.PointL (0:.f)) (sh2:.PointL (0:.t)) = topmostIndex sh1 sh2 :. pointL 0 t
+  {-# INLINE topmostIndex #-}
 
 
 instance NFData PointL where
@@ -244,6 +246,7 @@ instance ExtShape sh => ExtShape (sh:.PointR) where
   rangeList _ _ = error "PointR:rangeList not implemented"
   {-# INLINE rangeStream #-}
   rangeStream _ _ = error "PointR:rangeStream not implemented"
+  topmostIndex _ _ = error "PointR:topmostIndex not implemented"
 
 instance NFData PointR where
   rnf (PointR (i:.j)) = i `seq` rnf j

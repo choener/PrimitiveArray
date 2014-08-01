@@ -42,6 +42,12 @@ class ExtShape sh where
 
   rangeList :: sh -> sh -> [sh]
 
+  -- | Returns the topmost index for CYK-style parsing. Requires the lower
+  -- and upper bound as, for example, returned by
+  -- @Data.PrimitiveArray.Class.bounds@
+
+  topmostIndex :: sh -> sh -> sh
+
 
 
 instance ExtShape Z where
@@ -51,6 +57,8 @@ instance ExtShape Z where
   {-# INLINE rangeList #-}
   rangeStream Z Z = singleton Z
   {-# INLINE rangeStream #-}
+  topmostIndex Z Z = Z
+  {-# INLINE topmostIndex #-}
 
 instance ExtShape sh => ExtShape (sh:.Int) where
   subDim (sh1:.n1) (sh2:.n2) = subDim sh1 sh2 :. (n1-n2)
@@ -65,3 +73,6 @@ instance ExtShape sh => ExtShape (sh:.Int) where
     {-# INLINE [1] mk #-}
     {-# INLINE [1] step #-}
   {-# INLINE rangeStream #-}
+  topmostIndex (sh1:.n1) (sh2:.n2) = topmostIndex sh1 sh2 :. n2
+  {-# INLINE topmostIndex #-}
+

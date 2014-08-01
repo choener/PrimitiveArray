@@ -186,6 +186,8 @@ instance ExtShape sh => ExtShape (sh:.Subword) where
       | otherwise = return $ M.Yield (is:.subword k l) (is:.k  :.l+1)
     {-# INLINE [1] mk #-}
     {-# INLINE [1] step #-}
+  topmostIndex (sh1:.Subword (0:.0)) (sh2:.Subword (0:.n)) = topmostIndex sh1 sh2 :. subword 0 n
+  {-# INLINE topmostIndex #-}
 
 
 
@@ -233,6 +235,8 @@ instance ExtShape Subword where
         | otherwise = return $ M.Yield (subword k l) (k:.l+1)
       {-# INLINE [1] mk #-}
       {-# INLINE [1] step #-}
+    topmostIndex (Subword (0:.0)) (Subword (0:.n)) = subword 0 n
+    {-# INLINE topmostIndex #-}
 
 
 

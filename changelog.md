@@ -11,6 +11,8 @@
 - rangeStream of Extshape is new and used by the FillTables module
 - Binary, Cereal, Aeson instances for indices and immutable tables
 - orphan instances of Binary, Cereal, Aeson for Z, and (:.)
+- topmostIndex returns the final index position for CYK-style (bottom to top)
+  parsing
 
 0.5.4.0
 
