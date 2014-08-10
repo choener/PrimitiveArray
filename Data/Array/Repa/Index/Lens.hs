@@ -12,11 +12,11 @@
 module Data.Array.Repa.Index.Lens where
 
 import           Control.Applicative
-import           Control.Lens
+--import           Control.Lens
 import           Data.Array.Repa.Index
 import           Data.Array.Repa.Shape
 
-
+{-
 
 class IndexLens i where
   _from :: Functor k => (Int -> k Int) -> i -> k i
@@ -119,4 +119,6 @@ instance Field5 (Z:.a:.b:.c:.d:.e:.f) (Z:.a:.b:.c:.d:.e':.f) e e' where
 instance Field6 (Z:.a:.b:.c:.d:.e:.f) (Z:.a:.b:.c:.d:.e:.f') f f' where
   _6 k ~(Z:.a:.b:.c:.d:.e:.f) = k f <&> \f' -> (Z:.a:.b:.c:.d:.e:.f')
   {-# INLINE _6 #-}
+
+-}
 

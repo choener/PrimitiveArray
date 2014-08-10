@@ -3,6 +3,7 @@
 - moved primitive array classes to Data.PrimitiveArray.Class
 - added _from / _to lenses
 - Field1 .. Field6 lenses for indices (Z:.a:.b...) (with Z being Field0)
+  - lens stuff currently commented out; aiming to have an extra package [lens is fairly heavy]
 - FillTables should work now (with PointL, Subword)
 - freezing of whole stacks of (Z:.mutarr:.mutarr:. ...) tables
 - explicit 'Shape Subword'; this allows for simpler code in a number of places
