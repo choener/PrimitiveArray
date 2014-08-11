@@ -1,7 +1,9 @@
-{-# LANGUAGE TypeFamilies #-}
+
+{-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE TemplateHaskell #-}
-{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE TypeOperators #-}
 
 -- | Subwords span upper triangular tables. A subword (i,j) is legal iff i<=j.
@@ -22,11 +24,15 @@ module Data.Array.Repa.Index.Subword where
 
 import           Control.Applicative
 import           Control.DeepSeq
+import           Data.Aeson
 import           Data.Array.Repa.Index
 import           Data.Array.Repa.Shape
+import           Data.Binary
+import           Data.Serialize
 import           Data.Vector.Fusion.Stream.Size
 import           Data.Vector.Unboxed.Deriving
 import           GHC.Base (quotInt, remInt)
+import           GHC.Generics
 import qualified Data.Vector.Fusion.Stream.Monadic as M
 import qualified Data.Vector.Generic.Base
 import qualified Data.Vector.Generic.Mutable
@@ -34,8 +40,8 @@ import qualified Data.Vector.Unboxed as VU
 import           Test.QuickCheck
 import           Test.QuickCheck.All
 
+import           Data.Array.Repa.Bytes
 import           Data.Array.Repa.ExtShape
---import           Data.Array.Repa.Index.Lens
 
 
 
@@ -53,12 +59,17 @@ stage = "Data.Array.Repa.Index.Subword"
 -- larger to smaller diagonals.
 
 newtype Subword = Subword (Int:.Int)
-  deriving (Eq,Ord,Show)
+  deriving (Eq,Ord,Show,Generic)
 
 derivingUnbox "Subword"
   [t| Subword -> (Int,Int) |]
   [| \ (Subword (i:.j)) -> (i,j) |]
   [| \ (i,j) -> Subword (i:.j) |]
+
+instance Binary    Subword
+instance Serialize Subword
+instance FromJSON  Subword
+instance ToJSON    Subword
 
 subword :: Int -> Int -> Subword
 subword i j = Subword (i:.j)

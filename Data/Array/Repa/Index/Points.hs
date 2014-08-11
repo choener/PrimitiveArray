@@ -1,7 +1,9 @@
+
+{-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE TypeOperators #-}
 
 -- | Index structures for left- and right-linear grammars. Do not use this
@@ -14,11 +16,15 @@ module Data.Array.Repa.Index.Points where
 
 import           Control.Applicative
 import           Control.DeepSeq
+import           Data.Aeson
 import           Data.Array.Repa.Index
 import           Data.Array.Repa.Shape
+import           Data.Binary
+import           Data.Serialize
 import           Data.Vector.Fusion.Stream.Size
 import           Data.Vector.Unboxed.Deriving
 import           GHC.Base (quotInt, remInt)
+import           GHC.Generics
 import qualified Data.Vector.Fusion.Stream.Monadic as M
 import qualified Data.Vector.Generic.Base
 import qualified Data.Vector.Generic.Mutable
@@ -27,8 +33,8 @@ import           Test.QuickCheck
 import           Test.QuickCheck.All
 
 import           Data.Array.Repa.ExtShape
---import           Data.Array.Repa.Index.Lens
 import           Data.Array.Repa.Index.Subword
+import           Data.Array.Repa.Bytes
 
 
 
@@ -41,7 +47,7 @@ import           Data.Array.Repa.Index.Subword
 -- LHS is always a non-terminal ;-)
 
 newtype PointL = PointL (Int:.Int)
-  deriving (Eq,Read,Show)
+  deriving (Eq,Read,Show,Generic)
 
 pointL :: Int -> Int -> PointL
 pointL i j = PointL (i:.j)
@@ -50,7 +56,7 @@ pointL i j = PointL (i:.j)
 -- | A point in right-linear grammars.
 
 newtype PointR = PointR (Int:.Int)
-  deriving (Eq,Read,Show)
+  deriving (Eq,Read,Show,Generic)
 
 pointR :: Int -> Int -> PointR
 pointR i j = PointR (i:.j)
@@ -64,6 +70,11 @@ derivingUnbox "PointL"
   [t| PointL -> (Int,Int) |]
   [| \ (PointL (i:.j)) -> (i,j) |]
   [| \ (i,j) -> PointL (i:.j) |]
+
+instance Binary    PointL
+instance Serialize PointL
+instance FromJSON  PointL
+instance ToJSON    PointL
 
 instance Shape sh => Shape (sh :. PointL) where
   {-# INLINE [1] rank #-}
@@ -179,6 +190,11 @@ derivingUnbox "PointR"
   [t| PointR -> (Int,Int) |]
   [| \ (PointR (i:.j)) -> (i,j) |]
   [| \ (i,j) -> PointR (i:.j) |]
+
+instance Binary    PointR
+instance Serialize PointR
+instance FromJSON  PointR
+instance ToJSON    PointR
 
 instance Shape sh => Shape (sh :. PointR) where
   {-# INLINE [1] rank #-}

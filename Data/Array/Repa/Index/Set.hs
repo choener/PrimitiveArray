@@ -1,5 +1,6 @@
 
 {-# LANGUAGE BangPatterns #-}
+{-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE TemplateHaskell #-}
@@ -11,10 +12,14 @@
 
 module Data.Array.Repa.Index.Set where
 
+import Data.Aeson
 import Data.Array.Repa.Index
 import Data.Array.Repa.Shape
+import Data.Binary
 import Data.Bits
+import Data.Serialize
 import Data.Vector.Unboxed.Deriving
+import GHC.Generics
 
 import Data.Bits.Ordered
 import Data.Array.Repa.ExtShape
@@ -39,12 +44,17 @@ data PathSet = PathSet
   , psFirst :: !Int
   , psLast  :: !Int
   }
-  deriving (Eq,Ord,Show)
+  deriving (Eq,Ord,Show,Generic)
 
 derivingUnbox "PathSet"
   [t| PathSet -> (Int,Int,Int) |]
   [| \ (PathSet s f l) -> (s,f,l) |]
   [| \ (s,f,l) -> PathSet s f l |]
+
+instance Binary    PathSet
+instance Serialize PathSet
+instance ToJSON    PathSet
+instance FromJSON  PathSet
 
 
 
