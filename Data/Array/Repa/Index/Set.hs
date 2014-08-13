@@ -38,6 +38,8 @@ import Data.Array.Repa.ExtShape
 -- 0 0 0@) to having visited just node 0 @(PathSet 1 0 0)@. Have @psFirst@
 -- and @psLast@ in @psSet@ increases the memory requirements to @N*N*2^N@
 -- from @N*N*2^(N-2)@ i.e. by a factor of 4.
+--
+-- TODO newtype PathSet = PathSet { Z:.Int:.Int:.Int }
 
 data PathSet = PathSet
   { psSet   :: !Int
