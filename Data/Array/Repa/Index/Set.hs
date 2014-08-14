@@ -44,11 +44,15 @@ import           Data.Array.Repa.ExtShape
 -- from @N*N*2^(N-2)@ i.e. by a factor of 4.
 --
 -- TODO newtype PathSet = PathSet { Z:.Int:.Int:.Int }
+--
+-- TODO rangeStream currently uses explicitly constructed vectors for the
+-- sets. It would be better to be able to enumerate these explicitly. This
+-- will come with a later version of the OrderedBits library.
 
 data PathSet = PathSet
-  { psSet   :: !Int
-  , psFirst :: !Int
-  , psLast  :: !Int
+  { psSet   :: {-# UNPACK #-} !Int
+  , psFirst :: {-# UNPACK #-} !Int
+  , psLast  :: {-# UNPACK #-} !Int
   }
   deriving (Eq,Ord,Show,Generic)
 
@@ -144,4 +148,10 @@ instance ExtShape sh => ExtShape (sh:.PathSet) where
           {-# INLINE [1] step #-}
   {-# INLINE topmostIndex #-}
   topmostIndex _ _ = error "topmostIndex/not implemented"
+
+{-
+test :: IO Int
+test = M.length $ rangeStream (Z:.PathSet 0 0 0) (Z:.PathSet (2^14 -1) 0 0)
+{-# NOINLINE test #-}
+-}
 
