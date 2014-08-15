@@ -123,22 +123,22 @@ instance ExtShape sh => ExtShape (sh:.PathSet) where
   rangeList _ _ = error "rangeList/not implemented"
   {-# INLINE rangeStream #-}
   -- we assume a set starting at "nothing set"
-  rangeStream (sh1 :. PathSet _ _ _) (sh2 :. PathSet rs rf rl) = M.flatten mk step Unknown $ rangeStream sh1 sh2
+  rangeStream (sh1 :. PathSet 0 0 0) (sh2 :. PathSet rs rf rl) = M.flatten mk step Unknown $ rangeStream sh1 sh2
     where mk is = let v = popCntMemoInt (popCount rs)
-                  in  return $ Left (is:.v)
-          step (Left (is:.v))
+                  in  return $ Left (is,v)
+          step (Left (!is,!v))
             | G.null v  = return $ M.Done
-            | pcnt == 0 = return $ M.Yield (is:.PathSet  0 0 0) $ Left  (is:.vt) -- only one case
-            | pcnt == 1 = return $ M.Yield (is:.PathSet vh l l) $ Left  (is:.vt) -- only one case
-            | otherwise = return $ M.Skip                       $ Right (is:.v:.vh:.vh `clearBit` l)  -- prepare bit pools
+            | pcnt == 0 = return $ M.Yield (is:.PathSet  0 0 0) $ Left  (is,vt) -- only one case
+            | pcnt == 1 = return $ M.Yield (is:.PathSet vh l l) $ Left  (is,vt) -- only one case
+            | otherwise = return $ M.Skip                       $ Right (is,v,vh,vh `clearBit` l)  -- prepare bit pools
             where pcnt = popCount  vh
                   l    = lsbActive vh
                   vh   = G.unsafeHead v
                   vt   = G.unsafeTail v
-          step (Right (is:.v:.fp:.lp))
-            | fp==0     = return $ M.Skip                         $ Left  (is:.vt)  -- the fp pool is empty, reset everything
-            | lp==0     = return $ M.Skip                         $ Right (is:.v:.fn:.vh `clearBit` lsbActive fn) -- new lp pool with cutten fp
-            | otherwise = return $ M.Yield (is:.PathSet vh af al) $ Right (is:.v:.fp:.lp `clearBit` al) -- just continue with next lp pool element
+          step (Right (is,v,fp,lp))
+            | fp==0     = return $ M.Skip                         $ Left  (is,vt)  -- the fp pool is empty, reset everything
+            | lp==0     = return $ M.Skip                         $ Right (is,v,fn,vh `clearBit` lsbActive fn) -- new lp pool with cutten fp
+            | otherwise = return $ M.Yield (is:.PathSet vh af al) $ Right (is,v,fp,lp `clearBit` al) -- just continue with next lp pool element
             where vh = G.unsafeHead v
                   vt = G.unsafeTail v
                   af = lsbActive fp
@@ -149,9 +149,75 @@ instance ExtShape sh => ExtShape (sh:.PathSet) where
   {-# INLINE topmostIndex #-}
   topmostIndex _ _ = error "topmostIndex/not implemented"
 
-{-
+
+
+instance Shape PathSet where
+  {-# INLINE [1] rank #-}
+  rank _ = 1
+  {-# INLINE [1] zeroDim #-}
+  zeroDim = PathSet 0 0 0
+  {-# INLINE [1] unitDim #-}
+  unitDim = PathSet 1 1 1
+  {-# INLINE [1] intersectDim #-}
+  intersectDim = error "sh:.PathSet / intersectDim"
+  {-# INLINE [1] addDim #-}
+  addDim (PathSet ls lf ll) (PathSet rs rf rl)
+    = PathSet (ls `shiftL` popCount rs) (lf+rf) (ll+rl)
+  {-# INLINE [1] size #-}
+  size (PathSet s _ _)
+    = let !p = popCount s in size (Z:.s:.p:.p)
+  {-# INLINE [1] sizeIsValid #-}
+  sizeIsValid (PathSet p _ _) = True
+  {-# INLINE [1] toIndex #-}
+  toIndex (PathSet sS fF lL) (PathSet s f l)
+    = let !p = popCount sS
+      in  toIndex (Z:.sS:.p:.p) (Z:.s:.f:.l)
+  {-# INLINE [1] fromIndex #-}
+  fromIndex = error "sh:.PathSet / fromIndex"
+  {-# INLINE [1] inShapeRange #-}
+  inShapeRange = error "sh:.PathSet / inShapeRange"
+  {-# NOINLINE listOfShape #-}
+  listOfShape = error "sh:.PathSet / listOfShape"
+  {-# NOINLINE shapeOfList #-}
+  shapeOfList = error "sh:.PathSet / shapeOfList"
+  {-# INLINE deepSeq #-}
+  deepSeq p x = p `seq` x
+
+instance ExtShape PathSet where
+  {-# INLINE [1] subDim #-}
+  subDim (PathSet ls lf ll) (PathSet rs rf rl)
+    = PathSet (ls `shiftR` popCount rs) (lf-rf) (ll-rl)
+  {-# INLINE rangeList #-}
+  rangeList _ _ = error "rangeList/not implemented"
+  {-# INLINE rangeStream #-}
+  -- TODO should be as fast as an @M.unfoldr@?
+  rangeStream (PathSet 0 0 0) (PathSet rs rf rl) = M.flatten mk step Unknown $ M.singleton ()
+    where mk () = let v = popCntMemoInt (popCount rs)
+                  in  return $ Left v
+          step (Left !v)
+            | G.null v  = return $ M.Done
+            | pcnt == 0 = return $ M.Yield (PathSet  0 0 0) $ Left  vt -- only one case
+            | pcnt == 1 = return $ M.Yield (PathSet vh l l) $ Left  vt -- only one case
+            | otherwise = return $ M.Skip                   $ Right (v,vh,vh `clearBit` l)  -- prepare bit pools
+            where pcnt = popCount  vh
+                  l    = lsbActive vh
+                  vh   = G.unsafeHead v
+                  vt   = G.unsafeTail v
+          step (Right (!v,!fp,!lp))
+            | fp==0     = return $ M.Skip                     $ Left  vt  -- the fp pool is empty, reset everything
+            | lp==0     = return $ M.Skip                     $ Right (v,fn,vh `clearBit` lsbActive fn) -- new lp pool with cutten fp
+            | otherwise = return $ M.Yield (PathSet vh af al) $ Right (v,fp,lp `clearBit` al) -- just continue with next lp pool element
+            where vh = G.unsafeHead v
+                  vt = G.unsafeTail v
+                  af = lsbActive fp
+                  al = lsbActive lp
+                  fn = fp `clearBit` af
+          {-# INLINE [1] mk #-}
+          {-# INLINE [1] step #-}
+  {-# INLINE topmostIndex #-}
+  topmostIndex _ _ = error "topmostIndex/not implemented"
+
 test :: IO Int
-test = M.length $ rangeStream (Z:.PathSet 0 0 0) (Z:.PathSet (2^14 -1) 0 0)
+test = M.length $ rangeStream (PathSet 0 0 0) (PathSet (2^14 -1) 0 0)
 {-# NOINLINE test #-}
--}
 
