@@ -217,7 +217,9 @@ instance ExtShape PathSet where
   {-# INLINE topmostIndex #-}
   topmostIndex _ _ = error "topmostIndex/not implemented"
 
+{-
 test :: IO Int
 test = M.length $ rangeStream (PathSet 0 0 0) (PathSet (2^14 -1) 0 0)
 {-# NOINLINE test #-}
+-}
 
