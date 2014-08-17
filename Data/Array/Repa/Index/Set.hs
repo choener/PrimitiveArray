@@ -1,6 +1,7 @@
 
 {-# LANGUAGE BangPatterns #-}
 {-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE TemplateHaskell #-}
@@ -25,8 +26,9 @@ import qualified Data.Vector.Fusion.Stream.Monadic as M
 import qualified Data.Vector.Generic as G
 import qualified Data.Vector.Unboxed as VU
 
-import           Data.Bits.Ordered
 import           Data.Array.Repa.ExtShape
+import           Data.Array.Repa.Index.Outside
+import           Data.Bits.Ordered
 
 
 
@@ -144,6 +146,22 @@ instance ExtShape sh => ExtShape (sh:.PathSet) where
                   af = lsbActive fp
                   al = lsbActive lp
                   fn = fp `clearBit` af
+          {-# INLINE [1] mk #-}
+          {-# INLINE [1] step #-}
+  {-# INLINE topmostIndex #-}
+  topmostIndex _ _ = error "topmostIndex/not implemented"
+
+instance (ExtShape sh) => ExtShape (sh :. Outside PathSet) where
+  {-# INLINE [1] subDim #-}
+  subDim (sh1 :. O z1) (sh2 :. O z2)
+    = let (sh :. z) = subDim (sh1 :. z1) (sh2 :. z2) in sh :. O z
+  {-# INLINE rangeList #-}
+  rangeList _ _ = error "rangeList / Outside"
+  {-# INLINE rangeStream #-}
+  rangeStream (sh1 :. O (PathSet 0 0 0)) (sh2 :. O (PathSet rs rf rl)) = M.flatten mk step Unknown $ rangeStream sh1 sh2
+    where mk is = let v = popCntMemoInt (popCount rs)
+                  in  return $ Left (is,v)
+          step = undefined
           {-# INLINE [1] mk #-}
           {-# INLINE [1] step #-}
   {-# INLINE topmostIndex #-}
