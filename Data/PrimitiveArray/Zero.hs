@@ -77,9 +77,11 @@ instance (Shape sh, ExtShape sh, VUM.Unbox elm) => MPrimArrayOps Unboxed sh elm 
 instance (Shape sh, ExtShape sh, VUM.Unbox elm) => PrimArrayOps Unboxed sh elm where
   bounds (Unboxed exUb _) = (zeroDim,exUb `subDim` unitDim)
   freeze (MUnboxed exUb mba) = Unboxed exUb `liftM` unsafeFreeze mba
-  index (Unboxed exUb ba) idx = assert (inShape exUb idx) $ unsafeIndex ba (toIndex exUb idx)
+  thaw   (Unboxed exUb ba) = MUnboxed exUb `liftM` unsafeThaw ba
+  index  (Unboxed exUb ba) idx = assert (inShape exUb idx) $ unsafeIndex ba (toIndex exUb idx)
   {-# INLINE bounds #-}
   {-# INLINE freeze #-}
+  {-# INLINE thaw #-}
   {-# INLINE index #-}
 
 instance (Shape sh, ExtShape sh, VUM.Unbox e, VUM.Unbox e') => PrimArrayMap Unboxed sh e e' where
@@ -129,9 +131,11 @@ instance (Shape sh, ExtShape sh, VUM.Unbox elm) => MPrimArrayOps Boxed sh elm wh
 instance (Shape sh, ExtShape sh, VUM.Unbox elm) => PrimArrayOps Boxed sh elm where
   bounds (Boxed exUb _) = (zeroDim,exUb `subDim` unitDim)
   freeze (MBoxed exUb mba) = Boxed exUb `liftM` unsafeFreeze mba
+  thaw   (Boxed exUb ba) = MBoxed exUb `liftM` unsafeThaw ba
   index (Boxed exUb ba) idx = assert (inShape exUb idx) $ unsafeIndex ba (toIndex exUb idx)
   {-# INLINE bounds #-}
   {-# INLINE freeze #-}
+  {-# INLINE thaw #-}
   {-# INLINE index #-}
 
 instance (Shape sh, ExtShape sh) => PrimArrayMap Boxed sh e e' where

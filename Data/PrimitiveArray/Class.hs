@@ -81,6 +81,11 @@ class (Shape sh, ExtShape sh) => PrimArrayOps arr sh elm where
 
   freeze :: PrimMonad m => MutArr m (arr sh elm) -> m (arr sh elm)
 
+  -- | Thaw an immutable array into a mutable one. Both versions share
+  -- memory.
+
+  thaw :: PrimMonad m => arr sh elm -> m (MutArr m (arr sh elm))
+
   -- | Extract a single element from the array. Generally unsafe as not
   -- bounds-checking is performed.
 
