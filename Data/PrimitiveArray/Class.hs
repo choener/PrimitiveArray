@@ -79,17 +79,17 @@ class (Shape sh, ExtShape sh) => PrimArrayOps arr sh elm where
   -- is /O(1)/ and both arrays share the same memory. Do not use the mutable
   -- array afterwards.
 
-  freeze :: PrimMonad m => MutArr m (arr sh elm) -> m (arr sh elm)
+  unsafeFreeze :: PrimMonad m => MutArr m (arr sh elm) -> m (arr sh elm)
 
   -- | Thaw an immutable array into a mutable one. Both versions share
   -- memory.
 
-  thaw :: PrimMonad m => arr sh elm -> m (MutArr m (arr sh elm))
+  unsafeThaw :: PrimMonad m => arr sh elm -> m (MutArr m (arr sh elm))
 
   -- | Extract a single element from the array. Generally unsafe as not
   -- bounds-checking is performed.
 
-  index :: arr sh elm -> sh -> elm
+  unsafeIndex :: arr sh elm -> sh -> elm
 
 class (Shape sh, ExtShape sh) => PrimArrayMap arr sh e e' where
 
@@ -103,7 +103,7 @@ class (Shape sh, ExtShape sh) => PrimArrayMap arr sh e e' where
 -- non-optimized code.
 
 (!) :: PrimArrayOps arr sh elm => arr sh elm -> sh -> elm
-(!) arr idx = assert (inBounds arr idx) $ index arr idx
+(!) arr idx = assert (inBounds arr idx) $ unsafeIndex arr idx
 {-# INLINE (!) #-}
 
 -- | Returns true if the index is valid for the array.
@@ -122,8 +122,8 @@ inBoundsM marr idx = let (lb,ub) = boundsM marr in inShapeRange lb ub idx
 sliceEq :: (Eq elm, PrimArrayOps arr sh elm) => arr sh elm -> sh -> arr sh elm -> sh -> sh -> Bool
 sliceEq arr1 k1 arr2 k2 xtnd = assert ((inBounds arr1 k1) && (inBounds arr2 k2) && (inBounds arr1 $ k1 `addDim` xtnd) && (inBounds arr2 $ k2 `addDim` xtnd)) $ and res where
   res = zipWith (==) xs ys
-  xs = P.map (index arr1) $ rangeList k1 xtnd
-  ys = P.map (index arr2) $ rangeList k2 xtnd
+  xs = P.map (unsafeIndex arr1) $ rangeList k1 xtnd
+  ys = P.map (unsafeIndex arr2) $ rangeList k2 xtnd
 {-# INLINE sliceEq #-}
 
 -- | Construct a mutable primitive array from a lower and an upper bound, a
@@ -141,7 +141,7 @@ fromAssocsM lb ub def xs = do
 -- | Return all associations from an array.
 
 assocs :: PrimArrayOps arr sh elm => arr sh elm -> [(sh,elm)]
-assocs arr = P.map (\k -> (k,index arr k)) $ rangeList lb (ub `subDim` lb) where
+assocs arr = P.map (\k -> (k,unsafeIndex arr k)) $ rangeList lb (ub `subDim` lb) where
   (lb,ub) = bounds arr
 {-# INLINE assocs #-}
 
@@ -149,14 +149,14 @@ assocs arr = P.map (\k -> (k,index arr k)) $ rangeList lb (ub `subDim` lb) where
 -- of elements.
 
 fromList :: (PrimArrayOps arr sh elm, MPrimArrayOps arr sh elm) => sh -> sh -> [elm] -> arr sh elm
-fromList lb ub xs = runST $ fromListM lb ub xs >>= freeze
+fromList lb ub xs = runST $ fromListM lb ub xs >>= unsafeFreeze
 {-# INLINE fromList #-}
 
 -- | Creates an immutable array from lower and upper bounds, a default element,
 -- and a list of associations.
 
 fromAssocs :: (PrimArrayOps arr sh elm, MPrimArrayOps arr sh elm) => sh -> sh -> elm -> [(sh,elm)] -> arr sh elm
-fromAssocs lb ub def xs = runST $ fromAssocsM lb ub def xs >>= freeze
+fromAssocs lb ub def xs = runST $ fromAssocsM lb ub def xs >>= unsafeFreeze
 {-# INLINE fromAssocs #-}
 
 -- | Determines if an index is valid for a given immutable array.
@@ -188,6 +188,6 @@ instance Applicative m => FreezeTables m Z where
 
 instance (Functor m, Applicative m, Monad m, PrimMonad m, FreezeTables m ts, PrimArrayOps arr sh elm) => FreezeTables m (ts:.MutArr m (arr sh elm)) where
     type Frozen (ts:.MutArr m (arr sh elm)) = Frozen ts :. arr sh elm
-    freezeTables (ts:.t) = (:.) <$> freezeTables ts <*> freeze t
+    freezeTables (ts:.t) = (:.) <$> freezeTables ts <*> unsafeFreeze t
     {-# INLINE freezeTables #-}
 

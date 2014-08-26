@@ -22,7 +22,8 @@ import           Data.Array.Repa.Index
 import           Data.Array.Repa.Shape
 import           Data.Binary
 import           Data.Serialize
-import           Data.Vector.Generic as G hiding (forM_, length, zipWithM_, new)
+import           Data.Vector.Generic as G hiding (forM_, length, zipWithM_, new, unsafeFreeze, unsafeIndex, unsafeThaw)
+import qualified Data.Vector.Generic as G
 import           Data.Vector.Generic.Mutable as GM hiding (length)
 import           GHC.Generics
 import qualified Data.Vector as V hiding (forM_, length, zipWithM_)
@@ -76,13 +77,13 @@ instance (Shape sh, ExtShape sh, VUM.Unbox elm) => MPrimArrayOps Unboxed sh elm 
 
 instance (Shape sh, ExtShape sh, VUM.Unbox elm) => PrimArrayOps Unboxed sh elm where
   bounds (Unboxed exUb _) = (zeroDim,exUb `subDim` unitDim)
-  freeze (MUnboxed exUb mba) = Unboxed exUb `liftM` unsafeFreeze mba
-  thaw   (Unboxed exUb ba) = MUnboxed exUb `liftM` unsafeThaw ba
-  index  (Unboxed exUb ba) idx = assert (inShape exUb idx) $ unsafeIndex ba (toIndex exUb idx)
+  unsafeFreeze (MUnboxed exUb mba) = Unboxed exUb `liftM` G.unsafeFreeze mba
+  unsafeThaw   (Unboxed exUb ba) = MUnboxed exUb `liftM` G.unsafeThaw ba
+  unsafeIndex  (Unboxed exUb ba) idx = assert (inShape exUb idx) $ G.unsafeIndex ba (toIndex exUb idx)
   {-# INLINE bounds #-}
-  {-# INLINE freeze #-}
-  {-# INLINE thaw #-}
-  {-# INLINE index #-}
+  {-# INLINE unsafeFreeze #-}
+  {-# INLINE unsafeThaw #-}
+  {-# INLINE unsafeIndex #-}
 
 instance (Shape sh, ExtShape sh, VUM.Unbox e, VUM.Unbox e') => PrimArrayMap Unboxed sh e e' where
   map f (Unboxed sh xs) = Unboxed sh (VU.map f xs)
@@ -120,7 +121,7 @@ instance (Shape sh, ExtShape sh, VUM.Unbox elm) => MPrimArrayOps Boxed sh elm wh
     forM_ [0 .. size exUb -1] $ \k -> unsafeWrite mba k def
     return ma
   readM (MBoxed exUb mba) idx = assert (inShape exUb idx) $ unsafeRead mba (toIndex exUb idx)
-  writeM (MBoxed exUb mba) idx elm = assert (inShape exUb idx) $ unsafeWrite mba (toIndex exUb idx) elm
+  writeM (MBoxed exUb mba) idx elm = assert (inShape exUb idx) $ GM.unsafeWrite mba (toIndex exUb idx) elm
   {-# INLINE boundsM #-}
   {-# INLINE fromListM #-}
   {-# INLINE newM #-}
@@ -130,13 +131,13 @@ instance (Shape sh, ExtShape sh, VUM.Unbox elm) => MPrimArrayOps Boxed sh elm wh
 
 instance (Shape sh, ExtShape sh, VUM.Unbox elm) => PrimArrayOps Boxed sh elm where
   bounds (Boxed exUb _) = (zeroDim,exUb `subDim` unitDim)
-  freeze (MBoxed exUb mba) = Boxed exUb `liftM` unsafeFreeze mba
-  thaw   (Boxed exUb ba) = MBoxed exUb `liftM` unsafeThaw ba
-  index (Boxed exUb ba) idx = assert (inShape exUb idx) $ unsafeIndex ba (toIndex exUb idx)
+  unsafeFreeze (MBoxed exUb mba) = Boxed exUb `liftM` G.unsafeFreeze mba
+  unsafeThaw   (Boxed exUb ba) = MBoxed exUb `liftM` G.unsafeThaw ba
+  unsafeIndex (Boxed exUb ba) idx = assert (inShape exUb idx) $ G.unsafeIndex ba (toIndex exUb idx)
   {-# INLINE bounds #-}
-  {-# INLINE freeze #-}
-  {-# INLINE thaw #-}
-  {-# INLINE index #-}
+  {-# INLINE unsafeFreeze #-}
+  {-# INLINE unsafeThaw #-}
+  {-# INLINE unsafeIndex #-}
 
 instance (Shape sh, ExtShape sh) => PrimArrayMap Boxed sh e e' where
   map f (Boxed sh xs) = Boxed sh (V.map f xs)
