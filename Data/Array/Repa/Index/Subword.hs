@@ -42,6 +42,7 @@ import           Test.QuickCheck.All
 
 import           Data.Array.Repa.Bytes
 import           Data.Array.Repa.ExtShape
+import           Data.Array.Repa.Index.Outside
 
 
 
@@ -249,6 +250,24 @@ instance ExtShape Subword where
     topmostIndex (Subword (0:.0)) (Subword (0:.n)) = subword 0 n
     {-# INLINE topmostIndex #-}
 
+instance ExtShape (Outside Subword) where
+  {-# INLINE [1] subDim #-}
+  subDim (O s) (O t) = O $ subDim s t
+  {-# INLINE rangeList #-}
+  rangeList _ _ = error "not implemented"
+  {-# INLINE rangeStream #-}
+  rangeStream (O (Subword (0:.0))) (O (Subword (0:.t))) = M.flatten mk step Unknown $ M.enumFromStepN 0 1 (t+1) where
+    -- TODO step currently does *not* use the method devised with Andrew.
+    -- Need to update to ZNE stopping conditition.
+    mk k = return (k:.t)
+    step (k:.l)
+      | l>=k      = return $ M.Yield (O $ subword k l) (k:.l-1)
+      | otherwise = return $ M.Done
+    {-# INLINE [1] mk   #-}
+    {-# INLINE [1] step #-}
+  topmostIndex = error "???"
+  {-# INLINE topmostIndex #-}
+
 
 
 -- * NFData, Arbitrary
@@ -269,9 +288,14 @@ instance Arbitrary Subword where
     | i<j       = [Subword (i:.j-1)]
     | otherwise = []
 
+instance Arbitrary (Outside Subword) where
+  arbitrary = O <$> arbitrary
+  shrink (O z) = map O $ shrink z
+
 instance Arbitrary z => Arbitrary (z:.Subword) where
   arbitrary = (:.) <$> arbitrary <*> arbitrary
   shrink (z:.s) = (:.) <$> shrink z <*> shrink s
+
 
 {-
 instance IndexLens Subword where

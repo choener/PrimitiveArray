@@ -12,11 +12,12 @@
 -- @Outside@-style indices.
 --
 -- We can't automate this completely, as we want to fill tables in
--- a different, for example. Therefor, each index module needs to import
--- the @Outside@ module, then derive the required @Shape@ instances.
+-- a different order, for example. Therefor, each index module needs to
+-- import the @Outside@ module, then derive the required @Shape@ instances.
 
 module Data.Array.Repa.Index.Outside where
 
+import           Control.DeepSeq
 import           Data.Aeson
 import           Data.Array.Repa.Index
 import           Data.Array.Repa.Shape
@@ -76,4 +77,8 @@ instance (Eq z, Shape sh, Shape (sh:.z)) => Shape (sh:.Outside z) where
   shapeOfList = error "sh:.PathSet / shapeOfList"
   {-# INLINE deepSeq #-}
   deepSeq (sh :. O n) x = deepSeq sh (n `seq` x)
+
+instance NFData z => NFData (Outside z) where
+  rnf (O z) = rnf z
+  {-# INLINE rnf #-}
 
