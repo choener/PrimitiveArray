@@ -296,6 +296,9 @@ instance Arbitrary z => Arbitrary (z:.Subword) where
   arbitrary = (:.) <$> arbitrary <*> arbitrary
   shrink (z:.s) = (:.) <$> shrink z <*> shrink s
 
+instance Arbitrary z => Arbitrary (z:.Outside Subword) where
+  arbitrary = (:.) <$> arbitrary <*> arbitrary
+  shrink (z:.s) = (:.) <$> shrink z <*> shrink s
 
 {-
 instance IndexLens Subword where
