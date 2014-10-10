@@ -80,10 +80,12 @@ instance (Shape sh, ExtShape sh, VUM.Unbox elm) => PrimArrayOps Unboxed sh elm w
   unsafeFreeze (MUnboxed exUb mba) = Unboxed exUb `liftM` G.unsafeFreeze mba
   unsafeThaw   (Unboxed exUb ba) = MUnboxed exUb `liftM` G.unsafeThaw ba
   unsafeIndex  (Unboxed exUb ba) idx = assert (inShape exUb idx) $ G.unsafeIndex ba (toIndex exUb idx)
+  transformShape tr (Unboxed exUb ba) = Unboxed (tr exUb) ba
   {-# INLINE bounds #-}
   {-# INLINE unsafeFreeze #-}
   {-# INLINE unsafeThaw #-}
   {-# INLINE unsafeIndex #-}
+  {-# INLINE transformShape #-}
 
 instance (Shape sh, ExtShape sh, VUM.Unbox e, VUM.Unbox e') => PrimArrayMap Unboxed sh e e' where
   map f (Unboxed sh xs) = Unboxed sh (VU.map f xs)
@@ -134,10 +136,12 @@ instance (Shape sh, ExtShape sh, VUM.Unbox elm) => PrimArrayOps Boxed sh elm whe
   unsafeFreeze (MBoxed exUb mba) = Boxed exUb `liftM` G.unsafeFreeze mba
   unsafeThaw   (Boxed exUb ba) = MBoxed exUb `liftM` G.unsafeThaw ba
   unsafeIndex (Boxed exUb ba) idx = assert (inShape exUb idx) $ G.unsafeIndex ba (toIndex exUb idx)
+  transformShape tr (Boxed exUb ba) = Boxed (tr exUb) ba
   {-# INLINE bounds #-}
   {-# INLINE unsafeFreeze #-}
   {-# INLINE unsafeThaw #-}
   {-# INLINE unsafeIndex #-}
+  {-# INLINE transformShape #-}
 
 instance (Shape sh, ExtShape sh) => PrimArrayMap Boxed sh e e' where
   map f (Boxed sh xs) = Boxed sh (V.map f xs)

@@ -91,6 +91,10 @@ class (Shape sh, ExtShape sh) => PrimArrayOps arr sh elm where
 
   unsafeIndex :: arr sh elm -> sh -> elm
 
+  -- | Savely transform the shape space of a table.
+
+  transformShape :: (Shape sh', ExtShape sh') => (sh -> sh') -> arr sh elm -> arr sh' elm
+
 class (Shape sh, ExtShape sh) => PrimArrayMap arr sh e e' where
 
   -- | Map a function over each element, keeping the shape intact.
