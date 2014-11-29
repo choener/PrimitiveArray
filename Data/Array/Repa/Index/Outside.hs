@@ -78,6 +78,36 @@ instance (Eq z, Shape sh, Shape (sh:.z)) => Shape (sh:.Outside z) where
   {-# INLINE deepSeq #-}
   deepSeq (sh :. O n) x = deepSeq sh (n `seq` x)
 
+instance (Eq z, Shape z) => Shape (Outside z) where
+  {-# INLINE [1] rank #-}
+  rank _ = 1
+  {-# INLINE [1] zeroDim #-}
+  zeroDim = O zeroDim
+  {-# INLINE [1] unitDim #-}
+  unitDim = O unitDim
+  {-# INLINE [1] intersectDim #-}
+  intersectDim = error "Outside / intersectDim"
+  {-# INLINE [1] addDim #-}
+  addDim (O z1) (O z2)
+    = let z = addDim z1 z2 in O z
+  {-# INLINE [1] size #-}
+  size (O z) = size z
+  {-# INLINE [1] sizeIsValid #-}
+  sizeIsValid (O z) = sizeIsValid z
+  {-# INLINE [1] toIndex #-}
+  toIndex (O zF) (O z)
+    = toIndex zF z
+  {-# INLINE [1] fromIndex #-}
+  fromIndex = error "PathSet / fromIndex"
+  {-# INLINE [1] inShapeRange #-}
+  inShapeRange = error "PathSet / inShapeRange"
+  {-# NOINLINE listOfShape #-}
+  listOfShape = error "PathSet / listOfShape"
+  {-# NOINLINE shapeOfList #-}
+  shapeOfList = error "PathSet / shapeOfList"
+  {-# INLINE deepSeq #-}
+  deepSeq sw n = sw `seq` n
+
 instance NFData z => NFData (Outside z) where
   rnf (O z) = rnf z
   {-# INLINE rnf #-}

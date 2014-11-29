@@ -33,6 +33,7 @@ import           Data.Vector.Fusion.Stream.Size
 import           Data.Vector.Unboxed.Deriving
 import           GHC.Base (quotInt, remInt)
 import           GHC.Generics
+import qualified Data.Vector.Fusion.Stream as S
 import qualified Data.Vector.Fusion.Stream.Monadic as M
 import qualified Data.Vector.Generic.Base
 import qualified Data.Vector.Generic.Mutable
@@ -104,7 +105,7 @@ subwordIndex (Subword (l:.n)) (Subword (i:.j)) = adr n (i,j) -- - adr n (l,n)
 {-# INLINE subwordIndex #-}
 
 subwordFromIndex :: Subword -> Int -> Subword
-subwordFromIndex = error "not implemented"
+subwordFromIndex = error "subwordFromIndex not implemented"
 {-# INLINE subwordFromIndex #-}
 
 
@@ -185,10 +186,10 @@ instance Shape sh => Shape (sh :. Subword) where
 -- |
 
 instance ExtShape sh => ExtShape (sh:.Subword) where
-  subDim (sh1:.Subword (i:.j)) (sh2:.Subword (k:.l)) = subDim sh1 sh2 :. Subword (i-k:.j-l)
   {-# INLINE subDim #-}
-  rangeList (sh1:.Subword (i:.j)) (sh2:.Subword (k:.l)) = error "not implemented" -- [sh:.Subword (m,n) | sh <- rangeList sh1 sh2, m <- [i .. [i+k], n <- [ n <- [n1 .. (n1+n2) ] ]
+  subDim (sh1:.Subword (i:.j)) (sh2:.Subword (k:.l)) = subDim sh1 sh2 :. Subword (i-k:.j-l)
   {-# INLINE rangeList #-}
+  rangeList x y = S.toList $ rangeStream x y
   {-# INLINE rangeStream #-}
   rangeStream (fs:.Subword (0:.0)) (ts:.Subword (0:.t)) = M.flatten mk step Unknown $ rangeStream fs ts where
     mk is = return (is:.t:.t)
@@ -198,8 +199,8 @@ instance ExtShape sh => ExtShape (sh:.Subword) where
       | otherwise = return $ M.Yield (is:.subword k l) (is:.k  :.l+1)
     {-# INLINE [1] mk #-}
     {-# INLINE [1] step #-}
-  topmostIndex (sh1:.Subword (0:.0)) (sh2:.Subword (0:.n)) = topmostIndex sh1 sh2 :. subword 0 n
   {-# INLINE topmostIndex #-}
+  topmostIndex (sh1:.Subword (0:.0)) (sh2:.Subword (0:.n)) = topmostIndex sh1 sh2 :. subword 0 n
 
 
 
@@ -238,7 +239,7 @@ instance ExtShape Subword where
     {-# INLINE [1] subDim #-}
     subDim (Subword (i:.j)) (Subword (k:.l)) = subword (i-k) (j-l)
     {-# INLINE rangeList #-}
-    rangeList _ _ = error "not implemented" -- TODO should rangeList better be stream? would simplify table filling!
+    rangeList x y = S.toList $ rangeStream x y
     {-# INLINE rangeStream #-}
     rangeStream (Subword (0:.0)) (Subword (0:.t)) = M.flatten mk step Unknown $ M.enumFromStepN t (-1) (t+1) where
       mk k = return (k:.k)
@@ -247,14 +248,14 @@ instance ExtShape Subword where
         | otherwise = return $ M.Yield (subword k l) (k:.l+1)
       {-# INLINE [1] mk #-}
       {-# INLINE [1] step #-}
-    topmostIndex (Subword (0:.0)) (Subword (0:.n)) = subword 0 n
     {-# INLINE topmostIndex #-}
+    topmostIndex (Subword (0:.0)) (Subword (0:.n)) = subword 0 n
 
 instance ExtShape (Outside Subword) where
   {-# INLINE [1] subDim #-}
   subDim (O s) (O t) = O $ subDim s t
   {-# INLINE rangeList #-}
-  rangeList _ _ = error "not implemented"
+  rangeList x y = S.toList $ rangeStream x y
   {-# INLINE rangeStream #-}
   rangeStream (O (Subword (0:.0))) (O (Subword (0:.t))) = M.flatten mk step Unknown $ M.enumFromStepN 0 1 (t+1) where
     -- TODO step currently does *not* use the method devised with Andrew.
