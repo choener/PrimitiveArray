@@ -251,6 +251,8 @@ instance ExtShape Subword where
     {-# INLINE topmostIndex #-}
     topmostIndex (Subword (0:.0)) (Subword (0:.n)) = subword 0 n
 
+-- | 'rangeStream' for Outside / Subword is wrong?
+
 instance ExtShape (Outside Subword) where
   {-# INLINE [1] subDim #-}
   subDim (O s) (O t) = O $ subDim s t
