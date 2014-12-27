@@ -32,11 +32,13 @@ import qualified Data.Vector.Unboxed as VU
 import           Test.QuickCheck
 import           Test.QuickCheck.All
 
-import           Data.Array.Repa.ExtShape
-import           Data.Array.Repa.Index.Subword
 import           Data.Array.Repa.Bytes
+import           Data.Array.Repa.ExtShape
+import           Data.Array.Repa.Index.Outside
 
 
+
+stage = "Data.Array.Repa.Index.Points"
 
 -- | A point in left-linear grammars. In @(i:.j)@, @j@ is the non-terminal
 -- storage point, @i==0@ always for the non-terminal, while @i>=0@ for
@@ -75,6 +77,78 @@ instance Binary    PointL
 instance Serialize PointL
 instance FromJSON  PointL
 instance ToJSON    PointL
+
+instance Shape PointL where
+  {-# INLINE [1] rank #-}
+  rank _ = 1
+
+  {-# INLINE [1] zeroDim #-}
+  zeroDim = PointL (0:.0)
+
+  {-# INLINE [1] unitDim #-}
+  unitDim = PointL (0:.1)
+
+  {-# INLINE [1] intersectDim #-}
+  intersectDim (PointL (i:.j)) (PointL (k:.l))
+    = PointL (max i k :. min j l)
+
+  {-# INLINE [1] addDim #-}
+  addDim (PointL (i:.j)) (PointL (k:.l))
+    = PointL (i+k:.j+l)
+
+  {-# INLINE [1] size #-}
+  size  (PointL (i:.j)) = (j-i)
+
+  {-# INLINE [1] sizeIsValid #-}
+  sizeIsValid (PointL (i:.j))
+    = i>=0 && i<=j && j <= maxBound
+
+  {-# INLINE [1] toIndex #-}
+  toIndex (PointL(l:.r)) (PointL(i:.j))
+    = (j-l)
+
+  {-# INLINE [1] fromIndex #-}
+  fromIndex d n  = undefined
+
+  {-# INLINE [1] inShapeRange #-}
+  inShapeRange (PointL (_:._)) (PointL (l:.n)) (PointL (i:.j))
+    = i<=j && l<=i && j<n
+
+  {-# NOINLINE listOfShape #-}
+  listOfShape (PointL (i:.j)) = i : j : []
+
+  {-# NOINLINE shapeOfList #-}
+  shapeOfList xx
+   = case xx of
+    []     -> error $ stage ++ ".toList: empty list when converting to  (_ :. Int)"
+    [x]    -> error $ stage ++ ".toList: only single element remaining!"
+    i:j:[] -> PointL (i:.j)
+
+  {-# INLINE deepSeq #-}
+  deepSeq n x = n `seq` x
+
+instance ExtShape PointL where
+  {-# INLINE [1] subDim #-}
+  subDim (PointL (i:.j)) (PointL (k:.l)) = PointL (i-k:.j-l)
+  {-# INLINE [1] rangeList #-}
+  rangeList _ _ = error "PointL:rangeList not implemented"
+  {-# INLINE rangeStream #-}
+  rangeStream (PointL (0:.f)) (PointL (0:.t)) = M.map (pointL 0) $ M.enumFromStepN f 1 (t-f+1)
+  {-# INLINE topmostIndex #-}
+  topmostIndex (PointL (0:.f)) (PointL (0:.t)) = pointL 0 t
+
+instance ExtShape (Outside PointL) where
+  {-# INLINE [1] subDim #-}
+  subDim (O ij) (O kl) = O $ subDim ij kl
+  {-# INLINE [1] rangeList #-}
+  rangeList _ _ = error "PointL:rangeList not implemented"
+  {-# INLINE rangeStream #-}
+  rangeStream (O (PointL (0:.f))) (O (PointL (0:.t)))
+    = M.map (O . pointL 0) $ M.enumFromStepN t (-1) (t-f+1)
+  {-# INLINE topmostIndex #-}
+  topmostIndex (O (PointL (0:.f))) (O (PointL (0:.t))) = O $ pointL 0 f
+
+
 
 instance Shape sh => Shape (sh :. PointL) where
   {-# INLINE [1] rank #-}
@@ -171,16 +245,6 @@ instance Arbitrary PointL where
 instance Arbitrary z => Arbitrary (z:.PointL) where
   arbitrary = (:.) <$> arbitrary <*> arbitrary
   shrink (z:.s) = (:.) <$> shrink z <*> shrink s
-
-{-
-
-instance IndexLens PointL where
-  _from f (PointL (i:.j)) = fmap (\i' -> pointL i' j ) (f i)
-  _to   f (PointL (i:.j)) = fmap (\j' -> pointL i  j') (f j)
-  {-# INLINE _from #-}
-  {-# INLINE _to   #-}
-
--}
 
 
 
@@ -279,14 +343,4 @@ instance Arbitrary PointR where
 instance Arbitrary z => Arbitrary (z:.PointR) where
   arbitrary = (:.) <$> arbitrary <*> arbitrary
   shrink (z:.s) = (:.) <$> shrink z <*> shrink s
-
-{-
-
-instance IndexLens PointR where
-  _from f (PointR (i:.j)) = fmap (\i' -> pointR i' j ) (f i)
-  _to   f (PointR (i:.j)) = fmap (\j' -> pointR i  j') (f j)
-  {-# INLINE _from #-}
-  {-# INLINE _to   #-}
-
--}
 
