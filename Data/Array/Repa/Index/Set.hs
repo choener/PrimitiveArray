@@ -32,6 +32,40 @@ import           Data.Bits.Ordered
 
 
 
+-- | Newtype for a bitset. We use @Word@s. Does not encode the full set
+-- information, only the active bits.
+
+newtype BitSet = BitSet Word
+  deriving (Eq,Ord,Read,Show,Generic)
+
+instance Binary    BitSet
+instance Serialize BitSet
+instance ToJSON    BitSet
+instance FromJSON  BitSet
+
+derivingUnbox "BitSet"
+  [t| BitSet     -> Word |]
+  [| \(BitSet s) -> s    |]
+  [| BitSet              |]
+
+-- | Bitsets with elements pointed to.
+
+newtype BitSet1 = BitSet1 (BitSet,Int)
+  deriving (Eq,Ord,Read,Show,Generic)
+
+instance Binary    BitSet1
+instance Serialize BitSet1
+instance ToJSON    BitSet1
+instance FromJSON  BitSet1
+
+-- | Bitsets with with two elements being pointed two. (It should be up to
+-- the terminal symbol to decide if the two pointers may be the same)
+
+newtype BitSet2 = BitSet2 (BitSet,Int,Int)
+  deriving (Eq,Ord,Read,Show,Generic)
+
+{-
+
 -- | a path set denotes a set of visited nodes 'psSet' together with the
 -- node that was visited first 'psFirst' and the node visited last
 -- 'psLast'.
@@ -239,5 +273,7 @@ instance ExtShape PathSet where
 test :: IO Int
 test = M.length $ rangeStream (PathSet 0 0 0) (PathSet (2^14 -1) 0 0)
 {-# NOINLINE test #-}
+-}
+
 -}
 
