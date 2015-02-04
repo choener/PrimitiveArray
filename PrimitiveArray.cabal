@@ -39,6 +39,8 @@ Library
     Data.Array.Repa.Index.Points
     Data.Array.Repa.Index.Set
     Data.Array.Repa.Index.Subword
+    Data.PrimitiveArray.Index.Class
+    Data.PrimitiveArray.Index.Set
     Data.PrimitiveArray
     Data.PrimitiveArray.Class
     Data.PrimitiveArray.FillTables
