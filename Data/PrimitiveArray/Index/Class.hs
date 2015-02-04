@@ -99,8 +99,8 @@ class Index i where
   -- |
 
   flattenUp :: (forall j . Monad m) => i -> i -> Stream m j -> Stream m i
-  default flattenUp :: (Monad m) => i -> i -> Stream m (Z:.i) -> Stream m (Z:.i)
-  flattenUp l h = undefined
+--  default flattenUp :: (Monad m) => i -> i -> Stream m (Z:.i) -> Stream m (Z:.i)
+--  flattenUp l h = undefined
 
   -- | Semantically the reverse of 'streamUp'. Available as the reverse
   -- operation is not very efficient.
