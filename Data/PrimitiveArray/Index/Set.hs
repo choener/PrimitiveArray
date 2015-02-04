@@ -5,6 +5,7 @@
 {-# Language FlexibleInstances #-}
 {-# Language GeneralizedNewtypeDeriving #-}
 {-# Language MultiParamTypeClasses #-}
+{-# Language RankNTypes #-}
 {-# Language TemplateHaskell #-}
 {-# Language TypeFamilies #-}
 {-# Language TypeOperators #-}
@@ -34,6 +35,11 @@ import           Data.Bits.Ordered
 
 newtype Interface t = Interface Int
   deriving (Eq,Ord,Read,Show,Generic)
+
+derivingUnbox "Interface"
+  [t| forall t . Interface t -> Int |]
+  [| \(Interface i) -> i            |]
+  [| Interface                      |]
 
 data First
 
@@ -85,13 +91,27 @@ instance Index z => Index (z:.BitSet) where
 
 instance Index BitSet
 
-
--- | newtype for wrapping complex set structures. The assumption is that
--- the @i@ in @IndexSet@ is again a shape structure.
---
--- TODO needs to be written, but postponed until the rest of the machinery
--- works. And is needed only for multi-tape set systems ... which have
--- interesting running times.
-
-newtype IndexSet i = IndexSet i
+instance Index z => Index (z:.Interface i) where
+  linearIndex (ls:.l) (hs:.h) (zs:.Interface i) = linearIndex ls hs zs * (h+1) + i - l
+  {-# INLINE linearIndex #-}
+  smallestLinearIndex (z:.Interface i) = undefined
+  {-# INLINE smallestLinearIndex #-}
+  largestLinearIndex = undefined
+  {-# INLINE largestLinearIndex #-}
+  streamUp (ls:.Interface l) (hs:.Interface h) = SM.flatten mk step Unknown $ streamUp ls hs
+    where mk z = return (z,l)
+          step (z,k)
+            | k > h     = return $ SM.Done
+            | otherwise = return $ SM.Yield (z:.Interface k) (z,k+1)
+          {-# INLINE [0] mk   #-}
+          {-# INLINE [0] step #-}
+  {-# INLINE streamUp #-}
+  streamDown (ls:.Interface l) (hs:.Interface h) = SM.flatten mk step Unknown $ streamDown ls hs
+    where mk z = return (z,h)
+          step (z,k)
+            | k < l     = return $ SM.Done
+            | otherwise = return $ SM.Yield (z:.Interface k) (z,k-1)
+          {-# INLINE [0] mk   #-}
+          {-# INLINE [0] step #-}
+  {-# INLINE streamDown #-}
 

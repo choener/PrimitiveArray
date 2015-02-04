@@ -96,6 +96,12 @@ class Index i where
   streamUp l h = fmap (\(Z:.i) -> i) $ streamUp (Z:.l) (Z:.h)
   {-# INLINE streamUp #-}
 
+  -- |
+
+  flattenUp :: (forall j . Monad m) => i -> i -> Stream m j -> Stream m i
+  default flattenUp :: (Monad m) => i -> i -> Stream m (Z:.i) -> Stream m (Z:.i)
+  flattenUp l h = undefined
+
   -- | Semantically the reverse of 'streamUp'. Available as the reverse
   -- operation is not very efficient.
 
