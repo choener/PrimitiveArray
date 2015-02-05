@@ -60,6 +60,11 @@ type family LH z where
 
 type A = LH Int
 
+-- |
+--
+-- TODO i need two functions: @enumUp :: i -> Stream@, and @flattenUp ::
+-- i -> Stream -> Stream@.
+
 class Index i where
 
   -- | Given a minimal size, a maximal size, and a current index, calculate
@@ -86,6 +91,8 @@ class Index i where
   largestLinearIndex i = largestLinearIndex (Z:.i)
   {-# INLINE largestLinearIndex #-}
 
+  {-
+
   -- | Enumerate all elements from smallest included to largest included
   -- index. The assumption is that all indices that have already been
   -- enumerated are independent of those indices yet to be enumerated. We
@@ -110,6 +117,12 @@ class Index i where
   streamDown l h = fmap (\(Z:.i) -> i) $ streamDown (Z:.l) (Z:.h)
   {-# INLINE streamDown #-}
 
+  -}
+
+  enumUp :: Monad m => i -> i -> Stream m i
+
+  flattenUp :: Monad m => i -> i -> Stream m j -> Stream m (j:.i)
+
 instance Index Z where
   linearIndex _ _ _ = 0
   {-# INLINE linearIndex #-}
@@ -117,8 +130,10 @@ instance Index Z where
   {-# INLINE smallestLinearIndex #-}
   largestLinearIndex _ = 0
   {-# INLINE largestLinearIndex #-}
-  streamUp _ _ = SM.singleton Z
-  {-# INLINE streamUp #-}
-  streamDown _ _ = SM.singleton Z
-  {-# INLINE streamDown #-}
+  enumUp _ _ = SM.singleton Z
+  flattenUp _ _ = SM.map (\j -> j:.Z)
+--  streamUp _ _ = SM.singleton Z
+--  {-# INLINE streamUp #-}
+--  streamDown _ _ = SM.singleton Z
+--  {-# INLINE streamDown #-}
 
