@@ -68,6 +68,7 @@ instance Index z => Index (z:.BitSet) where
   {-# INLINE smallestLinearIndex #-}
   largestLinearIndex _ = undefined
   {-# INLINE largestLinearIndex #-}
+  {-
   streamUp (ls:.BitSet l) (hs:.BitSet h) = SM.flatten mk step Unknown $ streamUp ls hs
     where mk i = return (i,2^(popCount l) -1)
           step (i,k)
@@ -88,6 +89,7 @@ instance Index z => Index (z:.BitSet) where
           {-# INLINE [0] mk #-}
           {-# INLINE [0] step #-}
   {-# INLINE streamDown #-}
+  -}
 
 instance Index BitSet
 
@@ -98,6 +100,7 @@ instance Index z => Index (z:.Interface i) where
   {-# INLINE smallestLinearIndex #-}
   largestLinearIndex = undefined
   {-# INLINE largestLinearIndex #-}
+  {-
   streamUp (ls:.Interface l) (hs:.Interface h) = SM.flatten mk step Unknown $ streamUp ls hs
     where mk z = return (z,l)
           step (z,k)
@@ -114,4 +117,5 @@ instance Index z => Index (z:.Interface i) where
           {-# INLINE [0] mk   #-}
           {-# INLINE [0] step #-}
   {-# INLINE streamDown #-}
+  -}
 

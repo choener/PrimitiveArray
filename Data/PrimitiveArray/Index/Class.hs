@@ -91,37 +91,11 @@ class Index i where
   largestLinearIndex i = largestLinearIndex (Z:.i)
   {-# INLINE largestLinearIndex #-}
 
-  {-
-
-  -- | Enumerate all elements from smallest included to largest included
-  -- index. The assumption is that all indices that have already been
-  -- enumerated are independent of those indices yet to be enumerated. We
-  -- do not impose a total order, thereby this is not a "real" enumeration.
-
-  streamUp :: Monad m => i -> i -> Stream m i
-  default streamUp :: (Monad m, Index (Z:.i)) => i -> i -> Stream m i
-  streamUp l h = fmap (\(Z:.i) -> i) $ streamUp (Z:.l) (Z:.h)
-  {-# INLINE streamUp #-}
-
-  -- |
-
-  flattenUp :: (forall j . Monad m) => i -> i -> Stream m j -> Stream m i
---  default flattenUp :: (Monad m) => i -> i -> Stream m (Z:.i) -> Stream m (Z:.i)
---  flattenUp l h = undefined
-
-  -- | Semantically the reverse of 'streamUp'. Available as the reverse
-  -- operation is not very efficient.
-
+class IndexStream i where
+  streamUp   :: Monad m => i -> i -> Stream m i
   streamDown :: Monad m => i -> i -> Stream m i
-  default streamDown :: (Monad m, Index (Z:.i)) => i -> i -> Stream m i
-  streamDown l h = fmap (\(Z:.i) -> i) $ streamDown (Z:.l) (Z:.h)
-  {-# INLINE streamDown #-}
 
-  -}
 
-  enumUp :: Monad m => i -> i -> Stream m i
-
-  flattenUp :: Monad m => i -> i -> Stream m j -> Stream m (j:.i)
 
 instance Index Z where
   linearIndex _ _ _ = 0
@@ -130,10 +104,17 @@ instance Index Z where
   {-# INLINE smallestLinearIndex #-}
   largestLinearIndex _ = 0
   {-# INLINE largestLinearIndex #-}
-  enumUp _ _ = SM.singleton Z
-  flattenUp _ _ = SM.map (\j -> j:.Z)
---  streamUp _ _ = SM.singleton Z
---  {-# INLINE streamUp #-}
---  streamDown _ _ = SM.singleton Z
---  {-# INLINE streamDown #-}
+
+-- The current implementation for inductive tuples is not efficient. We would
+-- like to be able to generate index-streams for tree-like indices. An example
+-- is @( (Set:.Interface) :. (Set:.Interface) )@.
+--
+-- TODO: isn't this just @streamUp (is:.i) = flattenUp i $ map (\i -> (i)) $
+-- streamUp is@ ???
+
+instance (IndexStream a, IndexStream b) => IndexStream (a:.b) where
+  streamUp (lis:.li) (his:.hi) = SM.concatMap (\is -> SM.map (\i -> (is:.i)) $ streamUp li hi) $ streamUp lis his
+  {-# INLINE streamUp #-}
+  streamDown (lis:.li) (his:.hi) = SM.concatMap (\is -> SM.map (\i -> (is:.i)) $ streamDown li hi) $ streamDown lis his
+  {-# INLINE streamDown #-}
 
