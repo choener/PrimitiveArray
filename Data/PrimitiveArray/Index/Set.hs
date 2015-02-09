@@ -76,6 +76,7 @@ derivingUnbox "BitSet"
   [| \(BitSet s) -> s   |]
   [| BitSet             |]
 
+{-
 -- | Add interface options to a bitset.
 
 data a :> b = !a :> !b
@@ -92,7 +93,7 @@ instance (Binary    a, Binary    b) => Binary    (a:>b)
 instance (Serialize a, Serialize b) => Serialize (a:>b)
 instance (ToJSON    a, ToJSON    b) => ToJSON    (a:>b)
 instance (FromJSON  a, FromJSON  b) => FromJSON  (a:>b)
-
+-}
 
 {-
 instance Index z => Index (z:.BitSet) where
@@ -152,6 +153,33 @@ instance Index (Interface i) where
   {-# INLINE largestLinearIndex #-}
   size (Interface l) (Interface h) = h - l + 1
   {-# INLINE size #-}
+
+instance IndexStream z => IndexStream (z:.BitSet) where
+  streamUp   (ls:.l) (hs:.h) = SM.flatten mk step Unknown $ streamUp ls hs
+    where mk z = let k = popCount l in return (z,k,Just $ 2^k-1)
+          step (z,k,Nothing)
+            | k > c     = return $ SM.Done
+            | otherwise = return $ SM.Skip (z,k+1,Just $ 2^(k+1)-1)
+          step (z,k,Just (!s))
+            | otherwise = return $ SM.Yield (z:.s) (z,k,succPopulation c s)
+          !c   = popCount h
+          {-# INLINE [0] mk   #-}
+          {-# INLINE [0] step #-}
+  {-# INLINE streamUp #-}
+  streamDown = undefined
+
+testBitset :: BitSet -> BitSet -> IO Int
+testBitset l h = SM.foldl' (+) 0 $ SM.map (\(Z:.BitSet z) -> z) $ streamUp (Z:.l) (Z:.h)
+{-# NOINLINE testBitset #-}
+
+instance IndexStream z => IndexStream (z:.(BitSet:.Interface i)) where
+  streamUp   = undefined
+  streamDown = undefined
+
+instance IndexStream z => IndexStream (z:.(BitSet:.Interface i:.Interface j)) where
+  streamUp   = undefined
+  streamDown = undefined
+
 
 {-
 instance Index z => Index (z:.(BitSet:.Interface i)) where

@@ -99,6 +99,10 @@ class Index i where
 
   size :: i -> i -> Int
 
+-- | Generate a stream of indices in correct order for dynamic programming.
+-- Since the stream generators require @concatMap@ / @flatten@ we have to
+-- write more specialized code for @(z:.IX)@ stuff.
+
 class IndexStream i where
 
   -- |
