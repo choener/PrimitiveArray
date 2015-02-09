@@ -94,7 +94,7 @@ instance (ToJSON    a, ToJSON    b) => ToJSON    (a:>b)
 instance (FromJSON  a, FromJSON  b) => FromJSON  (a:>b)
 
 
-
+{-
 instance Index z => Index (z:.BitSet) where
   type LH (z:.BitSet) = LH z :. Int
   linearIndex (ls:.l) (hs:.h) (zs:.BitSet z) = linearIndex ls hs zs * (h+1) + z - l
@@ -131,11 +131,34 @@ instance Index z => Index (z:.BitSet) where
   -}
 
 instance Index BitSet
+-}
 
+instance Index BitSet where
+  linearIndex l _ (BitSet z) = z - smallestLinearIndex l -- (2 ^ popCount l - 1)
+  {-# INLINE linearIndex #-}
+  smallestLinearIndex (BitSet l) = 2 ^ popCount l - 1
+  {-# INLINE smallestLinearIndex #-}
+  largestLinearIndex (BitSet h) = 2 ^ popCount h - 1
+  {-# INLINE largestLinearIndex #-}
+  size (BitSet l) (BitSet h) = 2 ^ popCount h - 2 ^ popCount l + 1
+  {-# INLINE size #-}
+
+instance Index (Interface i) where
+  linearIndex l _ (Interface z) = z - smallestLinearIndex l
+  {-# INLINE linearIndex #-}
+  smallestLinearIndex (Interface l) = l
+  {-# INLINE smallestLinearIndex #-}
+  largestLinearIndex (Interface h) = h
+  {-# INLINE largestLinearIndex #-}
+  size (Interface l) (Interface h) = h - l + 1
+  {-# INLINE size #-}
+
+{-
 instance Index z => Index (z:.(BitSet:.Interface i)) where
   linearIndex = undefined -- (ls:.l) (hs:.h) (zs:.(BitSet z:>i)) = linearIndex ls hs zs * (h+1) + undefined - l
   smallestLinearIndex = undefined
   largestLinearIndex = undefined
+-}
 
 {-
 instance Index (BitSet:.Interface i) where

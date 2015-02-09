@@ -66,36 +66,38 @@ type family LH z where
 
 class Index i where
 
-  type LH i :: *
-  type LH i = Int
-
   -- | Given a minimal size, a maximal size, and a current index, calculate
   -- the linear index.
 
-  linearIndex :: LH i -> LH i -> i -> Int
-  default linearIndex :: (Index (Z:.i), LH (Z:.i) ~ (Z:.LH i)) => LH i -> LH i -> i -> Int
-  linearIndex l h i = linearIndex (Z:.l) (Z:.h) (Z:.i)
-  {-# INLINE linearIndex #-}
+  linearIndex :: i -> i -> i -> Int
+--  default linearIndex :: (Index (Z:.i), LH (Z:.i) ~ (Z:.LH i)) => LH i -> LH i -> i -> Int
+--  linearIndex l h i = linearIndex (Z:.l) (Z:.h) (Z:.i)
+--  {-# INLINE linearIndex #-}
 
   -- | Given an index element from the smallest subset, calculate the
   -- highest linear index that is *not* stored.
 
-  smallestLinearIndex :: i -> LH i
-  default smallestLinearIndex :: (Index (Z:.i), LH (Z:.i) ~ (Z:.Int)) => i -> Int
-  smallestLinearIndex i =
-    let (Z:.l) = smallestLinearIndex (Z:.i)
-    in  l
-  {-# INLINE smallestLinearIndex #-}
+  smallestLinearIndex :: i -> Int -- LH i
+--  default smallestLinearIndex :: (Index (Z:.i), LH (Z:.i) ~ (Z:.Int)) => i -> Int
+--  smallestLinearIndex i =
+--    let (Z:.l) = smallestLinearIndex (Z:.i)
+--    in  l
+--  {-# INLINE smallestLinearIndex #-}
 
   -- | Given an index element from the largest subset, calculate the
   -- highest linear index that *is* stored.
 
-  largestLinearIndex :: i -> LH i
-  default largestLinearIndex :: (Index (Z:.i), LH (Z:.i) ~ (Z:.Int)) => i -> Int
-  largestLinearIndex i =
-    let (Z:.h) = largestLinearIndex (Z:.i)
-    in  h
-  {-# INLINE largestLinearIndex #-}
+  largestLinearIndex :: i -> Int -- LH i
+--  default largestLinearIndex :: (Index (Z:.i), LH (Z:.i) ~ (Z:.Int)) => i -> Int
+--  largestLinearIndex i =
+--    let (Z:.h) = largestLinearIndex (Z:.i)
+--    in  h
+--  {-# INLINE largestLinearIndex #-}
+
+  -- | Given smallest and largest index, return the number of cells
+  -- required for storage.
+
+  size :: i -> i -> Int
 
 class IndexStream i where
 
@@ -116,19 +118,30 @@ class IndexStream i where
 
 
 instance Index Z where
-  type LH Z = Z
+--  type LH Z = Z
   linearIndex _ _ _ = 0
   {-# INLINE linearIndex #-}
-  smallestLinearIndex _ = Z
+  smallestLinearIndex _ = 0
   {-# INLINE smallestLinearIndex #-}
-  largestLinearIndex _ = Z
+  largestLinearIndex _ = 0
   {-# INLINE largestLinearIndex #-}
+  size _ _ = 1
 
 instance IndexStream Z where
   streamUp   Z Z = SM.singleton Z
   {-# INLINE streamUp #-}
   streamDown Z Z = SM.singleton Z
   {-# INLINE streamDown #-}
+
+instance (Index zs, Index z) => Index (zs:.z) where
+  linearIndex (ls:.l) (hs:.h) (zs:.z) = linearIndex ls hs zs * (largestLinearIndex h + 1) + linearIndex l h z
+  {-# INLINE linearIndex #-}
+  smallestLinearIndex (ls:.l) = smallestLinearIndex ls * smallestLinearIndex l
+  {-# INLINE smallestLinearIndex #-}
+  largestLinearIndex (hs:.h) = largestLinearIndex hs * largestLinearIndex h
+  {-# INLINE largestLinearIndex #-}
+  size (ls:.l) (hs:.h) = size ls hs * (size l h)
+  {-# INLINE size #-}
 
 -- The current implementation for inductive tuples is not efficient. We would
 -- like to be able to generate index-streams for tree-like indices. An example
