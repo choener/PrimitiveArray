@@ -10,6 +10,10 @@
 {-# Language TypeFamilies #-}
 {-# Language TypeOperators #-}
 
+-- | Set with and without interfaces. We provide instances for sets, and
+-- sets with one or two interfaces. The @First@ and @Last@ annotation is
+-- purely cosmetical (apart from introducing type safety).
+
 module Data.PrimitiveArray.Index.Set where
 
 import           Data.Aeson
@@ -22,6 +26,7 @@ import           Data.Vector.Unboxed.Deriving
 import           GHC.Generics
 import qualified Data.Vector.Fusion.Stream.Monadic as SM
 import qualified Data.Vector.Unboxed as VU
+import           Data.Vector.Unboxed (Unbox(..))
 
 import           Data.PrimitiveArray.Index.Class
 import           Data.Bits.Ordered
@@ -41,9 +46,19 @@ derivingUnbox "Interface"
   [| \(Interface i) -> i            |]
   [| Interface                      |]
 
+-- | Declare the interface to be the start of a path.
+
 data First
 
+-- | Declare the interface to be the end of a path.
+
 data Last
+
+-- | Declare the interface to match anything.
+--
+-- TODO needed? want to use later in ADPfusion
+
+data Any
 
 -- | Newtype for a bitset. We'd use @Word@s but that requires more shape
 -- instances.
@@ -61,12 +76,36 @@ derivingUnbox "BitSet"
   [| \(BitSet s) -> s   |]
   [| BitSet             |]
 
+-- | Add interface options to a bitset.
+
+data a :> b = !a :> !b
+  deriving (Eq,Ord,Show,Generic)
+
+infixl 3 :>
+
+derivingUnbox "StrictIFace"
+  [t| forall a b . (Unbox a, Unbox b) => (a:>b) -> (a,b) |]
+  [| \(a:>b) -> (a, b) |]
+  [| \(a,b)  -> (a:>b) |]
+
+instance (Binary    a, Binary    b) => Binary    (a:>b)
+instance (Serialize a, Serialize b) => Serialize (a:>b)
+instance (ToJSON    a, ToJSON    b) => ToJSON    (a:>b)
+instance (FromJSON  a, FromJSON  b) => FromJSON  (a:>b)
+
+
+
 instance Index z => Index (z:.BitSet) where
+  type LH (z:.BitSet) = LH z :. Int
   linearIndex (ls:.l) (hs:.h) (zs:.BitSet z) = linearIndex ls hs zs * (h+1) + z - l
   {-# INLINE linearIndex #-}
-  smallestLinearIndex (z:.BitSet s) = undefined
+  smallestLinearIndex (z:.BitSet s) =
+    let b = popCount s
+    in  smallestLinearIndex z :. (2^b -1)
   {-# INLINE smallestLinearIndex #-}
-  largestLinearIndex _ = undefined
+  largestLinearIndex (z:.BitSet s) =
+    let b = popCount s
+    in  largestLinearIndex z :. (2^b -1)
   {-# INLINE largestLinearIndex #-}
   {-
   streamUp (ls:.BitSet l) (hs:.BitSet h) = SM.flatten mk step Unknown $ streamUp ls hs
@@ -93,6 +132,25 @@ instance Index z => Index (z:.BitSet) where
 
 instance Index BitSet
 
+instance Index z => Index (z:.(BitSet:.Interface i)) where
+  linearIndex = undefined -- (ls:.l) (hs:.h) (zs:.(BitSet z:>i)) = linearIndex ls hs zs * (h+1) + undefined - l
+  smallestLinearIndex = undefined
+  largestLinearIndex = undefined
+
+{-
+instance Index (BitSet:.Interface i) where
+  linearIndex ls hs is = linearIndex (Z:.ls) (Z:.hs) (Z:.is)
+  smallestLinearIndex 
+
+instance Index z => Index (z:.(BitSet:>Interface i:>Interface j)) where
+  linearIndex = undefined
+  smallestLinearIndex = undefined
+  largestLinearIndex = undefined
+
+instance Index (BitSet:>Interface i:>Interface j)
+-}
+
+{-
 instance Index z => Index (z:.Interface i) where
   linearIndex (ls:.l) (hs:.h) (zs:.Interface i) = linearIndex ls hs zs * (h+1) + i - l
   {-# INLINE linearIndex #-}
@@ -118,4 +176,5 @@ instance Index z => Index (z:.Interface i) where
           {-# INLINE [0] step #-}
   {-# INLINE streamDown #-}
   -}
+-}
 
