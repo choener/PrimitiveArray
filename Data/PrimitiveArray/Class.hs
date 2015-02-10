@@ -19,14 +19,18 @@ import Control.Exception (assert)
 import Control.Monad
 import Control.Monad.Primitive
 import Control.Monad.ST
-import Data.Array.Repa.Index
-import Data.Array.Repa.Shape
 import Data.Primitive
 import Data.Primitive.Types
 import Prelude as P
 import System.IO.Unsafe
+import qualified Data.Vector.Fusion.Stream as S
 
-import Data.Array.Repa.ExtShape
+-- import Data.Array.Repa.Index
+-- import Data.Array.Repa.Shape
+--
+-- import Data.Array.Repa.ExtShape
+
+import Data.PrimitiveArray.Index
 
 
 
@@ -36,7 +40,7 @@ data family MutArr (m :: * -> *) (arr :: *) :: *
 
 
 -- | The core set of operations for monadic arrays.
-class (Shape sh, ExtShape sh) => MPrimArrayOps arr sh elm where
+class (Index sh) => MPrimArrayOps arr sh elm where
 
   -- | Return the bounds of the array. All bounds are inclusive, as in
   -- @[lb..ub]@
@@ -69,7 +73,7 @@ class (Shape sh, ExtShape sh) => MPrimArrayOps arr sh elm where
 
 -- | The core set of functions on immutable arrays.
 
-class (Shape sh, ExtShape sh) => PrimArrayOps arr sh elm where
+class (Index sh) => PrimArrayOps arr sh elm where
 
   -- | Returns the bounds of an immutable array, again inclusive bounds: @ [lb..ub] @.
 
@@ -93,9 +97,9 @@ class (Shape sh, ExtShape sh) => PrimArrayOps arr sh elm where
 
   -- | Savely transform the shape space of a table.
 
-  transformShape :: (Shape sh', ExtShape sh') => (sh -> sh') -> arr sh elm -> arr sh' elm
+  transformShape :: (Index sh') => (sh -> sh') -> arr sh elm -> arr sh' elm
 
-class (Shape sh, ExtShape sh) => PrimArrayMap arr sh e e' where
+class (Index sh) => PrimArrayMap arr sh e e' where
 
   -- | Map a function over each element, keeping the shape intact.
 
@@ -107,28 +111,28 @@ class (Shape sh, ExtShape sh) => PrimArrayMap arr sh e e' where
 -- non-optimized code.
 
 (!) :: PrimArrayOps arr sh elm => arr sh elm -> sh -> elm
-(!) arr idx = assert (inBounds arr idx) $ unsafeIndex arr idx
+(!) arr idx = {- assert (inBounds arr idx) $ -} unsafeIndex arr idx
 {-# INLINE (!) #-}
 
 -- | Returns true if the index is valid for the array.
 
 inBoundsM :: (Monad m, MPrimArrayOps arr sh elm) => MutArr m (arr sh elm) -> sh -> Bool
-inBoundsM marr idx = let (lb,ub) = boundsM marr in inShapeRange lb ub idx
+inBoundsM marr idx = let (lb,ub) = boundsM marr in inBounds lb ub idx
 {-# INLINE inBoundsM #-}
 
--- | Given two arrays with the same dimensionality, their respective starting
--- index, and how many steps to go in each dimension (in terms of a dimension
--- again), determine if the multidimensional slices have the same value at
--- all positions
---
--- TODO specialize for DIM1 (and maybe higher dim's) to use memcmp
-
-sliceEq :: (Eq elm, PrimArrayOps arr sh elm) => arr sh elm -> sh -> arr sh elm -> sh -> sh -> Bool
-sliceEq arr1 k1 arr2 k2 xtnd = assert ((inBounds arr1 k1) && (inBounds arr2 k2) && (inBounds arr1 $ k1 `addDim` xtnd) && (inBounds arr2 $ k2 `addDim` xtnd)) $ and res where
-  res = zipWith (==) xs ys
-  xs = P.map (unsafeIndex arr1) $ rangeList k1 xtnd
-  ys = P.map (unsafeIndex arr2) $ rangeList k2 xtnd
-{-# INLINE sliceEq #-}
+-- -- | Given two arrays with the same dimensionality, their respective starting
+-- -- index, and how many steps to go in each dimension (in terms of a dimension
+-- -- again), determine if the multidimensional slices have the same value at
+-- -- all positions
+-- --
+-- -- TODO specialize for DIM1 (and maybe higher dim's) to use memcmp
+-- 
+-- sliceEq :: (Eq elm, PrimArrayOps arr sh elm) => arr sh elm -> sh -> arr sh elm -> sh -> sh -> Bool
+-- sliceEq arr1 k1 arr2 k2 xtnd = assert ((inBounds arr1 k1) && (inBounds arr2 k2) && (inBounds arr1 $ k1 `addDim` xtnd) && (inBounds arr2 $ k2 `addDim` xtnd)) $ and res where
+--   res = zipWith (==) xs ys
+--   xs = P.map (unsafeIndex arr1) $ rangeList k1 xtnd
+--   ys = P.map (unsafeIndex arr2) $ rangeList k2 xtnd
+-- {-# INLINE sliceEq #-}
 
 -- | Construct a mutable primitive array from a lower and an upper bound, a
 -- default element, and a list of associations.
@@ -144,8 +148,8 @@ fromAssocsM lb ub def xs = do
 
 -- | Return all associations from an array.
 
-assocs :: PrimArrayOps arr sh elm => arr sh elm -> [(sh,elm)]
-assocs arr = P.map (\k -> (k,unsafeIndex arr k)) $ rangeList lb (ub `subDim` lb) where
+assocs :: (IndexStream sh, PrimArrayOps arr sh elm) => arr sh elm -> [(sh,elm)]
+assocs arr = P.map (\k -> (k,unsafeIndex arr k)) . S.toList $ streamUp lb ub where
   (lb,ub) = bounds arr
 {-# INLINE assocs #-}
 
@@ -163,16 +167,16 @@ fromAssocs :: (PrimArrayOps arr sh elm, MPrimArrayOps arr sh elm) => sh -> sh ->
 fromAssocs lb ub def xs = runST $ fromAssocsM lb ub def xs >>= unsafeFreeze
 {-# INLINE fromAssocs #-}
 
--- | Determines if an index is valid for a given immutable array.
-
-inBounds :: PrimArrayOps arr sh elm => arr sh elm -> sh -> Bool
-inBounds arr idx = let (lb,ub) = bounds arr in inShapeRange lb (ub `addDim` unitDim) idx
-{-# INLINE inBounds #-}
+-- -- | Determines if an index is valid for a given immutable array.
+-- 
+-- inBounds :: PrimArrayOps arr sh elm => arr sh elm -> sh -> Bool
+-- inBounds arr idx = let (lb,ub) = bounds arr in inShapeRange lb (ub `addDim` unitDim) idx
+-- {-# INLINE inBounds #-}
 
 -- | Returns all elements of an immutable array as a list.
 
-toList :: PrimArrayOps arr sh elm =>  arr sh elm -> [elm]
-toList arr = let (lb,ub) = bounds arr in P.map ((!) arr) $ rangeList lb $ ub `subDim` lb
+toList :: (IndexStream sh, PrimArrayOps arr sh elm) => arr sh elm -> [elm]
+toList arr = let (lb,ub) = bounds arr in P.map ((!) arr) . S.toList $ streamUp lb ub -- $ rangeList lb $ ub `subDim` lb
 {-# INLINE toList #-}
 
 

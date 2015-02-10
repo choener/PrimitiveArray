@@ -99,6 +99,10 @@ class Index i where
 
   size :: i -> i -> Int
 
+  -- | Check if an index is within the bounds.
+
+  inBounds :: i -> i -> i -> Bool
+
 -- | Generate a stream of indices in correct order for dynamic programming.
 -- Since the stream generators require @concatMap@ / @flatten@ we have to
 -- write more specialized code for @(z:.IX)@ stuff.
@@ -130,6 +134,9 @@ instance Index Z where
   largestLinearIndex _ = 0
   {-# INLINE largestLinearIndex #-}
   size _ _ = 1
+  {-# INLINE size #-}
+  inBounds _ _ _ = True
+  {-# INLINE inBounds #-}
 
 instance IndexStream Z where
   streamUp   Z Z = SM.singleton Z
@@ -146,6 +153,8 @@ instance (Index zs, Index z) => Index (zs:.z) where
   {-# INLINE largestLinearIndex #-}
   size (ls:.l) (hs:.h) = size ls hs * (size l h)
   {-# INLINE size #-}
+  inBounds (ls:.l) (hs:.h) (zs:.z) = inBounds ls hs zs && inBounds l h z
+  {-# INLINE inBounds #-}
 
 -- The current implementation for inductive tuples is not efficient. We would
 -- like to be able to generate index-streams for tree-like indices. An example

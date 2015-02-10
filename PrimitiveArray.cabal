@@ -32,21 +32,23 @@ extra-source-files:
 
 Library
   Exposed-modules:
-    Data.Array.Repa.Bytes
-    Data.Array.Repa.ExtShape
-    Data.Array.Repa.Index.Lens
-    Data.Array.Repa.Index.Outside
-    Data.Array.Repa.Index.Points
-    Data.Array.Repa.Index.Set
-    Data.Array.Repa.Index.Subword
-    Data.PrimitiveArray.Index.Class
---    Data.PrimitiveArray.Index.Outside
---    Data.PrimitiveArray.Index.Set
+--    Data.Array.Repa.Bytes
+--    Data.Array.Repa.ExtShape
+--    Data.Array.Repa.Index.Lens
+--    Data.Array.Repa.Index.Outside
+--    Data.Array.Repa.Index.Points
+--    Data.Array.Repa.Index.Set
+--    Data.Array.Repa.Index.Subword
     Data.PrimitiveArray
     Data.PrimitiveArray.Class
     Data.PrimitiveArray.FillTables
-    Data.PrimitiveArray.QuickCheck
-    Data.PrimitiveArray.Zero
+    Data.PrimitiveArray.Index
+    Data.PrimitiveArray.Index.Class
+    Data.PrimitiveArray.Index.Outside
+    Data.PrimitiveArray.Index.Set
+    Data.PrimitiveArray.Unboxed
+--    Data.PrimitiveArray.QuickCheck
+--    Data.PrimitiveArray.Zero
   Build-depends: base                     == 4.*
                , aeson                    == 0.8.*
                , binary                   == 0.7.*

@@ -15,17 +15,13 @@ module Data.PrimitiveArray.FillTables where
 
 import Control.Monad.Primitive
 import Control.Monad (when)
-import Data.Array.Repa.Index
-import Data.Array.Repa.Shape
 import Data.Vector.Fusion.Stream as S
 import Data.Vector.Fusion.Stream.Monadic as M
 import Data.Vector.Fusion.Stream.Size
 
-import Data.Array.Repa.ExtShape
-import Data.Array.Repa.Index.Points
-import Data.Array.Repa.Index.Subword
 import Data.PrimitiveArray.Class
-import Data.PrimitiveArray.Zero
+import Data.PrimitiveArray.Index
+import Data.PrimitiveArray.Unboxed
 
 
 
@@ -39,7 +35,7 @@ import Data.PrimitiveArray.Zero
 -- unsafe. This will have to be in @runFillTables@.
 
 unsafeRunFillTables
-  :: ( ExtShape sh
+  :: ( Index sh, IndexStream sh
      , WriteCell m (tail :. (MutArr m (arr sh elm), t)) sh
      , MPrimArrayOps arr sh elm
      , Monad m
@@ -47,7 +43,7 @@ unsafeRunFillTables
      )
   => (tail :. (MutArr m (arr sh elm), t)) -> m ()
 
-unsafeRunFillTables (ts:.(t,f)) = M.mapM_ (unsafeWriteCell (ts:.(t,f))) $ rangeStream from to where -- generateIndices from to where
+unsafeRunFillTables (ts:.(t,f)) = M.mapM_ (unsafeWriteCell (ts:.(t,f))) $ streamUp from to where -- generateIndices from to where
   (from,to) = boundsM t -- TODO min/max over all tables [for the safe version, the unsafe version *always* assumes equal-size tables; we still should check this during runtime]
 {-# INLINE unsafeRunFillTables #-}
 

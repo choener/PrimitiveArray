@@ -18,8 +18,6 @@ import           Control.Exception (assert)
 import           Control.Monad
 import           Control.Monad.Primitive (PrimState)
 import           Data.Aeson
-import           Data.Array.Repa.Index
-import           Data.Array.Repa.Shape
 import           Data.Binary
 import           Data.Serialize
 import           Data.Vector.Generic as G hiding (forM_, length, zipWithM_, new, unsafeFreeze, unsafeIndex, unsafeThaw)
@@ -32,8 +30,13 @@ import qualified Data.Vector.Unboxed.Mutable as VUM hiding (length)
 import           Data.Vector.Binary
 import           Data.Vector.Cereal
 
-import           Data.Array.Repa.ExtShape
+-- import           Data.Array.Repa.Index
+-- import           Data.Array.Repa.Shape
+
+-- import           Data.Array.Repa.ExtShape
+
 import           Data.PrimitiveArray.Class
+import           Data.PrimitiveArray.Index
 
 
 
@@ -49,7 +52,7 @@ instance (FromJSON sh, FromJSON e, VUM.Unbox e) => FromJSON (Unboxed sh e)
 
 data instance MutArr m (Unboxed sh e) = MUnboxed !sh !(VU.MVector (PrimState m) e)
 
-instance (Shape sh, ExtShape sh, VUM.Unbox elm) => MPrimArrayOps Unboxed sh elm where
+instance (Index sh, VUM.Unbox elm) => MPrimArrayOps Unboxed sh elm where
   boundsM (MUnboxed exUb _) = (zeroDim,exUb `subDim` unitDim)
   fromListM inLb inUb xs = do
     ma <- newM inLb inUb
