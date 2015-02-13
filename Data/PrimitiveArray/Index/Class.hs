@@ -5,6 +5,7 @@
 {-# Language FlexibleInstances #-}
 {-# Language MultiParamTypeClasses #-}
 {-# Language RankNTypes #-}
+{-# Language StandaloneDeriving #-}
 {-# Language TemplateHaskell #-}
 {-# Language TypeFamilies #-}
 {-# Language TypeOperators #-}
@@ -35,6 +36,8 @@ instance (Binary    a, Binary    b) => Binary    (a:.b)
 instance (Serialize a, Serialize b) => Serialize (a:.b)
 instance (ToJSON    a, ToJSON    b) => ToJSON    (a:.b)
 instance (FromJSON  a, FromJSON  b) => FromJSON  (a:.b)
+
+deriving instance (Read a, Read b) => Read (a:.b)
 
 
 

@@ -45,6 +45,7 @@ Library
     Data.PrimitiveArray.Index
     Data.PrimitiveArray.Index.Class
     Data.PrimitiveArray.Index.Outside
+    Data.PrimitiveArray.Index.Points
     Data.PrimitiveArray.Index.Set
     Data.PrimitiveArray.Unboxed
 --    Data.PrimitiveArray.QuickCheck
