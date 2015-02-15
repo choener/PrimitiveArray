@@ -18,6 +18,12 @@ import           Data.PrimitiveArray.Index.Class
 
 
 
+-- | The 'Outside' wrapper takes an index structure, and provides
+-- 'IndexStream' functions 'streamUp' and 'streamDown' that work the other
+-- way around. In particular, for @Outside z@ @streamUp (Outside z) = fmap
+-- Outside $ streamDown z@ and vice versa. @Index@ functions are unwrapped
+-- but otherwise work as before.
+
 newtype Outside z = O { unO :: z }
   deriving (Eq,Ord,Show,Generic)
 
