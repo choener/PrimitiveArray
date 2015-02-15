@@ -47,6 +47,7 @@ Library
     Data.PrimitiveArray.Index.Outside
     Data.PrimitiveArray.Index.Points
     Data.PrimitiveArray.Index.Set
+    Data.PrimitiveArray.Index.Subword
     Data.PrimitiveArray.Unboxed
 --    Data.PrimitiveArray.QuickCheck
 --    Data.PrimitiveArray.Zero
