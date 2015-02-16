@@ -159,6 +159,24 @@ instance (Index zs, Index z) => Index (zs:.z) where
   inBounds (ls:.l) (hs:.h) (zs:.z) = inBounds ls hs zs && inBounds l h z
   {-# INLINE inBounds #-}
 
+
+
+infixl 3 :>
+data a :> b = !a :> !b
+  deriving (Eq,Ord,Show,Generic)
+
+derivingUnbox "StrictIxPair"
+  [t| forall a b . (Unbox a, Unbox b) => (a:>b) -> (a,b) |]
+  [| \(a:>b) -> (a, b) |]
+  [| \(a,b)  -> (a:>b) |]
+
+instance (Binary    a, Binary    b) => Binary    (a:>b)
+instance (Serialize a, Serialize b) => Serialize (a:>b)
+instance (ToJSON    a, ToJSON    b) => ToJSON    (a:>b)
+instance (FromJSON  a, FromJSON  b) => FromJSON  (a:>b)
+
+deriving instance (Read a, Read b) => Read (a:>b)
+
 -- The current implementation for inductive tuples is not efficient. We would
 -- like to be able to generate index-streams for tree-like indices. An example
 -- is @( (Set:.Interface) :. (Set:.Interface) )@.
