@@ -5,6 +5,7 @@
 {-# Language FlexibleInstances #-}
 {-# Language GeneralizedNewtypeDeriving #-}
 {-# Language MultiParamTypeClasses #-}
+{-# Language PatternGuards #-}
 {-# Language RankNTypes #-}
 {-# Language TemplateHaskell #-}
 {-# Language TypeFamilies #-}
@@ -174,6 +175,25 @@ instance IndexStream z => IndexStream (z:.(BitSet:.Interface i)) where
   {-# INLINE streamDown #-}
 
 instance IndexStream z => IndexStream (z:.(BitSet:.Interface i:.Interface j)) where
-  streamUp   = undefined
+  streamUp (ls:.(lb:._:._)) (hs:.(hb:._:._)) = SM.flatten mk step Unknown $ streamUp ls hs
+    where mk z = let k = popCount lb; s = 2^k-1 in return (z,k,Just (s, 0,0)) -- start with lowest bits to zero to capture the empty-set case!
+          step (z,k,_)
+            | k > c = return $ SM.Done
+          -- increase popcount
+          step (z,k,Nothing)
+            | otherwise = let s = 2^(k+1)-1 in return $ SM.Skip (z,k+1,Just (s,0,lsbActive (clearBit s 0)))
+          -- TODO case with increasing interface here
+          step (z,k,Just (s,i,j))
+            | i >= 0, j >= 0 = return $ SM.Yield (z:.(s:.Interface i:.Interface j)) (z,k,Just (s,i,nextActive j (clearBit s i)))
+          step (z,k,Just (s,i,j)) -- increase the i index by one, reset j to lowest
+            | i >= 0 = let i' = nextActive i s in return $ SM.Skip (z,k,Just (s,i',lsbActive (clearBit s i')))
+          -- next population permutation
+          step (z,k,Just (s,_,_))
+            | otherwise = return $ SM.Skip (z,k,s')
+            where !s' = (\z -> let i = lsbActive z in (z,i,lsbActive (clearBit z i))) <$> succPopulation c s
+          !c   = popCount hb
+          {-# INLINE [0] mk   #-}
+          {-# INLINE [0] step #-}
+  {-# INLINE streamUp #-}
   streamDown = undefined
 
