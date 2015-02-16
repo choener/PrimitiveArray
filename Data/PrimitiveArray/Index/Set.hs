@@ -174,9 +174,13 @@ instance IndexStream z => IndexStream (z:.(BitSet:.Interface i)) where
           {-# INLINE [0] step #-}
   {-# INLINE streamDown #-}
 
+-- TODO 0,0,0 only if we actually want the empty set case
+
 instance IndexStream z => IndexStream (z:.(BitSet:.Interface i:.Interface j)) where
   streamUp (ls:.(lb:._:._)) (hs:.(hb:._:._)) = SM.flatten mk step Unknown $ streamUp ls hs
-    where mk z = let k = popCount lb; s = 2^k-1 in return (z,k,Just (s, 0,0)) -- start with lowest bits to zero to capture the empty-set case!
+    where mk z = let k = popCount lb; s = 2^k-1 in return (z,k,Just (s, 0,lsbActive (clearBit s 0))) -- start with lowest bits to zero to capture the empty-set case!
+          step (z,k,_)
+            | k == 0 = return $ SM.Yield (z:.(BitSet 0:.Interface 0:.Interface 0)) (z,1,Nothing)
           step (z,k,_)
             | k > c = return $ SM.Done
           -- increase popcount
@@ -190,10 +194,32 @@ instance IndexStream z => IndexStream (z:.(BitSet:.Interface i:.Interface j)) wh
           -- next population permutation
           step (z,k,Just (s,_,_))
             | otherwise = return $ SM.Skip (z,k,s')
-            where !s' = (\z -> let i = lsbActive z in (z,i,lsbActive (clearBit z i))) <$> succPopulation c s
+            where s' = (\z -> let i = lsbActive z in (z,i,lsbActive (clearBit z i))) <$> succPopulation c s
           !c   = popCount hb
           {-# INLINE [0] mk   #-}
           {-# INLINE [0] step #-}
   {-# INLINE streamUp #-}
-  streamDown = undefined
+  streamDown (ls:.(lb:._:._)) (hs:.(hb:._:._)) = SM.flatten mk step Unknown $ streamUp ls hs
+    where mk z = let k = ch; s = 2^k-1 in return (z,k,Just (s, 0,lsbActive (clearBit s 0))) -- start with lowest bits to zero to capture the empty-set case!
+          step (z,k,_)
+            | k == 0, k == cl = return $ SM.Yield (z:.(BitSet 0:.Interface 0:.Interface 0)) (z,k-1,Nothing)
+          step (z,k,_)
+            | k < cl = return $ SM.Done -- TODO the 0,0,0 if k==0
+          -- increase popcount
+          step (z,k,Nothing)
+            | otherwise = let s = 2^(k-1)-1 in return $ SM.Skip (z,k-1,Just (s,0,lsbActive (clearBit s 0)))
+          -- TODO case with increasing interface here
+          step (z,k,Just (s,i,j))
+            | i >= 0, j >= 0 = return $ SM.Yield (z:.(s:.Interface i:.Interface j)) (z,k,Just (s,i,nextActive j (clearBit s i)))
+          step (z,k,Just (s,i,j)) -- increase the i index by one, reset j to lowest
+            | i >= 0 = let i' = nextActive i s in return $ SM.Skip (z,k,Just (s,i',lsbActive (clearBit s i')))
+          -- next population permutation
+          step (z,k,Just (s,_,_))
+            | otherwise = return $ SM.Skip (z,k,s')
+            where s' = (\z -> let i = lsbActive z in (z,i,lsbActive (clearBit z i))) <$> succPopulation ch s
+          !cl  = popCount lb
+          !ch  = popCount hb
+          {-# INLINE [0] mk   #-}
+          {-# INLINE [0] step #-}
+  {-# INLINE streamDown #-}
 
