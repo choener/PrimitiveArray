@@ -140,13 +140,14 @@ testBitset l h = SM.foldl' (+) 0 $ SM.map (\(Z:.BitSet z) -> z) $ streamUp (Z:.l
 instance IndexStream z => IndexStream (z:.(BitSet:.Interface i)) where
   streamUp (ls:.(lb:._)) (hs:.(hb:._)) = SM.flatten mk step Unknown $ streamUp ls hs
     where mk z = let k = popCount lb in return (z,k,Just (2^k-1, 0)) -- start with lowest bit
+          step (z,k,_)
+            | k > c = return $ SM.Done
           -- increase popcount
           step (z,k,Nothing)
-            | k > c     = return $ SM.Done
             | otherwise = return $ SM.Skip (z,k+1,Just (2^(k+1)-1,0))
           -- TODO case with increasing interface here
           step (z,k,Just (s,i))
-            | i>=0 = return $ SM.Yield (z:.(s:.Interface i)) (z,k,Just (s,nextActive i s))
+            | i >= 0 = return $ SM.Yield (z:.(s:.Interface i)) (z,k,Just (s,nextActive i s))
           -- next population permutation
           step (z,k,Just (s,_))
             | otherwise = return $ SM.Skip (z,k,s')
@@ -155,20 +156,21 @@ instance IndexStream z => IndexStream (z:.(BitSet:.Interface i)) where
           {-# INLINE [0] mk   #-}
           {-# INLINE [0] step #-}
   {-# INLINE streamUp #-}
-  streamDown = undefined
-  {-
-  streamDown (ls:.l) (hs:.h) = SM.flatten mk step Unknown $ streamDown ls hs
-    where mk z = let k = popCount h in return (z,k,Just $ 2^k-1)
-          step (z,k,Nothing)
+  streamDown (ls:.(lb:._)) (hs:.(hb:._)) = SM.flatten mk step Unknown $ streamDown ls hs
+    where mk z = let k = popCount hb in return (z,k,Just (2^k-1,0))
+          step (z,k,_)
             | k < cl    = return $ SM.Done
-            | otherwise = return $ SM.Skip (z,k-1,Just $ 2^(k-1)-1)
-          step (z,k,Just s)
-            | otherwise = return $ SM.Yield (z:.s) (z,k,succPopulation ch s)
-          !cl = popCount l
-          !ch = popCount h
+          step (z,k,Nothing)
+            | otherwise = return $ SM.Skip (z,k-1,Just (2^(k-1)-1,0))
+          step (z,k,Just (s,i))
+            | i >= 0 = return $ SM.Yield (z:.(s:.Interface i)) (z,k,Just (s,nextActive i s))
+          step (z,k,Just (s,i))
+            | otherwise = return $ SM.Skip (z,k,s')
+            where !s' = (\z -> (z,lsbActive z)) <$> succPopulation ch s
+          !cl = popCount lb
+          !ch = popCount hb
           {-# INLINE [0] mk   #-}
           {-# INLINE [0] step #-}
-  -}
   {-# INLINE streamDown #-}
 
 instance IndexStream z => IndexStream (z:.(BitSet:.Interface i:.Interface j)) where
