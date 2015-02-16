@@ -20,7 +20,7 @@ module Data.PrimitiveArray.Index.Set where
 import           Data.Aeson
 import           Data.Binary
 import           Data.Bits
-import           Data.Bits.Extras (Ranked)
+import           Data.Bits.Extras (Ranked,lsb)
 import           Data.Serialize
 import           Data.Vector.Fusion.Stream.Size
 import           Data.Vector.Unboxed.Deriving
@@ -179,8 +179,9 @@ instance IndexStream z => IndexStream (z:.(BitSet:>Interface i)) where
 -- TODO should also produce all one-bit sets, ONLY here, start and end fall
 -- together.
 
-instance IndexStream z => IndexStream (z:.(BitSet:>Interface i:>Interface j)) where
+instance (Show z,IndexStream z) => IndexStream (z:.(BitSet:>Interface i:>Interface j)) where
   streamUp (ls:.(lb:>_:>_)) (hs:.(hb:>_:>_)) = SM.flatten mk step Unknown $ streamUp ls hs
+    {-
     where mk z = let k = popCount lb; s = 2^k-1 in return (z,k,Just (s, 0,lsbActive (clearBit s 0))) -- start with lowest bits to zero to capture the empty-set case!
           step (z,k,_)
             | k == 0 = return $ SM.Yield (z:.(BitSet 0:>Interface 0:>Interface 0)) (z,1,Nothing)
@@ -199,9 +200,25 @@ instance IndexStream z => IndexStream (z:.(BitSet:>Interface i:>Interface j)) wh
             | otherwise = return $ SM.Skip (z,k,s')
             where s' = (\z -> let i = lsbActive z in (z,i,lsbActive (clearBit z i))) <$> succPopulation c s
           !c   = popCount hb
+    -}
+    where mk z = let k = popCount lb; s = 2^k-1 in return (z,k,Just (s,0,0))
+          step (_,k,_)
+            | k > c = return $ SM.Done
+          step (z,k,Just(s,i,j))
+            | k == 0                  = return $ SM.Yield (z:.(s:>Interface 0      :>Interface 0      ))  (z,1,Just(1,0,0))
+            | k == 1                  = return $ SM.Yield (z:.(s:>Interface (lsb s):>Interface (lsb s)))  (z,1,s'         )
+            | i >= 0, j >= 0, i /= j  = return $ SM.Yield (z:.(s:>Interface i      :>Interface j      ))  (z,k,Just(s,i,nextActive j s))
+            | i >= 0, j >= 0          = return $ SM.Skip                                                  (z,k,Just(s,i,nextActive j s))
+            | i >= 0                  = return $ SM.Skip                                                  (z,k,Just(s,nextActive i s, lsbActive s))
+            | otherwise               = return $ SM.Skip                                                  (z,k,s')
+            where s' = (\z -> let i = lsbActive z in (z,i,i)) <$> succPopulation c s
+          step (z,k,Nothing)
+            | otherwise = let s = 2^(k+1)-1 in return $ SM.Skip (z,k+1,Just (s,0,0))
+          !c   = popCount hb
           {-# INLINE [0] mk   #-}
           {-# INLINE [0] step #-}
   {-# INLINE streamUp #-}
+  -- TODO rewrite to use same system as @streamUp@
   streamDown (ls:.(lb:>_:>_)) (hs:.(hb:>_:>_)) = SM.flatten mk step Unknown $ streamUp ls hs
     where mk z = let k = ch; s = 2^k-1 in return (z,k,Just (s, 0,lsbActive (clearBit s 0))) -- start with lowest bits to zero to capture the empty-set case!
           step (z,k,_)
