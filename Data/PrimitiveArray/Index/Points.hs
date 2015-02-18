@@ -4,6 +4,7 @@
 {-# Language DeriveGeneric #-}
 {-# Language TypeFamilies #-}
 {-# Language MultiParamTypeClasses #-}
+{-# Language FlexibleInstances #-}
 
 module Data.PrimitiveArray.Index.Points where
 
@@ -65,6 +66,24 @@ instance Index PointL where
   inBounds (PointL (l:._)) (PointL (_:.h)) (PointL (x:.y)) = l<=x && x<=y && y<=h
   {-# INLINE inBounds #-}
 
+instance IndexStream z => IndexStream (z:.PointL) where
+  streamUp (ls:.PointL (lf:._)) (hs:.PointL(_:.ht)) = SM.flatten mk step Unknown $ streamUp ls hs
+    where mk z = return (z,lf)
+          step (z,k)
+            | k > ht    = return $ SM.Done
+            | otherwise = return $ SM.Yield (z:.PointL (lf:.k)) (z,k+1)
+          {-# Inline [0] mk   #-}
+          {-# Inline [0] step #-}
+  {-# Inline streamUp #-}
+  streamDown (ls:.PointL (lf:._)) (hs:.PointL(_:.ht)) = SM.flatten mk step Unknown $ streamDown ls hs
+    where mk z = return (z,ht)
+          step (z,k)
+            | k < lf    = return $ SM.Done
+            | otherwise = return $ SM.Yield (z:.PointL (lf:.k)) (z,k-1)
+          {-# Inline [0] mk   #-}
+          {-# Inline [0] step #-}
+  {-# Inline streamDown #-}
+
 derivingUnbox "PointR"
   [t| PointR -> (Int,Int) |]
   [| \ (PointR (i:.j)) -> (i,j) |]
@@ -84,3 +103,4 @@ instance Index PointR where
   {-# INLINE largestLinearIndex #-}
   size = undefined
   {-# INLINE size #-}
+
