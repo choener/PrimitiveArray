@@ -281,6 +281,7 @@ succSet full@(BitSet zb:>Interface zi:>Interface zj) (BitSet b:>Interface i:>Int
         j'   = nextActive j  b
         j''  = nextActive j' b
         i'   = nextActive i b
+{-# Inline succSet #-}
 
 -- | Predecessor function. Note that sets are partially ordered. This means
 -- that @(predSet . succSet /= id)@ in general.
@@ -316,4 +317,5 @@ predSet full@(BitSet zb:>Interface zi:>Interface zj) (BitSet b:>Interface i:>Int
         j'   = nextActive j  b
         j''  = nextActive j' b
         i'   = nextActive i b
+{-# Inline predSet #-}
 
