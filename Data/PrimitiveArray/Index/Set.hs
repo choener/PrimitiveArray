@@ -20,7 +20,7 @@ module Data.PrimitiveArray.Index.Set where
 import           Data.Aeson
 import           Data.Binary
 import           Data.Bits
-import           Data.Bits.Extras (Ranked,lsb)
+import           Data.Bits.Extras
 import           Data.Serialize
 import           Data.Vector.Fusion.Stream.Size
 import           Data.Vector.Unboxed.Deriving
@@ -29,6 +29,7 @@ import           GHC.Generics
 import qualified Data.Vector.Fusion.Stream.Monadic as SM
 import qualified Data.Vector.Unboxed as VU
 import           Control.Applicative ((<$>))
+import           Debug.Trace
 
 import           Data.Bits.Ordered
 import           Data.PrimitiveArray.Index.Class
@@ -77,6 +78,14 @@ derivingUnbox "BitSet"
   [t| BitSet     -> Int |]
   [| \(BitSet s) -> s   |]
   [| BitSet             |]
+
+-- | A bitset with one interface.
+
+type BS1I i = BitSet:>Interface i
+
+-- | A bitset with two interfaces.
+
+type BS2I i j = BitSet:>Interface i:>Interface j
 
 instance Index BitSet where
   linearIndex l _ (BitSet z) = z - smallestLinearIndex l -- (2 ^ popCount l - 1)
@@ -242,4 +251,69 @@ instance (Show z,IndexStream z) => IndexStream (z:.(BitSet:>Interface i:>Interfa
           {-# INLINE [0] mk   #-}
           {-# INLINE [0] step #-}
   {-# INLINE streamDown #-}
+
+-- | Given a set with boundaries, return the successor. This steps through
+-- the whole poset-tree if called often enough. Boundaries may coincide
+-- only in case of single-element sets.
+
+succSet :: BS2I i j -> BS2I i j -> Maybe (BS2I i j)
+succSet full@(BitSet zb:>Interface zi:>Interface zj) (BitSet b:>Interface i:>Interface j)
+  | c==0 && z>0           = Just $ BitSet 1:>Interface 0:>Interface 0
+  | c==1 && msbB < msb zb = Just $ BitSet 2^(msbB+1):>Interface (msbB+1):>Interface (msbB+1)
+  -- increase j
+  | j' >= 0 && j' /= i    = Just $ BitSet b:>Interface i:>Interface j'
+  -- increasing j would make it equal to i, so increase twice
+  | j' >= 0, j'' >= 0 && j'' /= i  = Just $ BitSet b:>Interface i:>Interface j''
+  -- increase i, reset j
+  | i' >= 0               = Just $ BitSet b:>Interface i':>Interface (lsb b)
+  -- permutate population, restart i,j, still same population count
+  | Just bS <- succPopulation (popCount zb) b
+  , let iS = lsb bS; jS = nextActive iS bS
+  , jS >= 0
+                          = Just $ BitSet bS:>Interface iS:>Interface jS
+  -- increase population count by 1, reset everything
+  | c < z, let bS = 2^(c+1)-1; iS = lsb bS; jS = nextActive iS bS
+                          = Just $ BitSet bS:>Interface iS:>Interface jS
+  | otherwise             = Nothing
+  where c    = popCount b
+        z    = popCount zb
+        msbB = msb b
+        j'   = nextActive j  b
+        j''  = nextActive j' b
+        i'   = nextActive i b
+
+-- | Predecessor function. Note that sets are partially ordered. This means
+-- that @(predSet . succSet /= id)@ in general.
+
+predSet :: BS2I i j -> BS2I i j -> Maybe (BS2I i j)
+predSet full@(BitSet zb:>Interface zi:>Interface zj) (BitSet b:>Interface i:>Interface j)
+  -- this was the mpty set
+  | c == 0 = Nothing
+  | c==1 && msbB < msb zb = Just $ BitSet 2^(msbB+1):>Interface (msbB+1):>Interface (msbB+1)
+  -- increase j
+  | j' >= 0 && j' /= i    = Just $ BitSet b:>Interface i:>Interface j'
+  -- increasing j would make it equal to i, so increase twice
+  | j' >= 0, j'' >= 0 && j'' /= i  = Just $ BitSet b:>Interface i:>Interface j''
+  -- increase i, reset j
+  | i' >= 0               = Just $ BitSet b:>Interface i':>Interface (lsb b)
+  -- permutate population, restart i,j, still same population count
+  | Just bS <- succPopulation (popCount zb) b
+  , let iS = lsb bS; jS = nextActive iS bS
+  , jS >= 0
+                          = Just $ BitSet bS:>Interface iS:>Interface jS
+  -- decrease population count by 1, reset everything
+  | c > 2, let bS = 2^(c-1)-1; iS = lsb bS; jS = nextActive iS bS
+                          = Just $ BitSet bS:>Interface iS:>Interface jS
+  -- single-element sets
+  | c == 2, let bS = 2^(c-1)-1; iS = lsb bS; jS = iS
+                          = Just $ BitSet bS:>Interface iS:>Interface jS
+  -- empty set
+  | c == 1                = Just $ BitSet 0:>Interface 0:>Interface 0
+  | otherwise             = Nothing
+  where c    = popCount b
+        z    = popCount zb
+        msbB = msb b
+        j'   = nextActive j  b
+        j''  = nextActive j' b
+        i'   = nextActive i b
 

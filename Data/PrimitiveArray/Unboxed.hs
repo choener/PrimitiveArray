@@ -104,7 +104,7 @@ instance (FromJSON sh, FromJSON e)    => FromJSON (Boxed sh e)
 
 data instance MutArr m (Boxed sh e) = MBoxed !sh !sh !(V.MVector (PrimState m) e)
 
-instance (Index sh, VUM.Unbox elm) => MPrimArrayOps Boxed sh elm where
+instance (Index sh) => MPrimArrayOps Boxed sh elm where
   boundsM (MBoxed l h _) = (l,h)
   fromListM l h xs = do
     ma <- newM l h
