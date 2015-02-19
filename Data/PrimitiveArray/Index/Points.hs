@@ -8,6 +8,7 @@
 
 module Data.PrimitiveArray.Index.Points where
 
+import           Control.Applicative
 import           Data.Aeson
 import           Data.Binary
 import           Data.Bits
@@ -19,6 +20,7 @@ import           Data.Vector.Unboxed (Unbox(..))
 import           GHC.Generics
 import qualified Data.Vector.Fusion.Stream.Monadic as SM
 import qualified Data.Vector.Unboxed as VU
+import           Test.QuickCheck
 
 import           Data.PrimitiveArray.Index.Class
 
@@ -83,6 +85,22 @@ instance IndexStream z => IndexStream (z:.PointL) where
           {-# Inline [0] mk   #-}
           {-# Inline [0] step #-}
   {-# Inline streamDown #-}
+
+instance IndexStream PointL
+
+instance Arbitrary PointL where
+  arbitrary = do
+    b <- choose (0,100)
+    return $ pointL 0 b
+  shrink (PointL (i:.j))
+    | i<j = [pointL i $ j-1]
+    | otherwise = []
+
+instance Arbitrary z => Arbitrary (z:.PointL) where
+  arbitrary = (:.) <$> arbitrary <*> arbitrary
+  shrink (z:.s) = (:.) <$> shrink z <*> shrink s
+
+
 
 derivingUnbox "PointR"
   [t| PointR -> (Int,Int) |]

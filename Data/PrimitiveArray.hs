@@ -12,9 +12,9 @@ module Data.PrimitiveArray
   ( module Data.PrimitiveArray.Class
   , module Data.PrimitiveArray.FillTables
   , module Data.PrimitiveArray.Index
-  , module Data.PrimitiveArray.Index.Class
-  , module Data.PrimitiveArray.Index.Outside
-  , module Data.PrimitiveArray.Index.Set
+--  , module Data.PrimitiveArray.Index.Class
+--  , module Data.PrimitiveArray.Index.Outside
+--  , module Data.PrimitiveArray.Index.Set
   , module Data.PrimitiveArray.QuickCheck
   , module Data.PrimitiveArray.Unboxed
   ) where
@@ -31,9 +31,9 @@ module Data.PrimitiveArray
 import Data.PrimitiveArray.Class
 import Data.PrimitiveArray.FillTables
 import Data.PrimitiveArray.Index
-import Data.PrimitiveArray.Index.Class
-import Data.PrimitiveArray.Index.Outside
-import Data.PrimitiveArray.Index.Set
+--import Data.PrimitiveArray.Index.Class
+--import Data.PrimitiveArray.Index.Outside
+--import Data.PrimitiveArray.Index.Set
 import Data.PrimitiveArray.QuickCheck
 import Data.PrimitiveArray.Unboxed
 

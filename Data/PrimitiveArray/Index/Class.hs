@@ -12,6 +12,7 @@
 
 module Data.PrimitiveArray.Index.Class where
 
+import           Control.Applicative
 import           Data.Aeson
 import           Data.Binary
 import           Data.Serialize
@@ -20,6 +21,7 @@ import           Data.Vector.Unboxed.Deriving
 import           Data.Vector.Unboxed (Unbox(..))
 import           GHC.Generics
 import qualified Data.Vector.Fusion.Stream.Monadic as SM
+import           Test.QuickCheck
 
 
 
@@ -159,6 +161,9 @@ instance (Index zs, Index z) => Index (zs:.z) where
   inBounds (ls:.l) (hs:.h) (zs:.z) = inBounds ls hs zs && inBounds l h z
   {-# INLINE inBounds #-}
 
+instance Arbitrary Z where
+  arbitrary = return Z
+
 
 
 infixl 3 :>
@@ -176,6 +181,10 @@ instance (ToJSON    a, ToJSON    b) => ToJSON    (a:>b)
 instance (FromJSON  a, FromJSON  b) => FromJSON  (a:>b)
 
 deriving instance (Read a, Read b) => Read (a:>b)
+
+instance (Arbitrary a, Arbitrary b) => Arbitrary (a :> b) where
+  arbitrary = (:>) <$> arbitrary <*> arbitrary
+  shrink (a:>b) = (:>) <$> shrink a <*> shrink b
 
 -- The current implementation for inductive tuples is not efficient. We would
 -- like to be able to generate index-streams for tree-like indices. An example
