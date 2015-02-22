@@ -13,6 +13,8 @@ import           Data.Serialize
 import           Data.Vector.Unboxed.Deriving
 import           Data.Vector.Unboxed (Unbox(..))
 import           GHC.Generics
+import           Test.QuickCheck
+import           Control.Applicative
 
 import           Data.PrimitiveArray.Index.Class
 
@@ -54,4 +56,8 @@ instance IndexStream i => IndexStream (Outside i) where
   {-# INLINE streamUp #-}
   streamDown (O l) (O h) = fmap O $ streamUp l h
   {-# INLINE streamDown #-}
+
+instance Arbitrary z => Arbitrary (Outside z) where
+  arbitrary = O <$> arbitrary
+  shrink (O z) = O <$> shrink z
 

@@ -66,7 +66,8 @@ instance (Index sh, VUM.Unbox elm) => MPrimArrayOps Unboxed sh elm where
     forM_ [0 .. size l h -1] $ \k -> unsafeWrite mba k def
     return ma
   readM  (MUnboxed l h mba) idx     = {- assert (inShape exUb idx) $ -} unsafeRead  mba (linearIndex l h idx)
-  writeM (MUnboxed l h mba) idx elm = {- assert (inShape exUb idx) $ -} unsafeWrite mba (linearIndex l h idx) elm
+  --writeM (MUnboxed l h mba) idx elm = {- assert (inShape exUb idx) $ -} unsafeWrite mba (linearIndex l h idx) elm
+  writeM (MUnboxed l h mba) idx elm = write mba (linearIndex l h idx) elm
   {-# INLINE boundsM #-}
   {-# INLINE fromListM #-}
   {-# INLINE newM #-}
@@ -120,7 +121,8 @@ instance (Index sh) => MPrimArrayOps Boxed sh elm where
     forM_ [0 .. size l h -1] $ \k -> unsafeWrite mba k def
     return ma
   readM  (MBoxed l h mba) idx     = {- assert (inShape exUb idx) $ -} unsafeRead mba (linearIndex l h idx)
-  writeM (MBoxed l h mba) idx elm = {- assert (inShape exUb idx) $ -} GM.unsafeWrite mba (linearIndex l h idx) elm
+  --writeM (MBoxed l h mba) idx elm = {- assert (inShape exUb idx) $ -} GM.unsafeWrite mba (linearIndex l h idx) elm
+  writeM (MBoxed l h mba) idx elm = GM.write mba (linearIndex l h idx) elm
   {-# INLINE boundsM #-}
   {-# INLINE fromListM #-}
   {-# INLINE newM #-}

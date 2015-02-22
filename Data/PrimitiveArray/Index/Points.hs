@@ -63,7 +63,7 @@ instance Index PointL where
   {-# INLINE smallestLinearIndex #-}
   largestLinearIndex (PointL (_:.h)) = h
   {-# INLINE largestLinearIndex #-}
-  size (PointL (l:._)) (PointL (_:.h)) = h - l
+  size (PointL (l:._)) (PointL (_:.h)) = h - l + 1
   {-# INLINE size #-}
   inBounds (PointL (l:._)) (PointL (_:.h)) (PointL (x:.y)) = l<=x && x<=y && y<=h
   {-# INLINE inBounds #-}
