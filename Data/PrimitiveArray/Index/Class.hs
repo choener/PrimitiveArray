@@ -41,6 +41,11 @@ instance (FromJSON  a, FromJSON  b) => FromJSON  (a:.b)
 
 deriving instance (Read a, Read b) => Read (a:.b)
 
+instance (Arbitrary a, Arbitrary b) => Arbitrary (a :. b) where
+  arbitrary     = (:.) <$> arbitrary <*> arbitrary
+  shrink (a:.b) = (:.) <$> shrink a  <*> shrink b
+
+
 
 
 data Z = Z
@@ -55,6 +60,10 @@ instance Binary    Z
 instance Serialize Z
 instance ToJSON    Z
 instance FromJSON  Z
+
+instance Arbitrary Z where
+  arbitrary = return Z
+
 
 
 {-
@@ -160,9 +169,6 @@ instance (Index zs, Index z) => Index (zs:.z) where
   {-# INLINE size #-}
   inBounds (ls:.l) (hs:.h) (zs:.z) = inBounds ls hs zs && inBounds l h z
   {-# INLINE inBounds #-}
-
-instance Arbitrary Z where
-  arbitrary = return Z
 
 
 

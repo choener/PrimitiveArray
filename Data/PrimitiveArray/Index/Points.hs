@@ -28,28 +28,20 @@ import           Data.PrimitiveArray.Index.Class
 
 -- | A point in a right-linear grammar.
 
-newtype PointL = PointL (Int:.Int)
+newtype PointL = PointL Int
   deriving (Eq,Read,Show,Generic)
-
-pointL :: Int -> Int -> PointL
-pointL i j = PointL (i:.j)
-{-# INLINE pointL #-}
 
 -- | A point in a right-linear grammars.
 
-newtype PointR = PointR (Int:.Int)
+newtype PointR = PointR Int
   deriving (Eq,Read,Show,Generic)
-
-pointR :: Int -> Int -> PointR
-pointR i j = PointR (i:.j)
-{-# INLINE pointR #-}
 
 
 
 derivingUnbox "PointL"
-  [t| PointL -> (Int,Int) |]
-  [| \ (PointL (i:.j)) -> (i,j) |]
-  [| \ (i,j) -> PointL (i:.j) |]
+  [t| PointL -> Int    |]
+  [| \ (PointL i) -> i |]
+  [| \ i -> PointL i   |]
 
 instance Binary    PointL
 instance Serialize PointL
@@ -57,31 +49,31 @@ instance FromJSON  PointL
 instance ToJSON    PointL
 
 instance Index PointL where
-  linearIndex l _ (PointL (_:.z)) = z - smallestLinearIndex l
+  linearIndex _ _ (PointL z) = z
   {-# INLINE linearIndex #-}
-  smallestLinearIndex (PointL (l:._)) = l -- NOTE only the smallest left part is interesting
+  smallestLinearIndex (PointL l) = error "still needed?"
   {-# INLINE smallestLinearIndex #-}
-  largestLinearIndex (PointL (_:.h)) = h
+  largestLinearIndex (PointL h) = h
   {-# INLINE largestLinearIndex #-}
-  size (PointL (l:._)) (PointL (_:.h)) = h - l + 1
+  size (_) (PointL h) = h + 1
   {-# INLINE size #-}
-  inBounds (PointL (l:._)) (PointL (_:.h)) (PointL (x:.y)) = l<=x && x<=y && y<=h
+  inBounds (_) (PointL h) (PointL x) = 0<=x && x<=h
   {-# INLINE inBounds #-}
 
 instance IndexStream z => IndexStream (z:.PointL) where
-  streamUp (ls:.PointL (lf:._)) (hs:.PointL(_:.ht)) = SM.flatten mk step Unknown $ streamUp ls hs
+  streamUp (ls:.PointL lf) (hs:.PointL ht) = SM.flatten mk step Unknown $ streamUp ls hs
     where mk z = return (z,lf)
           step (z,k)
             | k > ht    = return $ SM.Done
-            | otherwise = return $ SM.Yield (z:.PointL (lf:.k)) (z,k+1)
+            | otherwise = return $ SM.Yield (z:.PointL k) (z,k+1)
           {-# Inline [0] mk   #-}
           {-# Inline [0] step #-}
   {-# Inline streamUp #-}
-  streamDown (ls:.PointL (lf:._)) (hs:.PointL(_:.ht)) = SM.flatten mk step Unknown $ streamDown ls hs
+  streamDown (ls:.PointL lf) (hs:.PointL ht) = SM.flatten mk step Unknown $ streamDown ls hs
     where mk z = return (z,ht)
           step (z,k)
             | k < lf    = return $ SM.Done
-            | otherwise = return $ SM.Yield (z:.PointL (lf:.k)) (z,k-1)
+            | otherwise = return $ SM.Yield (z:.PointL k) (z,k-1)
           {-# Inline [0] mk   #-}
           {-# Inline [0] step #-}
   {-# Inline streamDown #-}
@@ -91,9 +83,9 @@ instance IndexStream PointL
 instance Arbitrary PointL where
   arbitrary = do
     b <- choose (0,100)
-    return $ pointL 0 b
-  shrink (PointL (i:.j))
-    | i<j = [pointL i $ j-1]
+    return $ PointL b
+  shrink (PointL j)
+    | 0<j = [PointL $ j-1]
     | otherwise = []
 
 instance Arbitrary z => Arbitrary (z:.PointL) where
@@ -103,9 +95,9 @@ instance Arbitrary z => Arbitrary (z:.PointL) where
 
 
 derivingUnbox "PointR"
-  [t| PointR -> (Int,Int) |]
-  [| \ (PointR (i:.j)) -> (i,j) |]
-  [| \ (i,j) -> PointR (i:.j) |]
+  [t| PointR -> Int    |]
+  [| \ (PointR i) -> i |]
+  [| \ i -> PointR i   |]
 
 instance Binary    PointR
 instance Serialize PointR
@@ -113,7 +105,7 @@ instance FromJSON  PointR
 instance ToJSON    PointR
 
 instance Index PointR where
-  linearIndex l _ (PointR (z:._)) = undefined
+  linearIndex l _ (PointR z) = undefined
   {-# INLINE linearIndex #-}
   smallestLinearIndex = undefined
   {-# INLINE smallestLinearIndex #-}

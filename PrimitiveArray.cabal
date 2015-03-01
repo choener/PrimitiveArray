@@ -44,6 +44,7 @@ Library
     Data.PrimitiveArray.FillTables
     Data.PrimitiveArray.Index
     Data.PrimitiveArray.Index.Class
+    Data.PrimitiveArray.Index.Complement
     Data.PrimitiveArray.Index.Outside
     Data.PrimitiveArray.Index.Points
     Data.PrimitiveArray.Index.Set
