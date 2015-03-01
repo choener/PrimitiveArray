@@ -13,6 +13,7 @@
 module Data.PrimitiveArray.Index.Class where
 
 import           Control.Applicative
+import           Control.Monad (liftM2)
 import           Data.Aeson
 import           Data.Binary
 import           Data.Serialize
@@ -42,8 +43,8 @@ instance (FromJSON  a, FromJSON  b) => FromJSON  (a:.b)
 deriving instance (Read a, Read b) => Read (a:.b)
 
 instance (Arbitrary a, Arbitrary b) => Arbitrary (a :. b) where
-  arbitrary     = (:.) <$> arbitrary <*> arbitrary
-  shrink (a:.b) = (:.) <$> shrink a  <*> shrink b
+  arbitrary     = liftM2 (:.) arbitrary arbitrary
+  shrink (a:.b) = [ (a':.b) | a' <- shrink a ] ++ [ (a:.b') | b' <- shrink b ]
 
 
 
