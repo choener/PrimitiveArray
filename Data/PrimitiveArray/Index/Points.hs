@@ -88,10 +88,6 @@ instance Arbitrary PointL where
     | 0<j = [PointL $ j-1]
     | otherwise = []
 
-instance Arbitrary z => Arbitrary (z:.PointL) where
-  arbitrary = (:.) <$> arbitrary <*> arbitrary
-  shrink (z:.s) = (:.) <$> shrink z <*> shrink s
-
 
 
 derivingUnbox "PointR"
