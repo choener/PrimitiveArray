@@ -1,15 +1,4 @@
 
-{-# Language DefaultSignatures #-}
-{-# Language DeriveGeneric #-}
-{-# Language FlexibleContexts #-}
-{-# Language FlexibleInstances #-}
-{-# Language MultiParamTypeClasses #-}
-{-# Language RankNTypes #-}
-{-# Language StandaloneDeriving #-}
-{-# Language TemplateHaskell #-}
-{-# Language TypeFamilies #-}
-{-# Language TypeOperators #-}
-
 module Data.PrimitiveArray.Index.Class where
 
 import           Control.Applicative
@@ -27,6 +16,9 @@ import           Test.QuickCheck
 
 
 infixl 3 :.
+
+-- | Strict pairs -- as in @repa@.
+
 data a :. b = !a :. !b
   deriving (Eq,Ord,Show,Generic)
 
@@ -48,6 +40,33 @@ instance (Arbitrary a, Arbitrary b) => Arbitrary (a :. b) where
 
 
 
+infixl 3 :>
+
+-- | A different version of strict pairs. Makes for simpler type inference in
+-- multi-tape grammars.
+
+data a :> b = !a :> !b
+  deriving (Eq,Ord,Show,Generic)
+
+derivingUnbox "StrictIxPair"
+  [t| forall a b . (Unbox a, Unbox b) => (a:>b) -> (a,b) |]
+  [| \(a:>b) -> (a, b) |]
+  [| \(a,b)  -> (a:>b) |]
+
+instance (Binary    a, Binary    b) => Binary    (a:>b)
+instance (Serialize a, Serialize b) => Serialize (a:>b)
+instance (ToJSON    a, ToJSON    b) => ToJSON    (a:>b)
+instance (FromJSON  a, FromJSON  b) => FromJSON  (a:>b)
+
+deriving instance (Read a, Read b) => Read (a:>b)
+
+instance (Arbitrary a, Arbitrary b) => Arbitrary (a :> b) where
+  arbitrary = (:>) <$> arbitrary <*> arbitrary
+  shrink (a:>b) = (:>) <$> shrink a <*> shrink b
+
+
+
+-- | Base data constructor for multi-dimensional indices.
 
 data Z = Z
   deriving (Eq,Ord,Show,Generic)
@@ -67,17 +86,9 @@ instance Arbitrary Z where
 
 
 
-{-
-type family LH z where
-  LH (is:.i) = (LH is :. LH i)
-  LH Z       = Z
-  LH i       = Int
--}
-
--- |
---
--- TODO i need two functions: @enumUp :: i -> Stream@, and @flattenUp ::
--- i -> Stream -> Stream@.
+-- | Index structures for complex, heterogeneous indexing. Mostly designed for
+-- indexing in DP grammars, where the indices work for linear and context-free
+-- grammars on one or more tapes, for strings, sets, later on tree structures.
 
 class Index i where
 
@@ -85,29 +96,16 @@ class Index i where
   -- the linear index.
 
   linearIndex :: i -> i -> i -> Int
---  default linearIndex :: (Index (Z:.i), LH (Z:.i) ~ (Z:.LH i)) => LH i -> LH i -> i -> Int
---  linearIndex l h i = linearIndex (Z:.l) (Z:.h) (Z:.i)
---  {-# INLINE linearIndex #-}
 
   -- | Given an index element from the smallest subset, calculate the
   -- highest linear index that is *not* stored.
 
   smallestLinearIndex :: i -> Int -- LH i
---  default smallestLinearIndex :: (Index (Z:.i), LH (Z:.i) ~ (Z:.Int)) => i -> Int
---  smallestLinearIndex i =
---    let (Z:.l) = smallestLinearIndex (Z:.i)
---    in  l
---  {-# INLINE smallestLinearIndex #-}
 
   -- | Given an index element from the largest subset, calculate the
   -- highest linear index that *is* stored.
 
   largestLinearIndex :: i -> Int -- LH i
---  default largestLinearIndex :: (Index (Z:.i), LH (Z:.i) ~ (Z:.Int)) => i -> Int
---  largestLinearIndex i =
---    let (Z:.h) = largestLinearIndex (Z:.i)
---    in  h
---  {-# INLINE largestLinearIndex #-}
 
   -- | Given smallest and largest index, return the number of cells
   -- required for storage.
@@ -124,14 +122,20 @@ class Index i where
 
 class IndexStream i where
 
-  -- |
+  -- | This generates an index stream suitable for @forward@ structure filling.
+  -- The first index is the smallest (or the first indices considered are all
+  -- equally small in partially ordered sets). Larger indices follow up until
+  -- the largest one.
 
   streamUp   :: Monad m => i -> i -> Stream m i
   default streamUp :: (Monad m, IndexStream (Z:.i)) => i -> i -> Stream m i
   streamUp l h = SM.map (\(Z:.i) -> i) $ streamUp (Z:.l) (Z:.h)
   {-# INLINE streamUp #-}
 
-  -- |
+  -- | If 'streamUp' generates indices from smallest to largest, then
+  -- 'streamDown' generates indices from largest to smallest. Outside grammars
+  -- make implicit use of this. Asking for an axiom in backtracking requests
+  -- the first element from this stream.
 
   streamDown :: Monad m => i -> i -> Stream m i
   default streamDown :: (Monad m, IndexStream (Z:.i)) => i -> i -> Stream m i
@@ -141,7 +145,6 @@ class IndexStream i where
 
 
 instance Index Z where
---  type LH Z = Z
   linearIndex _ _ _ = 0
   {-# INLINE linearIndex #-}
   smallestLinearIndex _ = 0
@@ -170,43 +173,4 @@ instance (Index zs, Index z) => Index (zs:.z) where
   {-# INLINE size #-}
   inBounds (ls:.l) (hs:.h) (zs:.z) = inBounds ls hs zs && inBounds l h z
   {-# INLINE inBounds #-}
-
-
-
-infixl 3 :>
-data a :> b = !a :> !b
-  deriving (Eq,Ord,Show,Generic)
-
-derivingUnbox "StrictIxPair"
-  [t| forall a b . (Unbox a, Unbox b) => (a:>b) -> (a,b) |]
-  [| \(a:>b) -> (a, b) |]
-  [| \(a,b)  -> (a:>b) |]
-
-instance (Binary    a, Binary    b) => Binary    (a:>b)
-instance (Serialize a, Serialize b) => Serialize (a:>b)
-instance (ToJSON    a, ToJSON    b) => ToJSON    (a:>b)
-instance (FromJSON  a, FromJSON  b) => FromJSON  (a:>b)
-
-deriving instance (Read a, Read b) => Read (a:>b)
-
-instance (Arbitrary a, Arbitrary b) => Arbitrary (a :> b) where
-  arbitrary = (:>) <$> arbitrary <*> arbitrary
-  shrink (a:>b) = (:>) <$> shrink a <*> shrink b
-
--- The current implementation for inductive tuples is not efficient. We would
--- like to be able to generate index-streams for tree-like indices. An example
--- is @( (Set:.Interface) :. (Set:.Interface) )@.
---
--- TODO: isn't this just @streamUp (is:.i) = flattenUp i $ map (\i -> (i)) $
--- streamUp is@ ???
---
--- With better fusing @concatMap@ we should revisit this
-
-{-
-instance (IndexStream a, IndexStream b) => IndexStream (a:.b) where
-  streamUp (lis:.li) (his:.hi) = SM.concatMap (\is -> SM.map (\i -> (is:.i)) $ streamUp li hi) $ streamUp lis his
-  {-# INLINE streamUp #-}
-  streamDown (lis:.li) (his:.hi) = SM.concatMap (\is -> SM.map (\i -> (is:.i)) $ streamDown li hi) $ streamDown lis his
-  {-# INLINE streamDown #-}
--}
 

@@ -1,22 +1,16 @@
 
-{-# Language DeriveGeneric #-}
-{-# Language MultiParamTypeClasses #-}
-{-# Language RankNTypes #-}
-{-# Language TemplateHaskell #-}
-{-# Language TypeFamilies #-}
-
 module Data.PrimitiveArray.Index.Outside where
 
-import           Data.Aeson
-import           Data.Binary
-import           Data.Serialize
-import           Data.Vector.Unboxed.Deriving
-import           Data.Vector.Unboxed (Unbox(..))
-import           GHC.Generics
-import           Test.QuickCheck
-import           Control.Applicative
+import Control.Applicative
+import Data.Aeson
+import Data.Binary
+import Data.Serialize
+import Data.Vector.Unboxed.Deriving
+import Data.Vector.Unboxed (Unbox(..))
+import GHC.Generics
+import Test.QuickCheck
 
-import           Data.PrimitiveArray.Index.Class
+import Data.PrimitiveArray.Index.Class
 
 
 

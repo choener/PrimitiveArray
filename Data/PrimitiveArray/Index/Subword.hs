@@ -1,4 +1,7 @@
 
+-- | Index structure for context-free grammars on strings. A @Subword@ captures
+-- a pair @(i,j)@ with @i<=j@.
+
 module Data.PrimitiveArray.Index.Subword where
 
 import Control.DeepSeq (NFData(..))

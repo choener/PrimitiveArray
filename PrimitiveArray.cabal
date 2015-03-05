@@ -32,26 +32,18 @@ extra-source-files:
 
 Library
   Exposed-modules:
---    Data.Array.Repa.Bytes
---    Data.Array.Repa.ExtShape
---    Data.Array.Repa.Index.Lens
---    Data.Array.Repa.Index.Outside
---    Data.Array.Repa.Index.Points
---    Data.Array.Repa.Index.Set
---    Data.Array.Repa.Index.Subword
     Data.PrimitiveArray
     Data.PrimitiveArray.Class
+    Data.PrimitiveArray.Dense
     Data.PrimitiveArray.FillTables
     Data.PrimitiveArray.Index
     Data.PrimitiveArray.Index.Class
     Data.PrimitiveArray.Index.Complement
     Data.PrimitiveArray.Index.Outside
-    Data.PrimitiveArray.Index.Points
+    Data.PrimitiveArray.Index.Point
     Data.PrimitiveArray.Index.Set
     Data.PrimitiveArray.Index.Subword
-    Data.PrimitiveArray.Dense
---    Data.PrimitiveArray.QuickCheck
---    Data.PrimitiveArray.Zero
+    Data.PrimitiveArray.QuickCheck
   Build-depends: base                     == 4.*
                , aeson                    == 0.8.*
                , binary                   == 0.7.*
@@ -65,9 +57,15 @@ Library
                , vector                   == 0.10.*
                , vector-binary-instances  == 0.2.*
                , vector-th-unbox          == 0.2.*
-  default-extensions: DeriveGeneric
+  default-extensions: BangPatterns
+                    , DefaultSignatures
+                    , DeriveGeneric
+                    , FlexibleContexts
                     , FlexibleInstances
+                    , GeneralizedNewtypeDeriving
                     , MultiParamTypeClasses
+                    , RankNTypes
+                    , StandaloneDeriving
                     , TemplateHaskell
                     , TypeFamilies
                     , TypeOperators

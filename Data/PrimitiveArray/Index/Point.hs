@@ -1,5 +1,9 @@
 
-module Data.PrimitiveArray.Index.Points where
+-- | @Point@ index structures are used for left- and right-linear grammars.
+-- Such grammars have at most one syntactic symbol on each r.h.s. of a rule.
+-- The syntactic symbol needs to be in an outermost position.
+
+module Data.PrimitiveArray.Index.Point where
 
 import           Control.Applicative
 import           Data.Aeson
@@ -19,7 +23,8 @@ import           Data.PrimitiveArray.Index.Class
 
 
 
--- | A point in a right-linear grammar.
+-- | A point in a left-linear grammar. The syntactic symbol is in left-most
+-- position.
 
 newtype PointL = PointL Int
   deriving (Eq,Read,Show,Generic)

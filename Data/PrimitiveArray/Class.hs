@@ -8,21 +8,13 @@
 
 module Data.PrimitiveArray.Class where
 
-import Control.Applicative
-import Control.Exception (assert)
-import Control.Monad
-import Control.Monad.Primitive
-import Control.Monad.ST
-import Data.Primitive
-import Data.Primitive.Types
-import Prelude as P
-import System.IO.Unsafe
+import           Control.Applicative (Applicative, pure, (<$>), (<*>))
+import           Control.Exception (assert)
+import           Control.Monad (forM_)
+import           Control.Monad.Primitive (PrimMonad)
+import           Control.Monad.ST (runST)
+import           Prelude as P
 import qualified Data.Vector.Fusion.Stream as S
-
--- import Data.Array.Repa.Index
--- import Data.Array.Repa.Shape
---
--- import Data.Array.Repa.ExtShape
 
 import Data.PrimitiveArray.Index
 
@@ -34,6 +26,7 @@ data family MutArr (m :: * -> *) (arr :: *) :: *
 
 
 -- | The core set of operations for monadic arrays.
+
 class (Index sh) => MPrimArrayOps arr sh elm where
 
   -- | Return the bounds of the array. All bounds are inclusive, as in
@@ -105,7 +98,7 @@ class (Index sh) => PrimArrayMap arr sh e e' where
 -- non-optimized code.
 
 (!) :: PrimArrayOps arr sh elm => arr sh elm -> sh -> elm
-(!) arr idx = {- assert (inBounds arr idx) $ -} unsafeIndex arr idx
+(!) arr idx = assert (uncurry inBounds (bounds arr) idx) $ unsafeIndex arr idx
 {-# INLINE (!) #-}
 
 -- | Returns true if the index is valid for the array.

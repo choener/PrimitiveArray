@@ -1,22 +1,11 @@
 
-{-# Language BangPatterns #-}
-{-# Language DeriveGeneric #-}
-{-# Language EmptyDataDecls #-}
-{-# Language FlexibleInstances #-}
-{-# Language GeneralizedNewtypeDeriving #-}
-{-# Language MultiParamTypeClasses #-}
-{-# Language PatternGuards #-}
-{-# Language RankNTypes #-}
-{-# Language TemplateHaskell #-}
-{-# Language TypeFamilies #-}
-{-# Language TypeOperators #-}
-
 -- | Set with and without interfaces. We provide instances for sets, and
 -- sets with one or two interfaces. The @First@ and @Last@ annotation is
 -- purely cosmetical (apart from introducing type safety).
 
 module Data.PrimitiveArray.Index.Set where
 
+import           Control.Applicative ((<$>))
 import           Data.Aeson
 import           Data.Binary
 import           Data.Bits
@@ -25,11 +14,10 @@ import           Data.Serialize
 import           Data.Vector.Fusion.Stream.Size
 import           Data.Vector.Unboxed.Deriving
 import           Data.Vector.Unboxed (Unbox(..))
+import           Debug.Trace
 import           GHC.Generics
 import qualified Data.Vector.Fusion.Stream.Monadic as SM
 import qualified Data.Vector.Unboxed as VU
-import           Control.Applicative ((<$>))
-import           Debug.Trace
 
 import           Data.Bits.Ordered
 import           Data.PrimitiveArray.Index.Class
@@ -65,6 +53,8 @@ data Any
 
 -- | Newtype for a bitset. We'd use @Word@s but that requires more shape
 -- instances.
+--
+-- TODO can we use @Word@s now?
 
 newtype BitSet = BitSet Int
   deriving (Eq,Ord,Read,Show,Generic,FiniteBits,Ranked,Num,Bits)

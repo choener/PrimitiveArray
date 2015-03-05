@@ -1,26 +1,22 @@
 
-{-# Language DeriveGeneric #-}
-{-# Language MultiParamTypeClasses #-}
-{-# Language RankNTypes #-}
-{-# Language TemplateHaskell #-}
-{-# Language TypeFamilies #-}
-
 module Data.PrimitiveArray.Index.Complement where
 
-import           Data.Aeson
-import           Data.Binary
-import           Data.Serialize
-import           Data.Vector.Unboxed.Deriving
-import           Data.Vector.Unboxed (Unbox(..))
-import           GHC.Generics
-import           Test.QuickCheck
-import           Control.Applicative
+import Control.Applicative
+import Data.Aeson
+import Data.Binary
+import Data.Serialize
+import Data.Vector.Unboxed.Deriving
+import Data.Vector.Unboxed (Unbox(..))
+import GHC.Generics
+import Test.QuickCheck
 
-import           Data.PrimitiveArray.Index.Class
+import Data.PrimitiveArray.Index.Class
 
 
 
--- |
+-- | A special index wrapper -- like @Outside@. @Complement@ allows combining
+-- inside and outside symbols which complement each other. This then yields
+-- ensemble results for each index (you need @ADPfusion@ for this).
 
 newtype Complement z = C { unC :: z }
   deriving (Eq,Ord,Show,Generic)
