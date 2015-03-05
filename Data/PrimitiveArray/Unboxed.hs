@@ -11,6 +11,11 @@
 
 -- | Primitive arrays where the lower index is zero (or the equivalent of zero
 -- for newtypes and enumerations).
+--
+-- Actual @write@s to data structures use a more safe @write@ instead of
+-- the unsafe @unsafeWrite@. Writes also tend to occur much less in DP
+-- algorithms (say, N^2 writes for an N^3 time algorithm -- mostly reads
+-- are being executed).
 
 module Data.PrimitiveArray.Unboxed where
 
@@ -68,6 +73,7 @@ instance (Index sh, VUM.Unbox elm) => MPrimArrayOps Unboxed sh elm where
   readM  (MUnboxed l h mba) idx     = {- assert (inShape exUb idx) $ -} unsafeRead  mba (linearIndex l h idx)
   --writeM (MUnboxed l h mba) idx elm = {- assert (inShape exUb idx) $ -} unsafeWrite mba (linearIndex l h idx) elm
   writeM (MUnboxed l h mba) idx elm = write mba (linearIndex l h idx) elm
+  --writeM (MUnboxed l h mba) idx elm = unsafeWrite mba (linearIndex l h idx) elm
   {-# INLINE boundsM #-}
   {-# INLINE fromListM #-}
   {-# INLINE newM #-}
