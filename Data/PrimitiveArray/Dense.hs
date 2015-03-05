@@ -1,23 +1,17 @@
 
-{-# LANGUAGE CPP #-}
-{-# LANGUAGE DeriveDataTypeable #-}
-{-# LANGUAGE DeriveGeneric #-}
-{-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE StandaloneDeriving #-}
-{-# LANGUAGE TemplateHaskell #-}
-{-# LANGUAGE TypeFamilies #-}
-
--- | Primitive arrays where the lower index is zero (or the equivalent of zero
--- for newtypes and enumerations).
+-- | Dense primitive arrays where the lower index is zero (or the
+-- equivalent of zero for newtypes and enumerations).
 --
 -- Actual @write@s to data structures use a more safe @write@ instead of
 -- the unsafe @unsafeWrite@. Writes also tend to occur much less in DP
 -- algorithms (say, N^2 writes for an N^3 time algorithm -- mostly reads
 -- are being executed).
+--
+-- TODO consider if we want to force the lower index to be zero, or allow
+-- non-zero lower indices. Will have to be considered together with the
+-- @Index.Class@ module!
 
-module Data.PrimitiveArray.Unboxed where
+module Data.PrimitiveArray.Dense where
 
 import           Control.Exception (assert)
 import           Control.Monad

@@ -21,7 +21,6 @@ import Data.Vector.Fusion.Stream.Size
 
 import Data.PrimitiveArray.Class
 import Data.PrimitiveArray.Index
-import Data.PrimitiveArray.Unboxed
 
 
 

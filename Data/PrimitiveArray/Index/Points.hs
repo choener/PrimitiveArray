@@ -1,11 +1,4 @@
 
-{-# Language TypeOperators #-}
-{-# Language TemplateHaskell #-}
-{-# Language DeriveGeneric #-}
-{-# Language TypeFamilies #-}
-{-# Language MultiParamTypeClasses #-}
-{-# Language FlexibleInstances #-}
-
 module Data.PrimitiveArray.Index.Points where
 
 import           Control.Applicative

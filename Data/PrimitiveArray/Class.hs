@@ -1,9 +1,3 @@
-{-# LANGUAGE TypeFamilies #-}
-{-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE TypeOperators #-}
 
 -- | Vastly extended primitive arrays. Some basic ideas are now modeled after
 -- the vector package, especially the monadic mutable / pure immutable array
