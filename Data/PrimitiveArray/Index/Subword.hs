@@ -8,11 +8,12 @@ import Control.DeepSeq (NFData(..))
 import Data.Aeson (FromJSON,ToJSON)
 import Data.Binary (Binary)
 import Data.Serialize (Serialize)
-import Data.Vector.Fusion.Stream.Monadic (Step(..), flatten)
+import Data.Vector.Fusion.Stream.Monadic (Step(..), flatten, map)
 import Data.Vector.Fusion.Stream.Size
 import Data.Vector.Unboxed.Deriving
 import GHC.Generics (Generic)
 import Test.QuickCheck (Arbitrary(..), choose)
+import Prelude hiding (map)
 
 import Data.PrimitiveArray.Index.Class
 
@@ -108,7 +109,13 @@ instance IndexStream z => IndexStream (z:.Subword) where
           {-# Inline [0] step #-}
   {-# Inline streamDown #-}
 
-instance IndexStream Subword
+-- Default methods don't inline in a good way!
+
+instance IndexStream Subword where
+  streamUp l h = map (\(Z:.i) -> i) $ streamUp (Z:.l) (Z:.h)
+  {-# INLINE streamUp #-}
+  streamDown l h = map (\(Z:.i) -> i) $ streamDown (Z:.l) (Z:.h)
+  {-# INLINE streamDown #-}
 
 instance NFData Subword where
   rnf (Subword (i:.j)) = i `seq` rnf j
