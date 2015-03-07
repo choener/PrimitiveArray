@@ -56,7 +56,7 @@ triangularNumber x = (x * (x+1)) `quot` 2
 -- be the normal thing to use.
 
 upperTri :: Subword -> Int
-upperTri (Subword (i:.j)) = triangularNumber $ j-i
+upperTri (Subword (i:.j)) = triangularNumber $ j-i+1
 {-# INLINE upperTri #-}
 
 -- | Subword indexing. Given the longest subword and the current subword,
@@ -68,7 +68,7 @@ upperTri (Subword (i:.j)) = triangularNumber $ j-i
 subwordIndex :: Subword -> Subword -> Int
 subwordIndex (Subword (l:.n)) (Subword (i:.j)) = adr n (i,j) -- - adr n (l,n)
   where
-    adr n (i,j) = n*i - triangularNumber i + j
+    adr n (i,j) = (n+1)*i - triangularNumber i + j
 {-# INLINE subwordIndex #-}
 
 subwordFromIndex :: Subword -> Int -> Subword
@@ -84,7 +84,7 @@ instance Index Subword where
   {-# Inline smallestLinearIndex #-}
   largestLinearIndex = upperTri
   {-# Inline largestLinearIndex #-}
-  size _ h = upperTri h + 1
+  size _ h = upperTri h
   {-# Inline size #-}
   inBounds _ (Subword (_:.h)) (Subword (i:.j)) = 0<=i && i<=j && j<=h
   {-# Inline inBounds #-}
