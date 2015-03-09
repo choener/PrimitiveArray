@@ -26,12 +26,12 @@ import           Data.PrimitiveArray.Index.Class
 -- | A point in a left-linear grammar. The syntactic symbol is in left-most
 -- position.
 
-newtype PointL = PointL Int
+newtype PointL = PointL {fromPointL :: Int}
   deriving (Eq,Read,Show,Generic)
 
 -- | A point in a right-linear grammars.
 
-newtype PointR = PointR Int
+newtype PointR = PointR {fromPointR :: Int}
   deriving (Eq,Read,Show,Generic)
 
 

@@ -27,7 +27,7 @@ import Data.PrimitiveArray.Index.Class
 -- the smallest. We do, however, use (0,0) as the smallest as (0,k) gives
 -- successively smaller upper triangular parts.
 
-newtype Subword = Subword (Int:.Int)
+newtype Subword = Subword {fromSubword :: (Int:.Int)}
   deriving (Eq,Ord,Show,Generic,Read)
 
 derivingUnbox "Subword"
