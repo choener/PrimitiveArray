@@ -2,6 +2,7 @@
 module Data.PrimitiveArray.Index.Complement where
 
 import Control.Applicative
+import Control.DeepSeq (NFData(..))
 import Data.Aeson
 import Data.Binary
 import Data.Serialize
@@ -30,6 +31,10 @@ instance Binary    z => Binary    (Complement z)
 instance Serialize z => Serialize (Complement z)
 instance ToJSON    z => ToJSON    (Complement z)
 instance FromJSON  z => FromJSON  (Complement z)
+
+instance NFData z => NFData (Complement z) where
+  rnf (C z) = rnf z
+  {-# Inline rnf #-}
 
 instance Index i => Index (Complement i) where
   linearIndex (C l) (C h) (C i) = linearIndex l h i

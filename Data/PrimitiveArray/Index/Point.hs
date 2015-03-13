@@ -6,6 +6,7 @@
 module Data.PrimitiveArray.Index.Point where
 
 import           Control.Applicative
+import           Control.DeepSeq (NFData(..))
 import           Data.Aeson
 import           Data.Binary
 import           Data.Bits
@@ -45,6 +46,10 @@ instance Binary    PointL
 instance Serialize PointL
 instance FromJSON  PointL
 instance ToJSON    PointL
+
+instance NFData PointL where
+  rnf (PointL l) = rnf l
+  {-# Inline rnf #-}
 
 instance Index PointL where
   linearIndex _ _ (PointL z) = z
@@ -97,6 +102,10 @@ instance Binary    PointR
 instance Serialize PointR
 instance FromJSON  PointR
 instance ToJSON    PointR
+
+instance NFData PointR where
+  rnf (PointR l) = rnf l
+  {-# Inline rnf #-}
 
 instance Index PointR where
   linearIndex l _ (PointR z) = undefined

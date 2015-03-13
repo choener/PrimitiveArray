@@ -40,6 +40,10 @@ instance Serialize Subword
 instance FromJSON  Subword
 instance ToJSON    Subword
 
+instance NFData Subword where
+  rnf (Subword (i:.j)) = i `seq` rnf j
+  {-# Inline rnf #-}
+
 subword :: Int -> Int -> Subword
 subword i j = Subword (i:.j)
 {-# INLINE subword #-}
@@ -116,9 +120,6 @@ instance IndexStream Subword where
   {-# INLINE streamUp #-}
   streamDown l h = map (\(Z:.i) -> i) $ streamDown (Z:.l) (Z:.h)
   {-# INLINE streamDown #-}
-
-instance NFData Subword where
-  rnf (Subword (i:.j)) = i `seq` rnf j
 
 instance Arbitrary Subword where
   arbitrary = do

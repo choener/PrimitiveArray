@@ -6,6 +6,7 @@
 module Data.PrimitiveArray.Index.Set where
 
 import           Control.Applicative ((<$>))
+import           Control.DeepSeq (NFData(..))
 import           Data.Aeson
 import           Data.Binary
 import           Data.Bits
@@ -36,6 +37,15 @@ derivingUnbox "Interface"
   [t| forall t . Interface t -> Int |]
   [| \(Interface i) -> i            |]
   [| Interface                      |]
+
+instance Binary    (Interface t)
+instance Serialize (Interface t)
+instance ToJSON    (Interface t)
+instance FromJSON  (Interface t)
+
+instance NFData (Interface t) where
+  rnf (Interface i) = rnf i
+  {-# Inline rnf #-}
 
 -- | Declare the interface to be the start of a path.
 
@@ -68,6 +78,10 @@ derivingUnbox "BitSet"
   [t| BitSet     -> Int |]
   [| \(BitSet s) -> s   |]
   [| BitSet             |]
+
+instance NFData BitSet where
+  rnf (BitSet s) = rnf s
+  {-# Inline rnf #-}
 
 -- | A bitset with one interface.
 

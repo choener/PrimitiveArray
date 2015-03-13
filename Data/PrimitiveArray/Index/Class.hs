@@ -2,6 +2,7 @@
 module Data.PrimitiveArray.Index.Class where
 
 import           Control.Applicative
+import           Control.DeepSeq (NFData(..))
 import           Control.Monad (liftM2)
 import           Data.Aeson
 import           Data.Binary
@@ -34,6 +35,10 @@ instance (FromJSON  a, FromJSON  b) => FromJSON  (a:.b)
 
 deriving instance (Read a, Read b) => Read (a:.b)
 
+instance (NFData a, NFData b) => NFData (a:.b) where
+  rnf (a:.b) = rnf a `seq` rnf b
+  {-# Inline rnf #-}
+
 instance (Arbitrary a, Arbitrary b) => Arbitrary (a :. b) where
   arbitrary     = liftM2 (:.) arbitrary arbitrary
   shrink (a:.b) = [ (a':.b) | a' <- shrink a ] ++ [ (a:.b') | b' <- shrink b ]
@@ -60,6 +65,10 @@ instance (FromJSON  a, FromJSON  b) => FromJSON  (a:>b)
 
 deriving instance (Read a, Read b) => Read (a:>b)
 
+instance (NFData a, NFData b) => NFData (a:>b) where
+  rnf (a:>b) = rnf a `seq` rnf b
+  {-# Inline rnf #-}
+
 instance (Arbitrary a, Arbitrary b) => Arbitrary (a :> b) where
   arbitrary = (:>) <$> arbitrary <*> arbitrary
   shrink (a:>b) = (:>) <$> shrink a <*> shrink b
@@ -83,6 +92,10 @@ instance FromJSON  Z
 
 instance Arbitrary Z where
   arbitrary = return Z
+
+instance NFData Z where
+  rnf Z = ()
+  {-# Inline rnf #-}
 
 
 

@@ -2,6 +2,7 @@
 module Data.PrimitiveArray.Index.Outside where
 
 import Control.Applicative
+import Control.DeepSeq (NFData(..))
 import Data.Aeson
 import Data.Binary
 import Data.Serialize
@@ -32,6 +33,10 @@ instance Binary    z => Binary    (Outside z)
 instance Serialize z => Serialize (Outside z)
 instance ToJSON    z => ToJSON    (Outside z)
 instance FromJSON  z => FromJSON  (Outside z)
+
+instance NFData z => NFData (Outside z) where
+  rnf (O z) = rnf z
+  {-# Inline rnf #-}
 
 instance Index i => Index (Outside i) where
   linearIndex (O l) (O h) (O i) = linearIndex l h i
