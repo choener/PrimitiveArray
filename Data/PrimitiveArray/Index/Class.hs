@@ -78,7 +78,7 @@ instance (Arbitrary a, Arbitrary b) => Arbitrary (a :> b) where
 -- | Base data constructor for multi-dimensional indices.
 
 data Z = Z
-  deriving (Eq,Ord,Show,Generic)
+  deriving (Eq,Ord,Read,Show,Generic)
 
 derivingUnbox "Z"
   [t| Z -> () |]

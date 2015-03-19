@@ -20,7 +20,7 @@ import Data.PrimitiveArray.Index.Class
 -- ensemble results for each index (you need @ADPfusion@ for this).
 
 newtype Complement z = C { unC :: z }
-  deriving (Eq,Ord,Show,Generic)
+  deriving (Eq,Ord,Read,Show,Generic)
 
 derivingUnbox "Complement"
   [t| forall z . Unbox z => Complement z -> z |]

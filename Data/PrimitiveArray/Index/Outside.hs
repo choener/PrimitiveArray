@@ -22,7 +22,7 @@ import Data.PrimitiveArray.Index.Class
 -- but otherwise work as before.
 
 newtype Outside z = O { unO :: z }
-  deriving (Eq,Ord,Show,Generic)
+  deriving (Eq,Ord,Read,Show,Generic)
 
 derivingUnbox "Outside"
   [t| forall z . Unbox z => Outside z -> z |]
