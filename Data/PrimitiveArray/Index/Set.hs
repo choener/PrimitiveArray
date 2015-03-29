@@ -418,11 +418,42 @@ instance SetPredSucc (BitSet:>Interface i:>Interface j) where
     , let s' = BitSet $ 2^(cs+1)-1
     , let is' = lsbActive s'
     , Just js' <- succActive is' s'   = Just (s':>Interface is':>Interface js')
-    | otherwise = error $ show (s,is,js)
     where ch = popCount h
           cs = popCount s
   setPred (l:>il:>jl) (h:>ih:>jh) (s:>Interface is:>Interface js)
-    | False = undefined
+    -- early termination
+    | cs < cl                         = Nothing
+    -- in case nothing was set, set initial set @1@ with both interfaces
+    -- pointing to the same element
+    | cs == 0                         = Nothing
+    -- when only a single element is set, we just permute the population
+    -- and set the single interface
+    | cs == 1
+    , Just s'  <- popPermutation ch s
+    , let is' = lsbActive s'          = Just (s':>Interface is':>Interface is')
+    -- return the single @0@ set
+    | cs == 1                         = Just (0:>Interface (-1):>Interface (-1))
+    -- try advancing only one of the interfaces, doesn't collide with @is@
+    | Just js' <- succActive js (s `clearBit` is) = Just (s:>Interface is:>Interface js')
+    -- advance other interface, 
+    | Just is' <- succActive is s
+    , let js' = lsbActive (s `clearBit` is')      = Just (s:>Interface is':>Interface js')
+    -- find another permutation of the population
+    | Just s'  <- popPermutation ch s
+    , let is' = lsbActive s'
+    , Just js' <- succActive is' s'   = Just (s':>Interface is':>Interface js')
+    -- decreasing the population forbidden by upper limit
+    | cs <= cl                        = Nothing
+    -- decrease population
+    | cs > cl && cs > 2
+    , let s' = BitSet $ 2^(cs-1)-1
+    , let is' = lsbActive s'
+    , Just js' <- succActive is' s'   = Just (s':>Interface is':>Interface js')
+    -- decrease population to single-element sets
+    | cs > cl && cs == 2              = Just (1:>Interface 0:>Interface 0)
+    where cl = popCount l
+          ch = popCount h
+          cs = popCount s
   {-# Inline setSucc #-}
   {-# Inline setPred #-}
 
