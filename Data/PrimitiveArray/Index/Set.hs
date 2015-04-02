@@ -19,6 +19,7 @@ import           Debug.Trace
 import           GHC.Generics
 import qualified Data.Vector.Fusion.Stream.Monadic as SM
 import qualified Data.Vector.Unboxed as VU
+import           Test.QuickCheck (Arbitrary(..), choose)
 
 import           Data.Bits.Ordered
 import           Data.PrimitiveArray.Index.Class
@@ -310,4 +311,37 @@ instance SetPredSucc (BitSet:>Interface i:>Interface j) where
           ch = popCount h
           cs = popCount s
   {-# Inline setPred #-}
+
+
+
+instance Arbitrary BitSet where
+  arbitrary = BitSet <$> choose (0,2^14-1)
+  shrink s = [ s `clearBit` a | a <- activeBitsL s ]
+
+instance Arbitrary (BitSet:>Interface i) where
+  arbitrary = do
+    s <- arbitrary
+    if s==0
+      then return (s:>Interface (-1))
+      else do i <- undefined $ activeBitsL s
+              return (s:>Interface i)
+  shrink (s:>i) = [ (s `clearBit` a:>i)
+                  | a <- activeBitsL s
+                  , Interface a /= i ]
+
+instance Arbitrary (BitSet:>Interface i:>Interface j) where
+  arbitrary = do
+    s <- arbitrary
+    case (popCount s) of
+      0 -> return (s:>Interface (-1):>Interface (-1))
+      1 -> do i <- undefined $ activeBitsL s
+              return (s:>Interface i:>Interface i)
+      _ -> do i <- undefined $ activeBitsL s
+              j <- undefined $ activeBitsL (s `clearBit` i)
+              return (s:>Interface i:>Interface j)
+  shrink (s:>i:>j) = [ (s `clearBit` a:>i:>j)
+                     | a <- activeBitsL s
+                     , Interface a /= i, Interface a /= j ]
+
+
 

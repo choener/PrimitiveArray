@@ -127,6 +127,6 @@ instance Arbitrary Subword where
     b <- choose (0,100)
     return $ Subword (min a b :. max a b)
   shrink (Subword (i:.j))
-    | i<j       = [Subword (i:.j-1)]
+    | i<j       = [Subword (i:.j-1), Subword (i+1:.j)]
     | otherwise = []
 
