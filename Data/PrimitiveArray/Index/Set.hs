@@ -151,22 +151,30 @@ instance IndexStream z => IndexStream (z:.(BitSet:>Interface i)) where
 
 instance IndexStream z => IndexStream (z:.(BitSet:>Interface i:>Interface j)) where
   streamUp (ls:.l@(sl:>_:>_)) (hs:.h@(sh:>_:>_)) = SM.flatten mk step Unknown $ streamUp ls hs
-    where mk z | sl > sh = return (z , Nothing)
-               | cl == 0 = return (z , Just (BitSet 0 :> Interface (-1) :> Interface (-1)))
-               | cl == 1 = let i = lsbActive sl
-                           in  return (z , Just (sl :> Interface i :> Interface i))
+    where mk z | sl > sh   = return (z , Nothing)
+               | cl == 0   = return (z , Just (BitSet 0 :> Interface (-1) :> Interface (-1)))
+               | cl == 1   = let i = lsbActive sl
+                             in  return (z , Just (sl :> Interface i :> Interface i))
+               | otherwise = let i = lsbActive sl; j = lsbActive (sl `clearBit` i)
+                             in  return (z , Just (sl :> Interface i :> Interface j))
                where cl = popCount sl
           step (z , Nothing) = return $ SM.Done
           step (z , Just t ) = return $ SM.Yield (z:.t) (z , setSucc l h t)
+          {-# Inline [0] mk   #-}
+          {-# Inline [0] step #-}
   {-# Inline streamUp #-}
   streamDown (ls:.l@(sl:>_:>_)) (hs:.h@(sh:>_:>_)) = SM.flatten mk step Unknown $ streamDown ls hs
-    where mk z | sl > sh = return (z , Nothing)
-               | ch == 0 = return (z , Just (BitSet 0 :> Interface (-1) :> Interface (-1)))
-               | ch == 1 = let i = lsbActive sh
-                           in  return (z , Just (sh :> Interface i :> Interface i))
+    where mk z | sl > sh   = return (z , Nothing)
+               | ch == 0   = return (z , Just (BitSet 0 :> Interface (-1) :> Interface (-1)))
+               | ch == 1   = let i = lsbActive sh
+                             in  return (z , Just (sh :> Interface i :> Interface i))
+               | otherwise = let i = lsbActive sh; j = lsbActive sh
+                             in  return (z , Just (sh :> Interface i :> Interface j))
                where ch = popCount sh
           step (z , Nothing) = return $ SM.Done
           step (z , Just t ) = return $ SM.Yield (z:.t) (z , setPred l h t)
+          {-# Inline [0] mk   #-}
+          {-# Inline [0] step #-}
   {-# Inline streamDown #-}
 
 
