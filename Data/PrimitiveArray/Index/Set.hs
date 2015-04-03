@@ -314,7 +314,7 @@ instance SetPredSucc (BitSet:>Interface i:>Interface j) where
 
 
 
-arbitraryBitSetMax = 10
+arbitraryBitSetMax = 6
 
 instance Arbitrary BitSet where
   arbitrary = BitSet <$> choose (0,2^arbitraryBitSetMax-1)
