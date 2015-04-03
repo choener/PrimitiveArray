@@ -318,7 +318,8 @@ arbitraryBitSetMax = 6
 
 instance Arbitrary BitSet where
   arbitrary = BitSet <$> choose (0,2^arbitraryBitSetMax-1)
-  shrink s = [ s `clearBit` a | a <- activeBitsL s ]
+  shrink s = let s' = [ s `clearBit` a | a <- activeBitsL s ]
+             in  s' ++ concatMap shrink s'
 
 instance Arbitrary (BitSet:>Interface i) where
   arbitrary = do
@@ -327,10 +328,12 @@ instance Arbitrary (BitSet:>Interface i) where
       then return (s:>Interface (-1))
       else do i <- elements $ activeBitsL s
               return (s:>Interface i)
-  shrink (s:>i) = [ (s `clearBit` a:>i)
-                  | a <- activeBitsL s
-                  , Interface a /= i ]
-                  ++ [ 0 :> Interface (-1) | popCount s == 1 ]
+  shrink (s:>i) =
+    let s' = [ (s `clearBit` a:>i)
+             | a <- activeBitsL s
+             , Interface a /= i ]
+             ++ [ 0 :> Interface (-1) | popCount s == 1 ]
+    in  s' ++ concatMap shrink s'
 
 instance Arbitrary (BitSet:>Interface i:>Interface j) where
   arbitrary = do
@@ -342,14 +345,16 @@ instance Arbitrary (BitSet:>Interface i:>Interface j) where
       _ -> do i <- elements $ activeBitsL s
               j <- elements $ activeBitsL (s `clearBit` i)
               return (s:>Interface i:>Interface j)
-  shrink (s:>i:>j) = [ (s `clearBit` a:>i:>j)
-                     | a <- activeBitsL s
-                     , Interface a /= i, Interface a /= j ]
-                     ++ [ 0 `setBit` a :> Interface a :> Interface a
-                        | popCount s == 2
-                        , a <- activeBitsL s ]
-                     ++ [ 0 :> Interface (-1) :> Interface (-1)
-                        | popCount s == 1 ]
+  shrink (s:>i:>j) =
+    let s' = [ (s `clearBit` a:>i:>j)
+             | a <- activeBitsL s
+             , Interface a /= i, Interface a /= j ]
+             ++ [ 0 `setBit` a :> Interface a :> Interface a
+                | popCount s == 2
+                , a <- activeBitsL s ]
+             ++ [ 0 :> Interface (-1) :> Interface (-1)
+                | popCount s == 1 ]
+    in  s' ++ concatMap shrink s'
 
 
 

@@ -48,7 +48,8 @@ instance (Arbitrary a, Arbitrary b) => Arbitrary (a :. b) where
 infixl 3 :>
 
 -- | A different version of strict pairs. Makes for simpler type inference in
--- multi-tape grammars.
+-- multi-tape grammars. We use @:>@ when we have special needs, like
+-- non-recursive instances on inductives tuples, as used for set indices.
 
 data a :> b = !a :> !b
   deriving (Eq,Ord,Show,Generic)
@@ -69,9 +70,9 @@ instance (NFData a, NFData b) => NFData (a:>b) where
   rnf (a:>b) = rnf a `seq` rnf b
   {-# Inline rnf #-}
 
-instance (Arbitrary a, Arbitrary b) => Arbitrary (a :> b) where
-  arbitrary = (:>) <$> arbitrary <*> arbitrary
-  shrink (a:>b) = (:>) <$> shrink a <*> shrink b
+--instance (Arbitrary a, Arbitrary b) => Arbitrary (a :> b) where
+--  arbitrary = (:>) <$> arbitrary <*> arbitrary
+--  shrink (a:>b) = (:>) <$> shrink a <*> shrink b
 
 
 
