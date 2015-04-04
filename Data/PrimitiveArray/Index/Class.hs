@@ -188,3 +188,15 @@ instance (Index zs, Index z) => Index (zs:.z) where
   inBounds (ls:.l) (hs:.h) (zs:.z) = inBounds ls hs zs && inBounds l h z
   {-# INLINE inBounds #-}
 
+instance (Index zs, Index z) => Index (zs:>z) where
+  linearIndex (ls:>l) (hs:>h) (zs:>z) = linearIndex ls hs zs * (largestLinearIndex h + 1) + linearIndex l h z
+  {-# INLINE linearIndex #-}
+  smallestLinearIndex (ls:>l) = smallestLinearIndex ls * smallestLinearIndex l
+  {-# INLINE smallestLinearIndex #-}
+  largestLinearIndex (hs:>h) = largestLinearIndex hs * largestLinearIndex h
+  {-# INLINE largestLinearIndex #-}
+  size (ls:>l) (hs:>h) = size ls hs * (size l h)
+  {-# INLINE size #-}
+  inBounds (ls:>l) (hs:>h) (zs:>z) = inBounds ls hs zs && inBounds l h z
+  {-# INLINE inBounds #-}
+
