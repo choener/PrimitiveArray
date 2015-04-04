@@ -136,14 +136,14 @@ instance IndexStream z => IndexStream (z:.BitSet) where
 
 instance IndexStream z => IndexStream (z:.(BitSet:>Interface i)) where
   streamUp (ls:.l@(sl:>_)) (hs:.h@(sh:>_)) = SM.flatten mk step Unknown $ streamUp ls hs
-    where mk z = return (z, (if sl<=sh then Just (sl:>(Interface $ lsbActive sl)) else Nothing))
+    where mk z = return (z, (if sl<=sh then Just (sl:>(Interface . max 0 $ lsbActive sl)) else Nothing))
           step (z , Nothing) = return $ SM.Done
           step (z,  Just t ) = return $ SM.Yield (z:.t) (z , setSucc l h t)
           {-# Inline [0] mk   #-}
           {-# Inline [0] step #-}
   {-# Inline streamUp #-}
   streamDown (ls:.l@(sl:>_)) (hs:.h@(sh:>_)) = SM.flatten mk step Unknown $ streamDown ls hs
-    where mk z = return (z, (if sl<=sh then Just (sh:>(Interface $ lsbActive sh)) else Nothing))
+    where mk z = return (z, (if sl<=sh then Just (sh:>(Interface . max 0 $ lsbActive sh)) else Nothing))
           step (z , Nothing) = return $ SM.Done
           step (z , Just t ) = return $ SM.Yield (z:.t) (z , setPred l h t)
           {-# Inline [0] mk   #-}
@@ -153,7 +153,7 @@ instance IndexStream z => IndexStream (z:.(BitSet:>Interface i)) where
 instance IndexStream z => IndexStream (z:.(BitSet:>Interface i:>Interface j)) where
   streamUp (ls:.l@(sl:>_:>_)) (hs:.h@(sh:>_:>_)) = SM.flatten mk step Unknown $ streamUp ls hs
     where mk z | sl > sh   = return (z , Nothing)
-               | cl == 0   = return (z , Just (BitSet 0 :> Interface (-1) :> Interface (-1)))
+               | cl == 0   = return (z , Just (BitSet 0 :> Interface 0 :> Interface 0))
                | cl == 1   = let i = lsbActive sl
                              in  return (z , Just (sl :> Interface i :> Interface i))
                | otherwise = let i = lsbActive sl; j = lsbActive (sl `clearBit` i)
@@ -166,7 +166,7 @@ instance IndexStream z => IndexStream (z:.(BitSet:>Interface i:>Interface j)) wh
   {-# Inline streamUp #-}
   streamDown (ls:.l@(sl:>_:>_)) (hs:.h@(sh:>_:>_)) = SM.flatten mk step Unknown $ streamDown ls hs
     where mk z | sl > sh   = return (z , Nothing)
-               | ch == 0   = return (z , Just (BitSet 0 :> Interface (-1) :> Interface (-1)))
+               | ch == 0   = return (z , Just (BitSet 0 :> Interface 0 :> Interface 0))
                | ch == 1   = let i = lsbActive sh
                              in  return (z , Just (sh :> Interface i :> Interface i))
                | otherwise = let i = lsbActive sh; j = lsbActive sh
@@ -184,8 +184,8 @@ instance IndexStream z => IndexStream (z:.(BitSet:>Interface i:>Interface j)) wh
 -- sets with interfaces and without interfaces with one function.
 --
 -- The functions are not written recursively, as we currently only have
--- three cases, and we not to "reset" while generating successors and
--- predecessors.
+-- three cases, and we do not want to "reset" while generating successors
+-- and predecessors.
 --
 -- Note that sets have a partial order. Within the group of element with
 -- the same @popCount@, we use @popPermutation@ which has the same stepping
@@ -237,7 +237,7 @@ instance SetPredSucc (BitSet:>Interface i) where
     | Just is' <- succActive is s     = Just (s:>Interface is')
     | Just s'  <- popPermutation ch s = Just (s':>Interface (lsbActive s'))
     | cs <= cl                        = Nothing
-    | cs > cl                         = let s' = BitSet $ 2^(cs-1)-1 in Just (s' :> Interface (lsbActive s'))
+    | cs > cl                         = let s' = BitSet $ 2^(cs-1)-1 in Just (s' :> Interface (max 0 $ lsbActive s'))
     where cl = popCount l
           ch = popCount h
           cs = popCount s
@@ -288,7 +288,7 @@ instance SetPredSucc (BitSet:>Interface i:>Interface j) where
     , Just s'  <- popPermutation ch s
     , let is' = lsbActive s'          = Just (s':>Interface is':>Interface is')
     -- return the single @0@ set
-    | cs == 1                         = Just (0:>Interface (-1):>Interface (-1))
+    | cs == 1                         = Just (0:>Interface 0:>Interface 0)
     -- try advancing only one of the interfaces, doesn't collide with @is@
     | Just js' <- succActive js (s `clearBit` is) = Just (s:>Interface is:>Interface js')
     -- advance other interface, 
@@ -325,21 +325,21 @@ instance Arbitrary (BitSet:>Interface i) where
   arbitrary = do
     s <- arbitrary
     if s==0
-      then return (s:>Interface (-1))
+      then return (s:>Interface 0)
       else do i <- elements $ activeBitsL s
               return (s:>Interface i)
   shrink (s:>i) =
     let s' = [ (s `clearBit` a:>i)
              | a <- activeBitsL s
              , Interface a /= i ]
-             ++ [ 0 :> Interface (-1) | popCount s == 1 ]
+             ++ [ 0 :> Interface 0 | popCount s == 1 ]
     in  s' ++ concatMap shrink s'
 
 instance Arbitrary (BitSet:>Interface i:>Interface j) where
   arbitrary = do
     s <- arbitrary
     case (popCount s) of
-      0 -> return (s:>Interface (-1):>Interface (-1))
+      0 -> return (s:>Interface 0:>Interface 0)
       1 -> do i <- elements $ activeBitsL s
               return (s:>Interface i:>Interface i)
       _ -> do i <- elements $ activeBitsL s
@@ -352,7 +352,7 @@ instance Arbitrary (BitSet:>Interface i:>Interface j) where
              ++ [ 0 `setBit` a :> Interface a :> Interface a
                 | popCount s == 2
                 , a <- activeBitsL s ]
-             ++ [ 0 :> Interface (-1) :> Interface (-1)
+             ++ [ 0 :> Interface 0 :> Interface 0
                 | popCount s == 1 ]
     in  s' ++ concatMap shrink s'
 
