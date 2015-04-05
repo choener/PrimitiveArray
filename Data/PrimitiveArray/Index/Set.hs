@@ -68,7 +68,10 @@ data Any
 -- TODO can we use @Word@s now?
 
 newtype BitSet = BitSet { getBitSet :: Int }
-  deriving (Eq,Ord,Read,Show,Generic,FiniteBits,Ranked,Num,Bits)
+  deriving (Eq,Ord,Read,Generic,FiniteBits,Ranked,Num,Bits)
+
+instance Show BitSet where
+  show (BitSet s) = "<" ++ (show $ activeBitsL s) ++ ">(" ++ show s ++ ")"
 
 instance Binary    BitSet
 instance Serialize BitSet
@@ -311,6 +314,39 @@ instance SetPredSucc (BitSet:>Interface i:>Interface j) where
           ch = popCount h
           cs = popCount s
   {-# Inline setPred #-}
+
+
+
+-- | Assuming a bitset on bits @[0 .. highbit]@, we can apply a mask that
+-- stretches out those bits over @[0 .. higherBit]@ with @highbit <=
+-- higherBit@. Any active interfaces are correctly set as well.
+
+class ApplyMask s where
+  type Mask s :: *
+  applyMask :: Mask s -> s -> s
+
+instance ApplyMask BitSet where
+  type Mask BitSet = BitSet
+  applyMask = movePopulation
+  {-# Inline applyMask #-}
+
+instance ApplyMask (BitSet :> Interface i) where
+  type Mask (BitSet :> Interface i) = BitSet
+  applyMask m (s:>i)
+    | popCount s == 0 = 0:>0
+    | otherwise       = movePopulation m s :> (Iter . getBitSet . movePopulation m . BitSet $ 2 ^ getIter i)
+  {-# Inline applyMask #-}
+
+instance ApplyMask (BitSet :> Interface i :> Interface j) where
+  type Mask (BitSet :> Interface i :> Interface j) = BitSet
+  applyMask m (s:>i:>j)
+    | popCount s == 0 = 0:>0:>0
+    | popCount s == 1 = s' :> i' :> Iter (getIter i')
+    | otherwise       = s' :> i' :> j'
+    where s' = movePopulation m s
+          i' = Iter . getBitSet . movePopulation m . BitSet $ 2 ^ getIter i
+          j' = Iter . getBitSet . movePopulation m . BitSet $ 2 ^ getIter j
+  {-# Inline applyMask #-}
 
 
 
