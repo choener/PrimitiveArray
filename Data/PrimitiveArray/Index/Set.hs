@@ -317,28 +317,75 @@ instance SetPredSucc (BitSet:>Interface i:>Interface j) where
 
 
 
+-- | @Fixed@ allows us to fix some or all bits of a bitset, thereby
+-- providing @succ/pred@ operations which are only partially free.
+--
+-- The mask is lazy, this allows us to have @undefined@ for @l@ and @h@.
+
+data Fixed t = Fixed { getFixedMask :: (Mask t) , getFixed :: !t }
+
+instance SetPredSucc (Fixed BitSet) where
+  setPred (Fixed _ l) (Fixed _ h) (Fixed !m s) = Fixed m <$> setPred l h (s .&. complement m)
+  {-# Inline setPred #-}
+  setSucc (Fixed _ l) (Fixed _ h) (Fixed !m s) = Fixed m <$> setSucc l h (s .&. complement m)
+  {-# Inline setSucc #-}
+
+instance SetPredSucc (Fixed (BitSet:>Interface i)) where
+  setPred (Fixed _ (l:>li)) (Fixed _ (h:>hi)) (Fixed !m (s:>i))
+    | s `testBit` getIter i = (Fixed m . (:> i) . ( `setBit` getIter i)) <$> setPred l h (s .&. complement m)
+    | otherwise             = (Fixed m) <$> setPred (l:>li) (h:>hi) ((s .&. complement m):>i)
+  {-# Inline setPred #-}
+  setSucc (Fixed _ (l:>li)) (Fixed _ (h:>hi)) (Fixed !m (s:>i))
+    | s `testBit` getIter i = (Fixed m . (:> i) . ( `setBit` getIter i)) <$> setSucc l h (s .&. complement m)
+    | otherwise             = (Fixed m) <$> setSucc (l:>li) (h:>hi) ((s .&. complement m):>i)
+  {-# Inline setSucc #-}
+
+instance SetPredSucc (Fixed (BitSet:>Interface i:>Interface j)) where
+  setPred (Fixed _ (l:>li:>lj)) (Fixed _ (h:>hi:>hj)) (Fixed !m (s:>i:>j))
+    | s `testBit` getIter i && s `testBit` getIter j
+    = (Fixed m . (\z       -> (z `setBit` getIter i `setBit` getIter j:>i:>j ))) <$> setPred l h (s .&. complement m)
+    | s `testBit` getIter i
+    = (Fixed m . (\(z:>j') -> (z `setBit` getIter i                   :>i:>j'))) <$> setPred (l:>lj) (h:>hj) (s .&. complement m :>j)
+    | s `testBit` getIter j
+    = (Fixed m . (\(z:>i') -> (z `setBit` getIter j                   :>i':>j))) <$> setPred (l:>li) (h:>hi) (s .&. complement m :>i)
+  {-# Inline setPred #-}
+  setSucc (Fixed _ (l:>li:>lj)) (Fixed _ (h:>hi:>hj)) (Fixed !m (s:>i:>j))
+    | s `testBit` getIter i && s `testBit` getIter j
+    = (Fixed m . (\z       -> (z `setBit` getIter i `setBit` getIter j:>i:>j ))) <$> setSucc l h (s .&. complement m)
+    | s `testBit` getIter i
+    = (Fixed m . (\(z:>j') -> (z `setBit` getIter i                   :>i:>j'))) <$> setSucc (l:>lj) (h:>hj) (s .&. complement m :>j)
+    | s `testBit` getIter j
+    = (Fixed m . (\(z:>i') -> (z `setBit` getIter j                   :>i':>j))) <$> setSucc (l:>li) (h:>hi) (s .&. complement m :>i)
+  {-# Inline setSucc #-}
+
+
+-- | Masks are used quite often for different types of bitsets. We liberate
+-- them as a type family.
+
+type family Mask s :: *
+
+type instance Mask BitSet = BitSet
+type instance Mask (BitSet :> Interface i) = BitSet
+type instance Mask (BitSet :> Interface i :> Interface j) = BitSet
+
 -- | Assuming a bitset on bits @[0 .. highbit]@, we can apply a mask that
 -- stretches out those bits over @[0 .. higherBit]@ with @highbit <=
 -- higherBit@. Any active interfaces are correctly set as well.
 
 class ApplyMask s where
-  type Mask s :: *
   applyMask :: Mask s -> s -> s
 
 instance ApplyMask BitSet where
-  type Mask BitSet = BitSet
   applyMask = movePopulation
   {-# Inline applyMask #-}
 
 instance ApplyMask (BitSet :> Interface i) where
-  type Mask (BitSet :> Interface i) = BitSet
   applyMask m (s:>i)
     | popCount s == 0 = 0:>0
     | otherwise       = movePopulation m s :> (Iter . getBitSet . movePopulation m . BitSet $ 2 ^ getIter i)
   {-# Inline applyMask #-}
 
 instance ApplyMask (BitSet :> Interface i :> Interface j) where
-  type Mask (BitSet :> Interface i :> Interface j) = BitSet
   applyMask m (s:>i:>j)
     | popCount s == 0 = 0:>0:>0
     | popCount s == 1 = s' :> i' :> Iter (getIter i')
