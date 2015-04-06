@@ -353,8 +353,8 @@ instance ToJSON    (Interface t)
 instance FromJSON  (Interface t)
 -}
 
-instance NFData (Fixed t)
-
+instance NFData (Fixed t) where
+  rnf (Fixed m s) = m `seq` s `seq` ()
 
 instance SetPredSucc (Fixed BitSet) where
   setPred (Fixed _ l) (Fixed _ h) (Fixed !m s) = Fixed m <$> setPred l h (s .&. complement m)

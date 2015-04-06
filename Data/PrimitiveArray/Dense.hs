@@ -45,11 +45,13 @@ instance (Serialize sh, Serialize e, Unbox e) => Serialize (Unboxed sh e)
 instance (ToJSON    sh, ToJSON    e, Unbox e) => ToJSON    (Unboxed sh e)
 instance (FromJSON  sh, FromJSON  e, Unbox e) => FromJSON  (Unboxed sh e)
 
-instance NFData (Unboxed sh e)
+instance NFData (Unboxed sh e) where
+  rnf !_ = ()
 
 data instance MutArr m (Unboxed sh e) = MUnboxed !sh !sh !(VU.MVector (PrimState m) e)
 
-instance NFData (MutArr m (Unboxed sh e))
+instance NFData (MutArr m (Unboxed sh e)) where
+  rnf !_ = ()
 
 instance (Index sh, Unbox elm) => MPrimArrayOps Unboxed sh elm where
   boundsM (MUnboxed l h _) = (l,h)
@@ -101,11 +103,13 @@ instance (Serialize sh, Serialize e)  => Serialize (Boxed sh e)
 instance (ToJSON    sh, ToJSON    e)  => ToJSON    (Boxed sh e)
 instance (FromJSON  sh, FromJSON  e)  => FromJSON  (Boxed sh e)
 
-instance NFData (Boxed sh e)
+instance NFData (Boxed sh e) where
+  rnf !_ = ()
 
 data instance MutArr m (Boxed sh e) = MBoxed !sh !sh !(V.MVector (PrimState m) e)
 
-instance NFData (MutArr m (Boxed sh e))
+instance NFData (MutArr m (Boxed sh e)) where
+  rnf !_ = ()
 
 instance (Index sh) => MPrimArrayOps Boxed sh elm where
   boundsM (MBoxed l h _) = (l,h)
