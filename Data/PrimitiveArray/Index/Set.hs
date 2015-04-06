@@ -5,7 +5,7 @@
 
 module Data.PrimitiveArray.Index.Set where
 
-import           Control.Applicative ((<$>))
+import           Control.Applicative ((<$>),(<*>))
 import           Control.DeepSeq (NFData(..))
 import           Data.Aeson (FromJSON,ToJSON)
 import           Data.Binary (Binary)
@@ -317,12 +317,44 @@ instance SetPredSucc (BitSet:>Interface i:>Interface j) where
 
 
 
+-- | Masks are used quite often for different types of bitsets. We liberate
+-- them as a type family.
+
+type family Mask s :: *
+
+type instance Mask BitSet = BitSet
+type instance Mask (BitSet :> Interface i) = BitSet
+type instance Mask (BitSet :> Interface i :> Interface j) = BitSet
+
+
+
 -- | @Fixed@ allows us to fix some or all bits of a bitset, thereby
 -- providing @succ/pred@ operations which are only partially free.
 --
 -- The mask is lazy, this allows us to have @undefined@ for @l@ and @h@.
 
 data Fixed t = Fixed { getFixedMask :: (Mask t) , getFixed :: !t }
+
+deriving instance (Eq t     , Eq      (Mask t)) => Eq      (Fixed t)
+deriving instance (Ord t    , Ord     (Mask t)) => Ord     (Fixed t)
+deriving instance (Read t   , Read    (Mask t)) => Read    (Fixed t)
+deriving instance (Show t   , Show    (Mask t)) => Show    (Fixed t)
+deriving instance (Generic t, Generic (Mask t)) => Generic (Fixed t)
+
+derivingUnbox "Fixed"
+  [t| forall t . (Unbox t, Unbox (Mask t)) => Fixed t -> (Mask t, t) |]
+  [| \(Fixed m s) -> (m,s)              |]
+  [| uncurry Fixed                      |]
+
+instance (Generic t, Generic (Mask t), Binary t   , Binary    (Mask t)) => Binary    (Fixed t)
+instance (Generic t, Generic (Mask t), Serialize t, Serialize (Mask t)) => Serialize (Fixed t)
+{- -- TODO do json instances work automatically here?
+instance ToJSON    (Interface t)
+instance FromJSON  (Interface t)
+-}
+
+instance NFData (Fixed t)
+
 
 instance SetPredSucc (Fixed BitSet) where
   setPred (Fixed _ l) (Fixed _ h) (Fixed !m s) = Fixed m <$> setPred l h (s .&. complement m)
@@ -359,15 +391,6 @@ instance SetPredSucc (Fixed (BitSet:>Interface i:>Interface j)) where
   {-# Inline setSucc #-}
 
 
--- | Masks are used quite often for different types of bitsets. We liberate
--- them as a type family.
-
-type family Mask s :: *
-
-type instance Mask BitSet = BitSet
-type instance Mask (BitSet :> Interface i) = BitSet
-type instance Mask (BitSet :> Interface i :> Interface j) = BitSet
-
 -- | Assuming a bitset on bits @[0 .. highbit]@, we can apply a mask that
 -- stretches out those bits over @[0 .. higherBit]@ with @highbit <=
 -- higherBit@. Any active interfaces are correctly set as well.
@@ -398,6 +421,10 @@ instance ApplyMask (BitSet :> Interface i :> Interface j) where
 
 
 arbitraryBitSetMax = 6
+
+instance (Arbitrary t, Arbitrary (Mask t)) => Arbitrary (Fixed t) where
+  arbitrary = Fixed <$> arbitrary <*> arbitrary
+  shrink (Fixed m s) = [ Fixed m' s' | m' <- shrink m, s' <- shrink s ]
 
 instance Arbitrary BitSet where
   arbitrary = BitSet <$> choose (0,2^arbitraryBitSetMax-1)
