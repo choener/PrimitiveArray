@@ -26,6 +26,10 @@ import           Data.PrimitiveArray.Index.Class
 
 
 
+-- * @newtype@s, @data@ types, @class@es.
+
+
+
 -- | Certain sets have an interface, a particular element with special
 -- meaning. In this module, certain ``meanings'' are already provided.
 -- These include a @First@ element and a @Last@ element. We phantom-type
@@ -33,20 +37,6 @@ import           Data.PrimitiveArray.Index.Class
 
 newtype Interface t = Iter { getIter :: Int }
   deriving (Eq,Ord,Read,Show,Generic,Num)
-
-derivingUnbox "Interface"
-  [t| forall t . Interface t -> Int |]
-  [| \(Iter i) -> i            |]
-  [| Iter                      |]
-
-instance Binary    (Interface t)
-instance Serialize (Interface t)
-instance ToJSON    (Interface t)
-instance FromJSON  (Interface t)
-
-instance NFData (Interface t) where
-  rnf (Iter i) = rnf i
-  {-# Inline rnf #-}
 
 -- | Declare the interface to be the start of a path.
 
@@ -70,23 +60,6 @@ data Any
 newtype BitSet = BitSet { getBitSet :: Int }
   deriving (Eq,Ord,Read,Generic,FiniteBits,Ranked,Num,Bits)
 
-instance Show BitSet where
-  show (BitSet s) = "<" ++ (show $ activeBitsL s) ++ ">(" ++ show s ++ ")"
-
-instance Binary    BitSet
-instance Serialize BitSet
-instance ToJSON    BitSet
-instance FromJSON  BitSet
-
-derivingUnbox "BitSet"
-  [t| BitSet     -> Int |]
-  [| \(BitSet s) -> s   |]
-  [| BitSet             |]
-
-instance NFData BitSet where
-  rnf (BitSet s) = rnf s
-  {-# Inline rnf #-}
-
 -- | A bitset with one interface.
 
 type BS1I i = BitSet:>Interface i
@@ -95,17 +68,63 @@ type BS1I i = BitSet:>Interface i
 
 type BS2I i j = BitSet:>Interface i:>Interface j
 
-instance Index BitSet where
-  linearIndex l _ (BitSet z) = z - smallestLinearIndex l -- (2 ^ popCount l - 1)
-  {-# INLINE linearIndex #-}
-  smallestLinearIndex l = 2 ^ popCount l - 1
-  {-# INLINE smallestLinearIndex #-}
-  largestLinearIndex h = 2 ^ popCount h - 1
-  {-# INLINE largestLinearIndex #-}
-  size l h = 2 ^ popCount h - 2 ^ popCount l + 1
-  {-# INLINE size #-}
-  inBounds l h z = popCount l <= popCount z && popCount z <= popCount h
-  {-# INLINE inBounds #-}
+-- | Successor and Predecessor for sets. Designed as a class to accomodate
+-- sets with interfaces and without interfaces with one function.
+--
+-- The functions are not written recursively, as we currently only have
+-- three cases, and we do not want to "reset" while generating successors
+-- and predecessors.
+--
+-- Note that sets have a partial order. Within the group of element with
+-- the same @popCount@, we use @popPermutation@ which has the same stepping
+-- order for both, @setSucc@ and @setPred@.
+
+class SetPredSucc s where
+  -- | Set successor. The first argument is the lower set limit, the second
+  -- the upper set limit, the third the current set.
+  setSucc :: s -> s -> s -> Maybe s
+  -- | Set predecessor. The first argument is the lower set limit, the
+  -- second the upper set limit, the third the current set.
+  setPred :: s -> s -> s -> Maybe s
+
+-- | Masks are used quite often for different types of bitsets. We liberate
+-- them as a type family.
+
+type family Mask s :: *
+
+-- | @Fixed@ allows us to fix some or all bits of a bitset, thereby
+-- providing @succ/pred@ operations which are only partially free.
+--
+-- The mask is lazy, this allows us to have @undefined@ for @l@ and @h@.
+
+data Fixed t = Fixed { getFixedMask :: (Mask t) , getFixed :: !t }
+
+-- | Assuming a bitset on bits @[0 .. highbit]@, we can apply a mask that
+-- stretches out those bits over @[0 .. higherBit]@ with @highbit <=
+-- higherBit@. Any active interfaces are correctly set as well.
+
+class ApplyMask s where
+  applyMask :: Mask s -> s -> s
+
+
+
+-- * Instances
+
+
+
+derivingUnbox "Interface"
+  [t| forall t . Interface t -> Int |]
+  [| \(Iter i) -> i            |]
+  [| Iter                      |]
+
+instance Binary    (Interface t)
+instance Serialize (Interface t)
+instance ToJSON    (Interface t)
+instance FromJSON  (Interface t)
+
+instance NFData (Interface t) where
+  rnf (Iter i) = rnf i
+  {-# Inline rnf #-}
 
 instance Index (Interface i) where
   linearIndex l _ (Iter z) = z - smallestLinearIndex l
@@ -117,6 +136,37 @@ instance Index (Interface i) where
   size (Iter l) (Iter h) = h - l + 1
   {-# INLINE size #-}
   inBounds l h z = l <= z && z <= h
+  {-# INLINE inBounds #-}
+
+
+
+derivingUnbox "BitSet"
+  [t| BitSet     -> Int |]
+  [| \(BitSet s) -> s   |]
+  [| BitSet             |]
+
+instance Show BitSet where
+  show (BitSet s) = "<" ++ (show $ activeBitsL s) ++ ">(" ++ show s ++ ")"
+
+instance Binary    BitSet
+instance Serialize BitSet
+instance ToJSON    BitSet
+instance FromJSON  BitSet
+
+instance NFData BitSet where
+  rnf (BitSet s) = rnf s
+  {-# Inline rnf #-}
+
+instance Index BitSet where
+  linearIndex l _ (BitSet z) = z - smallestLinearIndex l -- (2 ^ popCount l - 1)
+  {-# INLINE linearIndex #-}
+  smallestLinearIndex l = 2 ^ popCount l - 1
+  {-# INLINE smallestLinearIndex #-}
+  largestLinearIndex h = 2 ^ popCount h - 1
+  {-# INLINE largestLinearIndex #-}
+  size l h = 2 ^ popCount h - 2 ^ popCount l + 1
+  {-# INLINE size #-}
+  inBounds l h z = popCount l <= popCount z && popCount z <= popCount h
   {-# INLINE inBounds #-}
 
 
@@ -183,27 +233,6 @@ instance IndexStream z => IndexStream (z:.(BitSet:>Interface i:>Interface j)) wh
 
 
 
--- | Successor and Predecessor for sets. Designed as a class to accomodate
--- sets with interfaces and without interfaces with one function.
---
--- The functions are not written recursively, as we currently only have
--- three cases, and we do not want to "reset" while generating successors
--- and predecessors.
---
--- Note that sets have a partial order. Within the group of element with
--- the same @popCount@, we use @popPermutation@ which has the same stepping
--- order for both, @setSucc@ and @setPred@.
-
-class SetPredSucc s where
-  -- | Set successor. The first argument is the lower set limit, the second
-  -- the upper set limit, the third the current set.
-  setSucc :: s -> s -> s -> Maybe s
-  -- | Set predecessor. The first argument is the lower set limit, the
-  -- second the upper set limit, the third the current set.
-  setPred :: s -> s -> s -> Maybe s
-
-
-
 instance SetPredSucc BitSet where
   setSucc l h s
     | cs > ch                        = Nothing
@@ -222,8 +251,6 @@ instance SetPredSucc BitSet where
           ch = popCount h
           cs = popCount s
   {-# Inline setPred #-}
-
-
 
 instance SetPredSucc (BitSet:>Interface i) where
   setSucc (l:>il) (h:>ih) (s:>Iter is)
@@ -245,8 +272,6 @@ instance SetPredSucc (BitSet:>Interface i) where
           ch = popCount h
           cs = popCount s
   {-# Inline setPred #-}
-
-
 
 instance SetPredSucc (BitSet:>Interface i:>Interface j) where
   setSucc (l:>il:>jl) (h:>ih:>jh) (s:>Iter is:>Iter js)
@@ -317,34 +342,24 @@ instance SetPredSucc (BitSet:>Interface i:>Interface j) where
 
 
 
--- | Masks are used quite often for different types of bitsets. We liberate
--- them as a type family.
-
-type family Mask s :: *
-
 type instance Mask BitSet = BitSet
+
 type instance Mask (BitSet :> Interface i) = BitSet
+
 type instance Mask (BitSet :> Interface i :> Interface j) = BitSet
 
 
 
--- | @Fixed@ allows us to fix some or all bits of a bitset, thereby
--- providing @succ/pred@ operations which are only partially free.
---
--- The mask is lazy, this allows us to have @undefined@ for @l@ and @h@.
-
-data Fixed t = Fixed { getFixedMask :: (Mask t) , getFixed :: !t }
+derivingUnbox "Fixed"
+  [t| forall t . (Unbox t, Unbox (Mask t)) => Fixed t -> (Mask t, t) |]
+  [| \(Fixed m s) -> (m,s)              |]
+  [| uncurry Fixed                      |]
 
 deriving instance (Eq t     , Eq      (Mask t)) => Eq      (Fixed t)
 deriving instance (Ord t    , Ord     (Mask t)) => Ord     (Fixed t)
 deriving instance (Read t   , Read    (Mask t)) => Read    (Fixed t)
 deriving instance (Show t   , Show    (Mask t)) => Show    (Fixed t)
 deriving instance (Generic t, Generic (Mask t)) => Generic (Fixed t)
-
-derivingUnbox "Fixed"
-  [t| forall t . (Unbox t, Unbox (Mask t)) => Fixed t -> (Mask t, t) |]
-  [| \(Fixed m s) -> (m,s)              |]
-  [| uncurry Fixed                      |]
 
 instance (Generic t, Generic (Mask t), Binary t   , Binary    (Mask t)) => Binary    (Fixed t)
 instance (Generic t, Generic (Mask t), Serialize t, Serialize (Mask t)) => Serialize (Fixed t)
@@ -391,12 +406,6 @@ instance SetPredSucc (Fixed (BitSet:>Interface i:>Interface j)) where
   {-# Inline setSucc #-}
 
 
--- | Assuming a bitset on bits @[0 .. highbit]@, we can apply a mask that
--- stretches out those bits over @[0 .. higherBit]@ with @highbit <=
--- higherBit@. Any active interfaces are correctly set as well.
-
-class ApplyMask s where
-  applyMask :: Mask s -> s -> s
 
 instance ApplyMask BitSet where
   applyMask = movePopulation
@@ -465,6 +474,4 @@ instance Arbitrary (BitSet:>Interface i:>Interface j) where
              ++ [ 0 :> Iter 0 :> Iter 0
                 | popCount s == 1 ]
     in  s' ++ concatMap shrink s'
-
-
 
