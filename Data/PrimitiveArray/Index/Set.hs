@@ -408,13 +408,13 @@ instance SetPredSucc (Fixed (BitSet:>Interface i:>Interface j)) where
 
 
 instance ApplyMask BitSet where
-  applyMask = movePopulation
+  applyMask = popMove
   {-# Inline applyMask #-}
 
 instance ApplyMask (BitSet :> Interface i) where
   applyMask m (s:>i)
     | popCount s == 0 = 0:>0
-    | otherwise       = movePopulation m s :> (Iter . getBitSet . movePopulation m . BitSet $ 2 ^ getIter i)
+    | otherwise       = popMove m s :> (Iter . getBitSet . popMove m . BitSet $ 2 ^ getIter i)
   {-# Inline applyMask #-}
 
 instance ApplyMask (BitSet :> Interface i :> Interface j) where
@@ -422,9 +422,9 @@ instance ApplyMask (BitSet :> Interface i :> Interface j) where
     | popCount s == 0 = 0:>0:>0
     | popCount s == 1 = s' :> i' :> Iter (getIter i')
     | otherwise       = s' :> i' :> j'
-    where s' = movePopulation m s
-          i' = Iter . getBitSet . movePopulation m . BitSet $ 2 ^ getIter i
-          j' = Iter . getBitSet . movePopulation m . BitSet $ 2 ^ getIter j
+    where s' = popMove m s
+          i' = Iter . getBitSet . popMove m . BitSet $ 2 ^ getIter i
+          j' = Iter . getBitSet . popMove m . BitSet $ 2 ^ getIter j
   {-# Inline applyMask #-}
 
 
