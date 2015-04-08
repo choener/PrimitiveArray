@@ -189,14 +189,14 @@ instance IndexStream z => IndexStream (z:.BitSet) where
 
 instance IndexStream z => IndexStream (z:.(BitSet:>Interface i)) where
   streamUp (ls:.l@(sl:>_)) (hs:.h@(sh:>_)) = SM.flatten mk step Unknown $ streamUp ls hs
-    where mk z = return (z, (if sl<=sh then Just (sl:>(Iter . max 0 $ lsbActive sl)) else Nothing))
+    where mk z = return (z, (if sl<=sh then Just (sl:>(Iter . max 0 $ lsbZ sl)) else Nothing))
           step (z , Nothing) = return $ SM.Done
           step (z,  Just t ) = return $ SM.Yield (z:.t) (z , setSucc l h t)
           {-# Inline [0] mk   #-}
           {-# Inline [0] step #-}
   {-# Inline streamUp #-}
   streamDown (ls:.l@(sl:>_)) (hs:.h@(sh:>_)) = SM.flatten mk step Unknown $ streamDown ls hs
-    where mk z = return (z, (if sl<=sh then Just (sh:>(Iter . max 0 $ lsbActive sh)) else Nothing))
+    where mk z = return (z, (if sl<=sh then Just (sh:>(Iter . max 0 $ lsbZ sh)) else Nothing))
           step (z , Nothing) = return $ SM.Done
           step (z , Just t ) = return $ SM.Yield (z:.t) (z , setPred l h t)
           {-# Inline [0] mk   #-}
@@ -207,9 +207,9 @@ instance IndexStream z => IndexStream (z:.(BitSet:>Interface i:>Interface j)) wh
   streamUp (ls:.l@(sl:>_:>_)) (hs:.h@(sh:>_:>_)) = SM.flatten mk step Unknown $ streamUp ls hs
     where mk z | sl > sh   = return (z , Nothing)
                | cl == 0   = return (z , Just (0:>0:>0))
-               | cl == 1   = let i = lsbActive sl
+               | cl == 1   = let i = lsbZ sl
                              in  return (z , Just (sl :> Iter i :> Iter i))
-               | otherwise = let i = lsbActive sl; j = lsbActive (sl `clearBit` i)
+               | otherwise = let i = lsbZ sl; j = lsbZ (sl `clearBit` i)
                              in  return (z , Just (sl :> Iter i :> Iter j))
                where cl = popCount sl
           step (z , Nothing) = return $ SM.Done
@@ -220,9 +220,9 @@ instance IndexStream z => IndexStream (z:.(BitSet:>Interface i:>Interface j)) wh
   streamDown (ls:.l@(sl:>_:>_)) (hs:.h@(sh:>_:>_)) = SM.flatten mk step Unknown $ streamDown ls hs
     where mk z | sl > sh   = return (z , Nothing)
                | ch == 0   = return (z , Just (0:>0:>0))
-               | ch == 1   = let i = lsbActive sh
+               | ch == 1   = let i = lsbZ sh
                              in  return (z , Just (sh :> Iter i :> Iter i))
-               | otherwise = let i = lsbActive sh; j = lsbActive sh
+               | otherwise = let i = lsbZ sh; j = lsbZ sh
                              in  return (z , Just (sh :> Iter i :> Iter j))
                where ch = popCount sh
           step (z , Nothing) = return $ SM.Done
@@ -255,19 +255,19 @@ instance SetPredSucc BitSet where
 instance SetPredSucc (BitSet:>Interface i) where
   setSucc (l:>il) (h:>ih) (s:>Iter is)
     | cs > ch                         = Nothing
-    | Just is' <- succActive is s     = Just (s:>Iter is')
-    | Just s'  <- popPermutation ch s = Just (s':>Iter (lsbActive s'))
+    | Just is' <- maybeNextActive is s     = Just (s:>Iter is')
+    | Just s'  <- popPermutation ch s = Just (s':>Iter (lsbZ s'))
     | cs >= ch                        = Nothing
-    | cs < ch                         = let s' = BitSet $ 2^(cs+1)-1 in Just (s' :> Iter (lsbActive s'))
+    | cs < ch                         = let s' = BitSet $ 2^(cs+1)-1 in Just (s' :> Iter (lsbZ s'))
     where ch = popCount h
           cs = popCount s
   {-# Inline setSucc #-}
   setPred (l:>il) (h:>ih) (s:>Iter is)
     | cs < cl                         = Nothing
-    | Just is' <- succActive is s     = Just (s:>Iter is')
-    | Just s'  <- popPermutation ch s = Just (s':>Iter (lsbActive s'))
+    | Just is' <- maybeNextActive is s     = Just (s:>Iter is')
+    | Just s'  <- popPermutation ch s = Just (s':>Iter (lsbZ s'))
     | cs <= cl                        = Nothing
-    | cs > cl                         = let s' = BitSet $ 2^(cs-1)-1 in Just (s' :> Iter (max 0 $ lsbActive s'))
+    | cs > cl                         = let s' = BitSet $ 2^(cs-1)-1 in Just (s' :> Iter (max 0 $ lsbZ s'))
     where cl = popCount l
           ch = popCount h
           cs = popCount s
@@ -284,23 +284,23 @@ instance SetPredSucc (BitSet:>Interface i:>Interface j) where
     -- and set the single interface
     | cs == 1
     , Just s'  <- popPermutation ch s
-    , let is' = lsbActive s'          = Just (s':>Iter is':>Iter is')
+    , let is' = lsbZ s'          = Just (s':>Iter is':>Iter is')
     -- try advancing only one of the interfaces, doesn't collide with @is@
-    | Just js' <- succActive js (s `clearBit` is) = Just (s:>Iter is:>Iter js')
+    | Just js' <- maybeNextActive js (s `clearBit` is) = Just (s:>Iter is:>Iter js')
     -- advance other interface, 
-    | Just is' <- succActive is s
-    , let js' = lsbActive (s `clearBit` is')      = Just (s:>Iter is':>Iter js')
+    | Just is' <- maybeNextActive is s
+    , let js' = lsbZ (s `clearBit` is')      = Just (s:>Iter is':>Iter js')
     -- find another permutation of the population
     | Just s'  <- popPermutation ch s
-    , let is' = lsbActive s'
-    , Just js' <- succActive is' s'   = Just (s':>Iter is':>Iter js')
+    , let is' = lsbZ s'
+    , Just js' <- maybeNextActive is' s'   = Just (s':>Iter is':>Iter js')
     -- increasing the population forbidden by upper limit
     | cs >= ch                        = Nothing
     -- increase population
     | cs < ch
     , let s' = BitSet $ 2^(cs+1)-1
-    , let is' = lsbActive s'
-    , Just js' <- succActive is' s'   = Just (s':>Iter is':>Iter js')
+    , let is' = lsbZ s'
+    , Just js' <- maybeNextActive is' s'   = Just (s':>Iter is':>Iter js')
     where ch = popCount h
           cs = popCount s
   {-# Inline setSucc #-}
@@ -314,25 +314,25 @@ instance SetPredSucc (BitSet:>Interface i:>Interface j) where
     -- and set the single interface
     | cs == 1
     , Just s'  <- popPermutation ch s
-    , let is' = lsbActive s'          = Just (s':>Iter is':>Iter is')
+    , let is' = lsbZ s'          = Just (s':>Iter is':>Iter is')
     -- return the single @0@ set
     | cs == 1                         = Just (0:>0:>0)
     -- try advancing only one of the interfaces, doesn't collide with @is@
-    | Just js' <- succActive js (s `clearBit` is) = Just (s:>Iter is:>Iter js')
+    | Just js' <- maybeNextActive js (s `clearBit` is) = Just (s:>Iter is:>Iter js')
     -- advance other interface, 
-    | Just is' <- succActive is s
-    , let js' = lsbActive (s `clearBit` is')      = Just (s:>Iter is':>Iter js')
+    | Just is' <- maybeNextActive is s
+    , let js' = lsbZ (s `clearBit` is')      = Just (s:>Iter is':>Iter js')
     -- find another permutation of the population
     | Just s'  <- popPermutation ch s
-    , let is' = lsbActive s'
-    , Just js' <- succActive is' s'   = Just (s':>Iter is':>Iter js')
+    , let is' = lsbZ s'
+    , Just js' <- maybeNextActive is' s'   = Just (s':>Iter is':>Iter js')
     -- decreasing the population forbidden by upper limit
     | cs <= cl                        = Nothing
     -- decrease population
     | cs > cl && cs > 2
     , let s' = BitSet $ 2^(cs-1)-1
-    , let is' = lsbActive s'
-    , Just js' <- succActive is' s'   = Just (s':>Iter is':>Iter js')
+    , let is' = lsbZ s'
+    , Just js' <- maybeNextActive is' s'   = Just (s':>Iter is':>Iter js')
     -- decrease population to single-element sets
     | cs > cl && cs == 2              = Just (1:>0:>0)
     where cl = popCount l
