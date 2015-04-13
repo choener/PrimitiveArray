@@ -391,13 +391,13 @@ instance SetPredSucc (Fixed BitSet) where
   setPred (Fixed _ l) (Fixed _ h) (Fixed !m s) = Fixed m <$> setPred l h (s .&. complement m)
   {-# Inline setPred #-}
   --setSucc (Fixed _ l) (Fixed _ h) (Fixed !m s) = Fixed m <$> setSucc l h (s .&. complement m)
-  setSucc (Fixed _ l) (Fixed _ h) (Fixed !m s) = Fixed m <$> p -- setSucc l h (s .&. complement m)
+  setSucc (Fixed _ l) (Fixed _ h) (Fixed !m s) = Fixed m <$> (p .|. f) -- return population, now again including the fixed part @f@
     where f = s .&. m             -- these bits are fixed to @1@
           n = s .&. complement m  -- these bits are free to be @0@ or @1@ and may move around; this means that @n `subset` complement m@
           to = complement m       -- once we have calculated our permutation, we move it to the correct places via @to@
           n' = popShiftR to n     -- population without holes. all primes denote that we are in hole-free space.
-          p' = popPermutation (popCount $ h .&. to) n'
-          p  = popShiftL to <$> p'
+          p' = popPermutation (popCount $ h .&. to) n'  -- permutate the shifted population
+          p  = popShiftL to <$> p'  -- undo the shift
   {-# Inline setSucc #-}
 
 instance SetPredSucc (Fixed (BitSet:>Interface i)) where
