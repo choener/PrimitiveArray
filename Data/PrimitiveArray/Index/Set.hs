@@ -100,7 +100,7 @@ type family Mask s :: *
 -- @f = getFixedMask .&. getFixed@ are the fixed bits.
 -- @n = getFixed .&. complement getFixedMask@ are the free bits.
 -- @to = complement getFixed@ is the to move mask
--- @n' = popShiftL ones n@ yields the population after the move
+-- @n' = popShiftR to n@ yields the population after the move
 -- @p = popPermutation undefined n'@ yields the new population permutation
 -- @p' = popShiftL to p@ yields the population moved back
 -- @final = p' .|. f@
@@ -383,18 +383,21 @@ instance NFData (Fixed t) where
 -- fixed AND that during permutations / increases in popCount we do not set
 -- an already fixed bit -- as otherwise we lose one in popCount.
 
-test :: BitSet -> Maybe (Fixed BitSet)
-test k = setSucc (Fixed 0 0) (Fixed 0 7) (Fixed 4 k)
+testBsS :: BitSet -> Maybe (Fixed BitSet)
+testBsS k = setSucc (Fixed 0 0) (Fixed 0 7) (Fixed 4 k)
+{-# NoInline testBsS #-}
 
 instance SetPredSucc (Fixed BitSet) where
   setPred (Fixed _ l) (Fixed _ h) (Fixed !m s) = Fixed m <$> setPred l h (s .&. complement m)
   {-# Inline setPred #-}
   --setSucc (Fixed _ l) (Fixed _ h) (Fixed !m s) = Fixed m <$> setSucc l h (s .&. complement m)
-  setSucc (Fixed _ l) (Fixed _ h) (Fixed !m s) = Fixed m <$> undefined -- setSucc l h (s .&. complement m)
+  setSucc (Fixed _ l) (Fixed _ h) (Fixed !m s) = Fixed m <$> p -- setSucc l h (s .&. complement m)
     where f = s .&. m             -- these bits are fixed to @1@
-          n = s .&. complement m  -- these bits are free to be @0@ or @1@ and may move around
-          to = complement m       -- once we have calculated our permutation, we move it to the correct places.
-          n' = undefined
+          n = s .&. complement m  -- these bits are free to be @0@ or @1@ and may move around; this means that @n `subset` complement m@
+          to = complement m       -- once we have calculated our permutation, we move it to the correct places via @to@
+          n' = popShiftR to n     -- population without holes. all primes denote that we are in hole-free space.
+          p' = popPermutation (popCount $ h .&. to) n'
+          p  = popShiftL to <$> p'
   {-# Inline setSucc #-}
 
 instance SetPredSucc (Fixed (BitSet:>Interface i)) where
