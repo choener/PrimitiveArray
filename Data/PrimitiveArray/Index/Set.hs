@@ -96,6 +96,14 @@ type family Mask s :: *
 -- providing @succ/pred@ operations which are only partially free.
 --
 -- The mask is lazy, this allows us to have @undefined@ for @l@ and @h@.
+--
+-- @f = getFixedMask .&. getFixed@ are the fixed bits.
+-- @n = getFixed .&. complement getFixedMask@ are the free bits.
+-- @to = complement getFixed@ is the to move mask
+-- @n' = popShiftL ones n@ yields the population after the move
+-- @p = popPermutation undefined n'@ yields the new population permutation
+-- @p' = popShiftL to p@ yields the population moved back
+-- @final = p' .|. f@
 
 data Fixed t = Fixed { getFixedMask :: (Mask t) , getFixed :: !t }
 
@@ -371,10 +379,22 @@ instance FromJSON  (Interface t)
 instance NFData (Fixed t) where
   rnf (Fixed m s) = m `seq` s `seq` ()
 
+-- TODO we need to be careful here, that we actually fix all bits that are
+-- fixed AND that during permutations / increases in popCount we do not set
+-- an already fixed bit -- as otherwise we lose one in popCount.
+
+test :: BitSet -> Maybe (Fixed BitSet)
+test k = setSucc (Fixed 0 0) (Fixed 0 7) (Fixed 4 k)
+
 instance SetPredSucc (Fixed BitSet) where
   setPred (Fixed _ l) (Fixed _ h) (Fixed !m s) = Fixed m <$> setPred l h (s .&. complement m)
   {-# Inline setPred #-}
-  setSucc (Fixed _ l) (Fixed _ h) (Fixed !m s) = Fixed m <$> setSucc l h (s .&. complement m)
+  --setSucc (Fixed _ l) (Fixed _ h) (Fixed !m s) = Fixed m <$> setSucc l h (s .&. complement m)
+  setSucc (Fixed _ l) (Fixed _ h) (Fixed !m s) = Fixed m <$> undefined -- setSucc l h (s .&. complement m)
+    where f = s .&. m             -- these bits are fixed to @1@
+          n = s .&. complement m  -- these bits are free to be @0@ or @1@ and may move around
+          to = complement m       -- once we have calculated our permutation, we move it to the correct places.
+          n' = undefined
   {-# Inline setSucc #-}
 
 instance SetPredSucc (Fixed (BitSet:>Interface i)) where
@@ -408,13 +428,13 @@ instance SetPredSucc (Fixed (BitSet:>Interface i:>Interface j)) where
 
 
 instance ApplyMask BitSet where
-  applyMask = popMove
+  applyMask = popShiftL
   {-# Inline applyMask #-}
 
 instance ApplyMask (BitSet :> Interface i) where
   applyMask m (s:>i)
     | popCount s == 0 = 0:>0
-    | otherwise       = popMove m s :> (Iter . getBitSet . popMove m . BitSet $ 2 ^ getIter i)
+    | otherwise       = popShiftL m s :> (Iter . getBitSet . popShiftL m . BitSet $ 2 ^ getIter i)
   {-# Inline applyMask #-}
 
 instance ApplyMask (BitSet :> Interface i :> Interface j) where
@@ -422,9 +442,9 @@ instance ApplyMask (BitSet :> Interface i :> Interface j) where
     | popCount s == 0 = 0:>0:>0
     | popCount s == 1 = s' :> i' :> Iter (getIter i')
     | otherwise       = s' :> i' :> j'
-    where s' = popMove m s
-          i' = Iter . getBitSet . popMove m . BitSet $ 2 ^ getIter i
-          j' = Iter . getBitSet . popMove m . BitSet $ 2 ^ getIter j
+    where s' = popShiftL m s
+          i' = Iter . getBitSet . popShiftL m . BitSet $ 2 ^ getIter i
+          j' = Iter . getBitSet . popShiftL m . BitSet $ 2 ^ getIter j
   {-# Inline applyMask #-}
 
 

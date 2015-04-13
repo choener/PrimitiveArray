@@ -130,6 +130,8 @@ class Index i where
 
   inBounds :: i -> i -> i -> Bool
 
+
+
 -- | Generate a stream of indices in correct order for dynamic programming.
 -- Since the stream generators require @concatMap@ / @flatten@ we have to
 -- write more specialized code for @(z:.IX)@ stuff.
