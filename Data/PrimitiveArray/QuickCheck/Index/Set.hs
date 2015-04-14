@@ -14,12 +14,12 @@ import Data.PrimitiveArray.Index.Set
 -- as it is? The mask should actually freeze-fix those bits, where we are
 -- set to @1@!
 
-prop_Fixed_BitSet_setSucc (h' :: BitSet, Fixed m s :: Fixed BitSet) = traceShow (tgo, tsu) $ tgo == tsu
+prop_Fixed_BitSet_setSucc (u :: Word, Fixed m s :: Fixed BitSet) = traceShow (tgo, tsu) $ tgo == tsu
   where tgo = go s
         tsu = (getFixed <$> setSucc (Fixed 0 0) (Fixed 0 h) (Fixed m s))
         fb1 = m .&. s -- fixed bits to 1
         fb0 = m .&. complement s  -- fixed bits to 0
-        h   = bit (popCount h') - 1
+        h   = bit (fromIntegral $ u `mod` 8) - 1
         go x -- continue creating successors, until the mask criterion is met (again).
           | Nothing <- ssx = Nothing
           | Just x' <- ssx
