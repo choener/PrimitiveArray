@@ -1,10 +1,11 @@
 
 module Data.PrimitiveArray.QuickCheck.Index.Set where
 
+import Control.Applicative
 import Data.Bits
+import Data.Word (Word)
 import Debug.Trace
 import Test.QuickCheck hiding (Fixed(..), (.&.))
-import Control.Applicative
 
 import Data.PrimitiveArray.Index.Set
 
