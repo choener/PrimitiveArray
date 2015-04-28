@@ -2,10 +2,10 @@ Name:           PrimitiveArray
 Version:        0.6.0.0
 License:        BSD3
 License-file:   LICENSE
-Author:         Christian Hoener zu Siederdissen
 Maintainer:     choener@bioinf.uni-leipzig.de
-Copyright:      Christian Hoener zu Siederdissen, 2010 - 2015
-Homepage:       http://www.bioinf.uni-leipzig.de/~choener/
+author:         Christian Hoener zu Siederdissen, 2011-2015
+copyright:      Christian Hoener zu Siederdissen, 2011-2015
+homepage:       http://www.bioinf.uni-leipzig.de/Software/gADP/
 Stability:      Experimental
 Category:       Data
 Build-type:     Simple
@@ -52,7 +52,7 @@ Library
                , cereal                   == 0.4.*
                , deepseq                  >= 1.3      && < 1.5
                , OrderedBits              == 0.0.*
-               , primitive                == 0.5.*
+               , primitive                >= 0.5.4    && < 0.7
                , QuickCheck               >= 2.7      && < 2.9
                , vector                   == 0.10.*
                , vector-binary-instances  == 0.2.*
