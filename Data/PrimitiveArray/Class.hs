@@ -163,7 +163,7 @@ fromAssocs lb ub def xs = runST $ fromAssocsM lb ub def xs >>= unsafeFreeze
 -- | Returns all elements of an immutable array as a list.
 
 toList :: (IndexStream sh, PrimArrayOps arr sh elm) => arr sh elm -> [elm]
-toList arr = let (lb,ub) = bounds arr in P.map ((!) arr) . S.toList $ streamUp lb ub -- $ rangeList lb $ ub `subDim` lb
+toList arr = let (lb,ub) = bounds arr in P.map ((!) arr) . S.toList $ streamUp lb ub
 {-# INLINE toList #-}
 
 
