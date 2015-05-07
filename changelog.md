@@ -1,4 +1,5 @@
 0.6.0.0
+-------
 
 - moved primitive array classes to Data.PrimitiveArray.Class
 - added _from / _to lenses
@@ -21,13 +22,16 @@
 - Data.Array.Repa.Index.Outside is now just a newtype wrapped around other
   Index types. We want to be able to say "a Subword, but for Outside
   algorithms"
+- travis-ci integration
 
 0.5.4.0
+-------
 
 - actually implemented PointR
 
 - added the rather important strictness annotation for mutable arrays in .Zero
 
 0.5.3.0
+-------
 
 - fixed vector-th-unbox problem

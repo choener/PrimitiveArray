@@ -10,8 +10,8 @@ Stability:      Experimental
 Category:       Data
 Build-type:     Simple
 Cabal-version:  >=1.10.0
-Synopsis:
-                Efficient multidimensional arrays
+tested-with:    GHC == 7.8.4, GHC == 7.10.1
+Synopsis:       Efficient multidimensional arrays
 Description:
                 This library provides efficient multidimensional arrays. Import
                 @Data.PrimitiveArray@ for indices, lenses, and arrays.
@@ -27,8 +27,13 @@ Description:
                 bounds-checking or other sanity-checking is performed.
                 Operations are aimed toward efficiency as much as possible.
 
+
+
 extra-source-files:
+  README.md
   changelog.md
+
+
 
 Library
   Exposed-modules:
@@ -71,7 +76,8 @@ Library
                     , TypeFamilies
                     , TypeOperators
                     , UndecidableInstances
-  default-language: Haskell2010
+  default-language:
+    Haskell2010
   ghc-options:
     -O2
     -funbox-strict-fields
