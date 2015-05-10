@@ -14,7 +14,8 @@ Primitive arrays are designed to be used together with ADPfusion.
 
 #### Contact
 
-Christian Hoener zu Siederdissen
-choener@bioinf.uni-leipzig.de
-http://www.bioinf.uni-leipzig.de/~choener/
+Christian Hoener zu Siederdissen  
+Leipzig University, Leipzig, Germany  
+choener@bioinf.uni-leipzig.de  
+http://www.bioinf.uni-leipzig.de/~choener/  
 
