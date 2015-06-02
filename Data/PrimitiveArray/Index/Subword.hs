@@ -86,7 +86,7 @@ instance Index Subword where
   {-# Inline linearIndex #-}
   smallestLinearIndex _ = error "still needed?"
   {-# Inline smallestLinearIndex #-}
-  largestLinearIndex = upperTri
+  largestLinearIndex h = upperTri h -1
   {-# Inline largestLinearIndex #-}
   size _ h = upperTri h
   {-# Inline size #-}
