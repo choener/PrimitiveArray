@@ -6,6 +6,8 @@ Maintainer:     choener@bioinf.uni-leipzig.de
 author:         Christian Hoener zu Siederdissen, 2011-2015
 copyright:      Christian Hoener zu Siederdissen, 2011-2015
 homepage:       http://www.bioinf.uni-leipzig.de/Software/gADP/
+homepage:       https://github.com/choener/PrimitiveArray
+bug-reports:    https://github.com/choener/PrimitiveArray/issues
 Stability:      Experimental
 Category:       Data
 Build-type:     Simple
