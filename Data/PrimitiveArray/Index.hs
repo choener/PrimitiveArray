@@ -4,6 +4,7 @@ module Data.PrimitiveArray.Index
   , module Data.PrimitiveArray.Index.Complement
   , module Data.PrimitiveArray.Index.Int
   , module Data.PrimitiveArray.Index.Outside
+  , module Data.PrimitiveArray.Index.PhantomInt
   , module Data.PrimitiveArray.Index.Point
   , module Data.PrimitiveArray.Index.Set
   , module Data.PrimitiveArray.Index.Subword
@@ -13,6 +14,7 @@ import Data.PrimitiveArray.Index.Class
 import Data.PrimitiveArray.Index.Complement
 import Data.PrimitiveArray.Index.Int
 import Data.PrimitiveArray.Index.Outside
+import Data.PrimitiveArray.Index.PhantomInt
 import Data.PrimitiveArray.Index.Point
 import Data.PrimitiveArray.Index.Set
 import Data.PrimitiveArray.Index.Subword

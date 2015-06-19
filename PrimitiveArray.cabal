@@ -1,5 +1,5 @@
 Name:           PrimitiveArray
-Version:        0.6.0.1
+Version:        0.6.1.0
 License:        BSD3
 License-file:   LICENSE
 Maintainer:     choener@bioinf.uni-leipzig.de
@@ -48,6 +48,7 @@ Library
     Data.PrimitiveArray.Index.Complement
     Data.PrimitiveArray.Index.Int
     Data.PrimitiveArray.Index.Outside
+    Data.PrimitiveArray.Index.PhantomInt
     Data.PrimitiveArray.Index.Point
     Data.PrimitiveArray.Index.Set
     Data.PrimitiveArray.Index.Subword
@@ -66,6 +67,7 @@ Library
                , vector-th-unbox          >= 0.2      && < 0.3
   default-extensions: BangPatterns
                     , DefaultSignatures
+                    , DeriveDataTypeable
                     , DeriveGeneric
                     , FlexibleContexts
                     , FlexibleInstances
