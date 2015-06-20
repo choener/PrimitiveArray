@@ -3,17 +3,18 @@
 
 module Data.PrimitiveArray.Index.PhantomInt where
 
-import Data.Vector.Fusion.Stream.Monadic (flatten,map,Step(..))
-import Data.Vector.Fusion.Stream.Size
-import Prelude hiding (map)
 import Control.DeepSeq (NFData(..))
 import Data.Aeson (FromJSON,ToJSON)
 import Data.Binary (Binary)
-import Data.Serialize (Serialize)
-import GHC.Generics (Generic)
-import Data.Typeable
 import Data.Data
+import Data.Ix(Ix)
+import Data.Serialize (Serialize)
+import Data.Typeable
+import Data.Vector.Fusion.Stream.Monadic (flatten,map,Step(..))
+import Data.Vector.Fusion.Stream.Size
 import Data.Vector.Unboxed.Deriving
+import GHC.Generics (Generic)
+import Prelude hiding (map)
 
 import Data.PrimitiveArray.Index.Class
 
@@ -24,7 +25,7 @@ import Data.PrimitiveArray.Index.Class
 -- same as for raw @Int@s.
 
 newtype PInt p = PInt { getPInt :: Int }
-  deriving (Read,Show,Eq,Ord,Enum,Num,Integral,Real,Generic,Data,Typeable)
+  deriving (Read,Show,Eq,Ord,Enum,Num,Integral,Real,Generic,Data,Typeable,Ix)
 
 
 derivingUnbox "PInt"
