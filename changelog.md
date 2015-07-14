@@ -1,3 +1,9 @@
+0.6.1.0
+-------
+
+- OrderedBits < 0.0.1
+- travis.yml update
+
 0.6.0.0
 -------
 
