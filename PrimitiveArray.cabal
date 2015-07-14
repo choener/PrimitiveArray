@@ -5,7 +5,6 @@ License-file:   LICENSE
 Maintainer:     choener@bioinf.uni-leipzig.de
 author:         Christian Hoener zu Siederdissen, 2011-2015
 copyright:      Christian Hoener zu Siederdissen, 2011-2015
-homepage:       http://www.bioinf.uni-leipzig.de/Software/gADP/
 homepage:       https://github.com/choener/PrimitiveArray
 bug-reports:    https://github.com/choener/PrimitiveArray/issues
 Stability:      Experimental
@@ -15,10 +14,14 @@ Cabal-version:  >=1.10.0
 tested-with:    GHC == 7.8.4, GHC == 7.10.1
 Synopsis:       Efficient multidimensional arrays
 Description:
+                <http://www.bioinf.uni-leipzig.de/Software/gADP/ generalized Algebraic Dynamic Programming>
+                .
                 This library provides efficient multidimensional arrays. Import
                 @Data.PrimitiveArray@ for indices, lenses, and arrays.
                 .
-                For ADPfusion users, the library also provides the machinary to
+                For
+                <http://www.bioinf.uni-leipzig.de/Software/gADP/ generalized ADP>
+                users, the library also provides the machinary to
                 fill tables in the correct order required by usual CYK-style
                 parsers, or regular grammars (used e.g. in alignment
                 algorithms). This means that unless your grammar require a
