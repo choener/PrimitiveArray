@@ -2,7 +2,7 @@
 
 # PrimitiveArray
 
-[*generalized ADPfusion Homepage*](http://www.bioinf.uni-leipzig.de/Software/gADP/)
+[*generalized Algebraic Dynamic Programming Homepage*](http://www.bioinf.uni-leipzig.de/Software/gADP/)
 
 PrimitiveArray provides operations on multi-dimensional arrays. Internally, the
 representation is based on the vector library, while the multi-dimensional
