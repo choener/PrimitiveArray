@@ -1,4 +1,4 @@
-0.6.2.0
+0.6.1.1
 -------
 
 - Hashable instances for all index structures
