@@ -7,13 +7,14 @@ module Data.PrimitiveArray.Index.Subword where
 import Control.DeepSeq (NFData(..))
 import Data.Aeson (FromJSON,ToJSON)
 import Data.Binary (Binary)
+import Data.Hashable (Hashable)
 import Data.Serialize (Serialize)
 import Data.Vector.Fusion.Stream.Monadic (Step(..), flatten, map)
 import Data.Vector.Fusion.Stream.Size
 import Data.Vector.Unboxed.Deriving
 import GHC.Generics (Generic)
-import Test.QuickCheck (Arbitrary(..), choose)
 import Prelude hiding (map)
+import Test.QuickCheck (Arbitrary(..), choose)
 
 import Data.PrimitiveArray.Index.Class
 
@@ -39,6 +40,7 @@ instance Binary    Subword
 instance Serialize Subword
 instance FromJSON  Subword
 instance ToJSON    Subword
+instance Hashable  Subword
 
 instance NFData Subword where
   rnf (Subword (i:.j)) = i `seq` rnf j

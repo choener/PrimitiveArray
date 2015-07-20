@@ -10,6 +10,9 @@
 -- TODO consider if we want to force the lower index to be zero, or allow
 -- non-zero lower indices. Will have to be considered together with the
 -- @Index.Class@ module!
+--
+-- TODO while @Unboxed@ is, in princile, @Hashable@, we'd need the
+-- corresponding @VU.Vector@ instances ...
 
 module Data.PrimitiveArray.Dense where
 
@@ -28,6 +31,7 @@ import           GHC.Generics (Generic)
 import qualified Data.Vector as V hiding (forM_, length, zipWithM_)
 import qualified Data.Vector.Generic as G
 import qualified Data.Vector.Unboxed as VU hiding (forM_, length, zipWithM_)
+import           Data.Hashable (Hashable)
 
 
 import           Data.PrimitiveArray.Class
@@ -44,6 +48,7 @@ instance (Binary    sh, Binary    e, Unbox e) => Binary    (Unboxed sh e)
 instance (Serialize sh, Serialize e, Unbox e) => Serialize (Unboxed sh e)
 instance (ToJSON    sh, ToJSON    e, Unbox e) => ToJSON    (Unboxed sh e)
 instance (FromJSON  sh, FromJSON  e, Unbox e) => FromJSON  (Unboxed sh e)
+instance (Hashable  sh, Hashable  e, Hashable (VU.Vector e), Unbox e) => Hashable  (Unboxed sh e)
 
 instance (NFData sh) => NFData (Unboxed sh e) where
   rnf (Unboxed l h xs) = rnf l `seq` rnf h `seq` rnf xs
@@ -104,6 +109,7 @@ instance (Binary    sh, Binary    e)  => Binary    (Boxed sh e)
 instance (Serialize sh, Serialize e)  => Serialize (Boxed sh e)
 instance (ToJSON    sh, ToJSON    e)  => ToJSON    (Boxed sh e)
 instance (FromJSON  sh, FromJSON  e)  => FromJSON  (Boxed sh e)
+instance (Hashable  sh, Hashable  e, Hashable (V.Vector e), Unbox e) => Hashable  (Boxed sh e)
 
 instance (NFData sh, NFData e) => NFData (Boxed sh e) where
   rnf (Boxed l h xs) = rnf l `seq` rnf h `seq` rnf xs

@@ -5,6 +5,7 @@ import Control.Applicative
 import Control.DeepSeq (NFData(..))
 import Data.Aeson
 import Data.Binary
+import Data.Hashable (Hashable)
 import Data.Serialize
 import Data.Vector.Unboxed.Deriving
 import Data.Vector.Unboxed (Unbox(..))
@@ -33,6 +34,7 @@ instance Binary    z => Binary    (Outside z)
 instance Serialize z => Serialize (Outside z)
 instance ToJSON    z => ToJSON    (Outside z)
 instance FromJSON  z => FromJSON  (Outside z)
+instance Hashable  z => Hashable  (Outside z)
 
 instance NFData z => NFData (Outside z) where
   rnf (O z) = rnf z

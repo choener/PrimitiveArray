@@ -11,6 +11,7 @@ import           Data.Aeson
 import           Data.Binary
 import           Data.Bits
 import           Data.Bits.Extras (Ranked)
+import           Data.Hashable (Hashable)
 import           Data.Serialize
 import           Data.Vector.Fusion.Stream.Size
 import           Data.Vector.Unboxed.Deriving
@@ -46,6 +47,7 @@ instance Binary    PointL
 instance Serialize PointL
 instance FromJSON  PointL
 instance ToJSON    PointL
+instance Hashable  PointL
 
 instance NFData PointL where
   rnf (PointL l) = rnf l

@@ -6,6 +6,7 @@ import           Control.DeepSeq (NFData(..))
 import           Control.Monad (liftM2)
 import           Data.Aeson
 import           Data.Binary
+import           Data.Hashable (Hashable)
 import           Data.Serialize
 import           Data.Vector.Fusion.Stream.Monadic (Stream)
 import           Data.Vector.Unboxed.Deriving
@@ -32,6 +33,7 @@ instance (Binary    a, Binary    b) => Binary    (a:.b)
 instance (Serialize a, Serialize b) => Serialize (a:.b)
 instance (ToJSON    a, ToJSON    b) => ToJSON    (a:.b)
 instance (FromJSON  a, FromJSON  b) => FromJSON  (a:.b)
+instance (Hashable  a, Hashable  b) => Hashable  (a:.b)
 
 deriving instance (Read a, Read b) => Read (a:.b)
 
@@ -63,6 +65,7 @@ instance (Binary    a, Binary    b) => Binary    (a:>b)
 instance (Serialize a, Serialize b) => Serialize (a:>b)
 instance (ToJSON    a, ToJSON    b) => ToJSON    (a:>b)
 instance (FromJSON  a, FromJSON  b) => FromJSON  (a:>b)
+instance (Hashable  a, Hashable  b) => Hashable  (a:>b)
 
 deriving instance (Read a, Read b) => Read (a:>b)
 
@@ -90,6 +93,7 @@ instance Binary    Z
 instance Serialize Z
 instance ToJSON    Z
 instance FromJSON  Z
+instance Hashable  Z
 
 instance Arbitrary Z where
   arbitrary = return Z

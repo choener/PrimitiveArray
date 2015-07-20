@@ -7,6 +7,7 @@ import Control.DeepSeq (NFData(..))
 import Data.Aeson (FromJSON,ToJSON)
 import Data.Binary (Binary)
 import Data.Data
+import Data.Hashable (Hashable)
 import Data.Ix(Ix)
 import Data.Serialize (Serialize)
 import Data.Typeable
@@ -35,8 +36,8 @@ instance Binary    (PInt p)
 instance Serialize (PInt p)
 instance FromJSON  (PInt p)
 instance ToJSON    (PInt p)
-
-instance NFData (PInt p)
+instance Hashable  (PInt p)
+instance NFData    (PInt p)
 
 instance Index (PInt p) where
   linearIndex _ _ (PInt k) = k

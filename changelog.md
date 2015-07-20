@@ -1,3 +1,10 @@
+0.6.2.0
+-------
+
+- Hashable instances for all index structures
+- Hashable instances for Unboxed and Boxed arrays. *These require Hashable
+  instances for vectors, which are not available by default*
+
 0.6.1.0
 -------
 

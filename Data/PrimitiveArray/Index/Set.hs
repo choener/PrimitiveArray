@@ -11,6 +11,7 @@ import           Data.Aeson (FromJSON,ToJSON)
 import           Data.Binary (Binary)
 import           Data.Bits
 import           Data.Bits.Extras
+import           Data.Hashable (Hashable)
 import           Data.Serialize (Serialize)
 import           Data.Vector.Fusion.Stream.Size
 import           Data.Vector.Unboxed.Deriving
@@ -129,6 +130,7 @@ instance Binary    (Interface t)
 instance Serialize (Interface t)
 instance ToJSON    (Interface t)
 instance FromJSON  (Interface t)
+instance Hashable  (Interface t)
 
 instance NFData (Interface t) where
   rnf (Iter i) = rnf i
@@ -160,6 +162,7 @@ instance Binary    BitSet
 instance Serialize BitSet
 instance ToJSON    BitSet
 instance FromJSON  BitSet
+instance Hashable  BitSet
 
 instance NFData BitSet where
   rnf (BitSet s) = rnf s
@@ -368,13 +371,10 @@ deriving instance (Ord t    , Ord     (Mask t)) => Ord     (Fixed t)
 deriving instance (Read t   , Read    (Mask t)) => Read    (Fixed t)
 deriving instance (Show t   , Show    (Mask t)) => Show    (Fixed t)
 deriving instance (Generic t, Generic (Mask t)) => Generic (Fixed t)
+instance (Generic t, Generic (Mask t), Hashable t, Hashable (Mask t)) => Hashable (Fixed t)
 
 instance (Generic t, Generic (Mask t), Binary t   , Binary    (Mask t)) => Binary    (Fixed t)
 instance (Generic t, Generic (Mask t), Serialize t, Serialize (Mask t)) => Serialize (Fixed t)
-{- -- TODO do json instances work automatically here?
-instance ToJSON    (Interface t)
-instance FromJSON  (Interface t)
--}
 
 instance NFData (Fixed t) where
   rnf (Fixed m s) = m `seq` s `seq` ()

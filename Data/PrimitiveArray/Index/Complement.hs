@@ -5,6 +5,7 @@ import Control.Applicative
 import Control.DeepSeq (NFData(..))
 import Data.Aeson
 import Data.Binary
+import Data.Hashable (Hashable)
 import Data.Serialize
 import Data.Vector.Unboxed.Deriving
 import Data.Vector.Unboxed (Unbox(..))
@@ -31,6 +32,7 @@ instance Binary    z => Binary    (Complement z)
 instance Serialize z => Serialize (Complement z)
 instance ToJSON    z => ToJSON    (Complement z)
 instance FromJSON  z => FromJSON  (Complement z)
+instance Hashable  z => Hashable  (Complement z)
 
 instance NFData z => NFData (Complement z) where
   rnf (C z) = rnf z
