@@ -109,7 +109,7 @@ instance (Binary    sh, Binary    e)  => Binary    (Boxed sh e)
 instance (Serialize sh, Serialize e)  => Serialize (Boxed sh e)
 instance (ToJSON    sh, ToJSON    e)  => ToJSON    (Boxed sh e)
 instance (FromJSON  sh, FromJSON  e)  => FromJSON  (Boxed sh e)
-instance (Hashable  sh, Hashable  e, Hashable (V.Vector e), Unbox e) => Hashable  (Boxed sh e)
+instance (Hashable  sh, Hashable  e, Hashable (V.Vector e)) => Hashable  (Boxed sh e)
 
 instance (NFData sh, NFData e) => NFData (Boxed sh e) where
   rnf (Boxed l h xs) = rnf l `seq` rnf h `seq` rnf xs
@@ -144,7 +144,7 @@ instance (Index sh) => MPrimArrayOps Boxed sh elm where
   {-# INLINE readM #-}
   {-# INLINE writeM #-}
 
-instance (Index sh, Unbox elm) => PrimArrayOps Boxed sh elm where
+instance (Index sh) => PrimArrayOps Boxed sh elm where
   bounds (Boxed l h _) = (l,h)
   unsafeFreeze (MBoxed l h mba) = Boxed l h `liftM` G.unsafeFreeze mba
   unsafeThaw   (Boxed l h ba) = MBoxed l h `liftM` G.unsafeThaw ba
