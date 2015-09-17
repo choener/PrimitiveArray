@@ -32,6 +32,18 @@ import           Data.PrimitiveArray.Vector.Compat
 newtype PointL t = PointL {fromPointL :: Int}
   deriving (Eq,Read,Show,Generic)
 
+pointLI :: Int -> PointL I
+pointLI = PointL
+{-# Inline pointLI #-}
+
+pointLO :: Int -> PointL O
+pointLO = PointL
+{-# Inline pointLO #-}
+
+pointLC :: Int -> PointL C
+pointLC = PointL
+{-# Inline pointLC #-}
+
 -- | A point in a right-linear grammars.
 
 newtype PointR t = PointR {fromPointR :: Int}

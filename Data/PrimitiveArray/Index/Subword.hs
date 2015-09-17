@@ -53,6 +53,18 @@ subword :: Int -> Int -> Subword t
 subword i j = Subword (i:.j)
 {-# INLINE subword #-}
 
+subwordI :: Int -> Int -> Subword I
+subwordI i j = Subword (i:.j)
+{-# INLINE subwordI #-}
+
+subwordO :: Int -> Int -> Subword O
+subwordO i j = Subword (i:.j)
+{-# INLINE subwordO #-}
+
+subwordC :: Int -> Int -> Subword C
+subwordC i j = Subword (i:.j)
+{-# INLINE subwordC #-}
+
 -- | triangular numbers
 --
 -- A000217

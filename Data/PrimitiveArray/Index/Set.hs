@@ -62,6 +62,18 @@ data Any
 newtype BitSet t = BitSet { getBitSet :: Int }
   deriving (Eq,Ord,Read,Generic,FiniteBits,Ranked,Num,Bits)
 
+bitSetI :: Int -> BitSet I
+bitSetI = BitSet
+{-# Inline bitSetI #-}
+
+bitSetO :: Int -> BitSet O
+bitSetO = BitSet
+{-# Inline bitSetO #-}
+
+bitSetC :: Int -> BitSet C
+bitSetC = BitSet
+{-# Inline bitSetC #-}
+
 -- | A bitset with one interface.
 
 type BS1I t i = BitSet t :> Interface i

@@ -29,6 +29,17 @@ import Data.PrimitiveArray.Vector.Compat
 newtype PInt t p = PInt { getPInt :: Int }
   deriving (Read,Show,Eq,Ord,Enum,Num,Integral,Real,Generic,Data,Typeable,Ix)
 
+pIntI :: Int -> PInt I p
+pIntI = PInt
+{-# Inline pIntI #-}
+
+pIntO :: Int -> PInt O p
+pIntO = PInt
+{-# Inline pIntO #-}
+
+pIntC :: Int -> PInt C p
+pIntC = PInt
+{-# Inline pIntC #-}
 
 derivingUnbox "PInt"
   [t| forall t p . PInt t p -> Int |]  [| getPInt |]  [| PInt |]
