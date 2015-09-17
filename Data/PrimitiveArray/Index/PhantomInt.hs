@@ -11,18 +11,14 @@ import Data.Hashable (Hashable)
 import Data.Ix(Ix)
 import Data.Serialize (Serialize)
 import Data.Typeable
-import Data.Vector.Fusion.Stream.Monadic (flatten,map,Step(..))
+import Data.Vector.Fusion.Stream.Monadic (map,Step(..))
 import Data.Vector.Unboxed.Deriving
 import GHC.Generics (Generic)
 import Prelude hiding (map)
 
-#if MIN_VERSION_vector(0,11,0)
-import Data.Vector.Fusion.Bundle.Size
-#else
-import Data.Vector.Fusion.Stream.Size
-#endif
-
 import Data.PrimitiveArray.Index.Class
+import Data.PrimitiveArray.Index.IOC
+import Data.PrimitiveArray.Vector.Compat
 
 
 
@@ -30,21 +26,21 @@ import Data.PrimitiveArray.Index.Class
 -- type @p@. In particular, the @Index@ and @IndexStream@ instances are the
 -- same as for raw @Int@s.
 
-newtype PInt p = PInt { getPInt :: Int }
+newtype PInt t p = PInt { getPInt :: Int }
   deriving (Read,Show,Eq,Ord,Enum,Num,Integral,Real,Generic,Data,Typeable,Ix)
 
 
 derivingUnbox "PInt"
-  [t| forall p . PInt p -> Int |]  [| getPInt |]  [| PInt |]
+  [t| forall t p . PInt t p -> Int |]  [| getPInt |]  [| PInt |]
 
-instance Binary    (PInt p)
-instance Serialize (PInt p)
-instance FromJSON  (PInt p)
-instance ToJSON    (PInt p)
-instance Hashable  (PInt p)
-instance NFData    (PInt p)
+instance Binary    (PInt t p)
+instance Serialize (PInt t p)
+instance FromJSON  (PInt t p)
+instance ToJSON    (PInt t p)
+instance Hashable  (PInt t p)
+instance NFData    (PInt t p)
 
-instance Index (PInt p) where
+instance Index (PInt t p) where
   linearIndex _ _ (PInt k) = k
   {-# Inline linearIndex #-}
   smallestLinearIndex _ = error "still needed?"
@@ -56,8 +52,49 @@ instance Index (PInt p) where
   inBounds l h k = l <= k && k <= h
   {-# Inline inBounds #-}
 
+instance IndexStream z => IndexStream (z:.PInt I p) where
+  streamUp   (ls:.l) (hs:.h) = flatten (streamUpMk   l h) (streamUpStep   l h) $ streamUp ls hs
+  streamDown (ls:.l) (hs:.h) = flatten (streamDownMk l h) (streamDownStep l h) $ streamDown ls hs
+  {-# Inline streamUp   #-}
+  {-# Inline streamDown #-}
+
+instance IndexStream z => IndexStream (z:.PInt O p) where
+  streamUp   (ls:.l) (hs:.h) = flatten (streamDownMk l h) (streamDownStep l h) $ streamUp ls hs
+  streamDown (ls:.l) (hs:.h) = flatten (streamUpMk   l h) (streamUpStep   l h) $ streamDown ls hs
+  {-# Inline streamUp   #-}
+  {-# Inline streamDown #-}
+
+instance IndexStream z => IndexStream (z:.PInt C p) where
+  streamUp   (ls:.l) (hs:.h) = flatten (streamUpMk   l h) (streamUpStep   l h) $ streamUp ls hs
+  streamDown (ls:.l) (hs:.h) = flatten (streamDownMk l h) (streamDownStep l h) $ streamDown ls hs
+  {-# Inline streamUp   #-}
+  {-# Inline streamDown #-}
+
+streamUpMk l h z = return (z,l)
+{-# Inline [0] streamUpMk #-}
+
+streamUpStep l h (z,k)
+  | k > h     = return $ Done
+  | otherwise = return $ Yield (z:.k) (z,k+1)
+{-# Inline [0] streamUpStep #-}
+
+streamDownMk l h z = return (z,h)
+{-# Inline [0] streamDownMk #-}
+
+streamDownStep l h (z,k)
+  | k < l     = return $ Done
+  | otherwise = return $ Yield (z:.k) (z,k-1)
+{-# Inline [0] streamDownStep #-}
+
+instance IndexStream (PInt I p)
+
+instance IndexStream (PInt O p)
+
+instance IndexStream (PInt C p)
+
+{-
 instance IndexStream z => IndexStream (z:.(PInt p)) where
-  streamUp (ls:.l) (hs:.h) = flatten mk step Unknown $ streamUp ls hs
+  streamUp (ls:.l) (hs:.h) = flatten mk step $ streamUp ls hs
     where mk z = return (z,l)
           step (z,k)
             | k > h     = return $ Done
@@ -65,7 +102,7 @@ instance IndexStream z => IndexStream (z:.(PInt p)) where
           {-# Inline [0] mk   #-}
           {-# Inline [0] step #-}
   {-# Inline streamUp #-}
-  streamDown (ls:.l) (hs:.h) = flatten mk step Unknown $ streamDown ls hs
+  streamDown (ls:.l) (hs:.h) = flatten mk step $ streamDown ls hs
     where mk z = return (z,h)
           step (z,k)
             | k < l     = return $ Done
@@ -79,4 +116,5 @@ instance IndexStream (PInt p) where
   {-# Inline streamUp #-}
   streamDown l h = map (\(Z:.k) -> k) $ streamDown (Z:.l) (Z:.h)
   {-# Inline streamDown #-}
+-}
 

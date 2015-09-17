@@ -16,7 +16,7 @@ import           Data.Serialize (Serialize)
 import           Data.Vector.Unboxed.Deriving
 import           Data.Vector.Unboxed (Unbox(..))
 import           Debug.Trace
-import           GHC.Generics
+import           GHC.Generics (Generic)
 import qualified Data.Vector.Fusion.Stream.Monadic as SM
 import qualified Data.Vector.Unboxed as VU
 import           Test.QuickCheck (Arbitrary(..), choose, elements)
@@ -59,16 +59,16 @@ data Any
 --
 -- TODO can we use @Word@s now?
 
-newtype BitSet = BitSet { getBitSet :: Int }
+newtype BitSet t = BitSet { getBitSet :: Int }
   deriving (Eq,Ord,Read,Generic,FiniteBits,Ranked,Num,Bits)
 
 -- | A bitset with one interface.
 
-type BS1I i = BitSet:>Interface i
+type BS1I t i = BitSet t :> Interface i
 
 -- | A bitset with two interfaces.
 
-type BS2I i j = BitSet:>Interface i:>Interface j
+type BS2I t i j = BitSet t :> Interface i :> Interface j
 
 -- | Successor and Predecessor for sets. Designed as a class to accomodate
 -- sets with interfaces and without interfaces with one function.
@@ -152,24 +152,24 @@ instance Index (Interface i) where
 
 
 derivingUnbox "BitSet"
-  [t| BitSet     -> Int |]
+  [t| forall t . BitSet t -> Int |]
   [| \(BitSet s) -> s   |]
   [| BitSet             |]
 
-instance Show BitSet where
+instance Show (BitSet t) where
   show (BitSet s) = "<" ++ (show $ activeBitsL s) ++ ">(" ++ show s ++ ")"
 
-instance Binary    BitSet
-instance Serialize BitSet
-instance ToJSON    BitSet
-instance FromJSON  BitSet
-instance Hashable  BitSet
+instance Binary    (BitSet t)
+instance Serialize (BitSet t)
+instance ToJSON    (BitSet t)
+instance FromJSON  (BitSet t)
+instance Hashable  (BitSet t)
 
-instance NFData BitSet where
+instance NFData (BitSet t) where
   rnf (BitSet s) = rnf s
   {-# Inline rnf #-}
 
-instance Index BitSet where
+instance Index (BitSet t) where
   linearIndex l _ (BitSet z) = z - smallestLinearIndex l -- (2 ^ popCount l - 1)
   {-# INLINE linearIndex #-}
   smallestLinearIndex l = 2 ^ popCount l - 1
@@ -183,39 +183,108 @@ instance Index BitSet where
 
 
 
-instance IndexStream z => IndexStream (z:.BitSet) where
+instance IndexStream z => IndexStream (z:.BitSet I) where
+  streamUp   (ls:.l) (hs:.h) = flatten (streamUpBsMk   l h) (streamUpBsStep   l h) $ streamUp   ls hs
+  streamDown (ls:.l) (hs:.h) = flatten (streamDownBsMk l h) (streamDownBsStep l h) $ streamDown ls hs
+  {-# Inline streamUp   #-}
+  {-# Inline streamDown #-}
+{-
   streamUp (ls:.l) (hs:.h) = flatten mk step $ streamUp ls hs
     where mk z = return (z , (if l <= h then Just l else Nothing))
           step (z , Nothing) = return $ SM.Done
           step (z , Just t ) = return $ SM.Yield (z:.t) (z , setSucc l h t)
           {-# Inline [0] mk   #-}
           {-# Inline [0] step #-}
-  {-# Inline streamUp   #-}
   streamDown (ls:.l) (hs:.h) = flatten mk step $ streamDown ls hs
     where mk z = return (z :. (if l <= h then Just h else Nothing))
           step (z :. Nothing) = return $ SM.Done
           step (z :. Just t ) = return $ SM.Yield (z:.t) (z :. setPred l h t)
           {-# Inline [0] mk   #-}
           {-# Inline [0] step #-}
+-}
+
+instance IndexStream z => IndexStream (z:.BitSet O) where
+  streamUp   (ls:.l) (hs:.h) = flatten (streamDownBsMk l h) (streamDownBsStep l h) $ streamUp   ls hs
+  streamDown (ls:.l) (hs:.h) = flatten (streamUpBsMk   l h) (streamUpBsStep   l h) $ streamDown ls hs
+  {-# Inline streamUp   #-}
   {-# Inline streamDown #-}
 
-instance IndexStream z => IndexStream (z:.(BitSet:>Interface i)) where
+instance IndexStream z => IndexStream (z:.BitSet C) where
+  streamUp   (ls:.l) (hs:.h) = flatten (streamUpBsMk   l h) (streamUpBsStep   l h) $ streamUp   ls hs
+  streamDown (ls:.l) (hs:.h) = flatten (streamDownBsMk l h) (streamDownBsStep l h) $ streamDown ls hs
+  {-# Inline streamUp   #-}
+  {-# Inline streamDown #-}
+
+streamUpBsMk l h z = return (z, if l <= h then Just l else Nothing)
+{-# Inline [0] streamUpBsMk #-}
+
+streamUpBsStep l h (z , Nothing) = return $ SM.Done
+streamUpBsStep l h (z , Just t ) = return $ SM.Yield (z:.t) (z , setSucc l h t)
+{-# Inline [0] streamUpBsStep #-}
+
+streamDownBsMk l h z = return (z, if l <=h then Just h else Nothing)
+{-# Inline [0] streamDownBsMk #-}
+
+streamDownBsStep l h (z , Nothing) = return $ SM.Done
+streamDownBsStep l h (z , Just t ) = return $ SM.Yield (z:.t) (z , setPred l h t)
+{-# Inline [0] streamDownBsStep #-}
+
+instance IndexStream (Z:.BitSet t) => IndexStream (BitSet t)
+
+instance IndexStream z => IndexStream (z:.(BitSet I:>Interface i)) where
+  streamUp   (ls:.l) (hs:.h) = flatten (streamUpBsIMk   l h) (streamUpBsIStep   l h) $ streamUp   ls hs
+  streamDown (ls:.l) (hs:.h) = flatten (streamDownBsIMk l h) (streamDownBsIStep l h) $ streamDown ls hs
+  {-# Inline streamUp #-}
+  {-# Inline streamDown #-}
+{-
   streamUp (ls:.l@(sl:>_)) (hs:.h@(sh:>_)) = flatten mk step $ streamUp ls hs
     where mk z = return (z, (if sl<=sh then Just (sl:>(Iter . max 0 $ lsbZ sl)) else Nothing))
           step (z , Nothing) = return $ SM.Done
           step (z,  Just t ) = return $ SM.Yield (z:.t) (z , setSucc l h t)
           {-# Inline [0] mk   #-}
           {-# Inline [0] step #-}
-  {-# Inline streamUp #-}
   streamDown (ls:.l@(sl:>_)) (hs:.h@(sh:>_)) = flatten mk step $ streamDown ls hs
     where mk z = return (z, (if sl<=sh then Just (sh:>(Iter . max 0 $ lsbZ sh)) else Nothing))
           step (z , Nothing) = return $ SM.Done
           step (z , Just t ) = return $ SM.Yield (z:.t) (z , setPred l h t)
           {-# Inline [0] mk   #-}
           {-# Inline [0] step #-}
+-}
+
+instance IndexStream z => IndexStream (z:.(BitSet O:>Interface i)) where
+  streamUp   (ls:.l) (hs:.h) = flatten (streamDownBsIMk l h) (streamDownBsIStep l h) $ streamUp   ls hs
+  streamDown (ls:.l) (hs:.h) = flatten (streamUpBsIMk   l h) (streamUpBsIStep   l h) $ streamDown ls hs
+  {-# Inline streamUp #-}
   {-# Inline streamDown #-}
 
-instance IndexStream z => IndexStream (z:.(BitSet:>Interface i:>Interface j)) where
+instance IndexStream z => IndexStream (z:.(BitSet C:>Interface i)) where
+  streamUp   (ls:.l) (hs:.h) = flatten (streamUpBsIMk   l h) (streamUpBsIStep   l h) $ streamUp   ls hs
+  streamDown (ls:.l) (hs:.h) = flatten (streamDownBsIMk l h) (streamDownBsIStep l h) $ streamDown ls hs
+  {-# Inline streamUp #-}
+  {-# Inline streamDown #-}
+
+streamUpBsIMk (sl:>_) (sh:>_) z = return (z, if sl <= sh then Just (sl:>(Iter . max 0 $ lsbZ sl)) else Nothing)
+{-# Inline [0] streamUpBsIMk #-}
+
+streamUpBsIStep l h (z , Nothing) = return $ SM.Done
+streamUpBsIStep l h (z,  Just t ) = return $ SM.Yield (z:.t) (z , setSucc l h t)
+{-# Inline [0] streamUpBsIStep #-}
+
+streamDownBsIMk (sl:>_) (sh:>_) z = return (z, if sl <= sh then Just (sl:>(Iter . max 0 $ lsbZ sh)) else Nothing)
+{-# Inline [0] streamDownBsIMk #-}
+
+streamDownBsIStep l h (z , Nothing) = return $ SM.Done
+streamDownBsIStep l h (z , Just t ) = return $ SM.Yield (z:.t) (z , setPred l h t)
+{-# Inline [0] streamDownBsIStep #-}
+
+instance IndexStream (Z:.(BitSet t :> Interface i)) => IndexStream (BitSet t :> Interface i)
+
+instance IndexStream z => IndexStream (z:.(BitSet I:>Interface i:>Interface j)) where
+  streamUp   (ls:.l) (hs:.h) = flatten (streamUpBsIiMk   l h) (streamUpBsIiStep   l h) $ streamUp   ls hs
+  streamDown (ls:.l) (hs:.h) = flatten (streamDownBsIiMk l h) (streamDownBsIiStep l h) $ streamDown ls hs
+  {-# Inline streamUp #-}
+  {-# Inline streamDown #-}
+{-
   streamUp (ls:.l@(sl:>_:>_)) (hs:.h@(sh:>_:>_)) = flatten mk step $ streamUp ls hs
     where mk z | sl > sh   = return (z , Nothing)
                | cl == 0   = return (z , Just (0:>0:>0))
@@ -228,7 +297,6 @@ instance IndexStream z => IndexStream (z:.(BitSet:>Interface i:>Interface j)) wh
           step (z , Just t ) = return $ SM.Yield (z:.t) (z , setSucc l h t)
           {-# Inline [0] mk   #-}
           {-# Inline [0] step #-}
-  {-# Inline streamUp #-}
   streamDown (ls:.l@(sl:>_:>_)) (hs:.h@(sh:>_:>_)) = flatten mk step $ streamDown ls hs
     where mk z | sl > sh   = return (z , Nothing)
                | ch == 0   = return (z , Just (0:>0:>0))
@@ -241,11 +309,51 @@ instance IndexStream z => IndexStream (z:.(BitSet:>Interface i:>Interface j)) wh
           step (z , Just t ) = return $ SM.Yield (z:.t) (z , setPred l h t)
           {-# Inline [0] mk   #-}
           {-# Inline [0] step #-}
+-}
+
+instance IndexStream z => IndexStream (z:.(BitSet O:>Interface i:>Interface j)) where
+  streamUp   (ls:.l) (hs:.h) = flatten (streamDownBsIiMk l h) (streamDownBsIiStep l h) $ streamUp   ls hs
+  streamDown (ls:.l) (hs:.h) = flatten (streamUpBsIiMk   l h) (streamUpBsIiStep   l h) $ streamDown ls hs
+  {-# Inline streamUp #-}
   {-# Inline streamDown #-}
 
+instance IndexStream z => IndexStream (z:.(BitSet C:>Interface i:>Interface j)) where
+  streamUp   (ls:.l) (hs:.h) = flatten (streamUpBsIiMk   l h) (streamUpBsIiStep   l h) $ streamUp   ls hs
+  streamDown (ls:.l) (hs:.h) = flatten (streamDownBsIiMk l h) (streamDownBsIiStep l h) $ streamDown ls hs
+  {-# Inline streamUp #-}
+  {-# Inline streamDown #-}
 
+streamUpBsIiMk (sl:>_:>_) (sh:>_:>_) z
+  | sl > sh   = return (z , Nothing)
+  | cl == 0   = return (z , Just (0:>0:>0))
+  | cl == 1   = let i = lsbZ sl
+                in  return (z , Just (sl :> Iter i :> Iter i))
+  | otherwise = let i = lsbZ sl; j = lsbZ (sl `clearBit` i)
+                in  return (z , Just (sl :> Iter i :> Iter j))
+  where cl = popCount sl
+{-# Inline [0] streamUpBsIiMk #-}
 
-instance SetPredSucc BitSet where
+streamUpBsIiStep l h (z , Nothing) = return $ SM.Done
+streamUpBsIiStep l h (z , Just t ) = return $ SM.Yield (z:.t) (z , setSucc l h t)
+{-# Inline [0] streamUpBsIiStep #-}
+
+streamDownBsIiMk (sl:>_:>_) (sh:>_:>_) z
+  | sl > sh   = return (z , Nothing)
+  | ch == 0   = return (z , Just (0:>0:>0))
+  | ch == 1   = let i = lsbZ sh
+                in  return (z , Just (sh :> Iter i :> Iter i))
+  | otherwise = let i = lsbZ sh; j = lsbZ sh
+                in  return (z , Just (sh :> Iter i :> Iter j))
+  where ch = popCount sh
+{-# Inline [0] streamDownBsIiMk #-}
+
+streamDownBsIiStep l h (z , Nothing) = return $ SM.Done
+streamDownBsIiStep l h (z , Just t ) = return $ SM.Yield (z:.t) (z , setPred l h t)
+{-# Inline [0] streamDownBsIiStep #-}
+
+instance IndexStream (Z:.(BitSet t :> Interface i :> Interface j)) => IndexStream (BitSet t :> Interface i :> Interface j)
+
+instance SetPredSucc (BitSet t) where
   setSucc l h s
     | cs > ch                        = Nothing
     | Just s' <- popPermutation ch s = Just s'
@@ -264,7 +372,7 @@ instance SetPredSucc BitSet where
           cs = popCount s
   {-# Inline setPred #-}
 
-instance SetPredSucc (BitSet:>Interface i) where
+instance SetPredSucc (BitSet t:>Interface i) where
   setSucc (l:>il) (h:>ih) (s:>Iter is)
     | cs > ch                         = Nothing
     | Just is' <- maybeNextActive is s     = Just (s:>Iter is')
@@ -285,7 +393,7 @@ instance SetPredSucc (BitSet:>Interface i) where
           cs = popCount s
   {-# Inline setPred #-}
 
-instance SetPredSucc (BitSet:>Interface i:>Interface j) where
+instance SetPredSucc (BitSet t:>Interface i:>Interface j) where
   setSucc (l:>il:>jl) (h:>ih:>jh) (s:>Iter is:>Iter js)
     -- early termination
     | cs > ch                         = Nothing
@@ -354,11 +462,11 @@ instance SetPredSucc (BitSet:>Interface i:>Interface j) where
 
 
 
-type instance Mask BitSet = BitSet
+type instance Mask (BitSet t) = BitSet t
 
-type instance Mask (BitSet :> Interface i) = BitSet
+type instance Mask (BitSet t :> Interface i) = BitSet t
 
-type instance Mask (BitSet :> Interface i :> Interface j) = BitSet
+type instance Mask (BitSet t :> Interface i :> Interface j) = BitSet t
 
 
 
@@ -384,11 +492,11 @@ instance NFData (Fixed t) where
 -- fixed AND that during permutations / increases in popCount we do not set
 -- an already fixed bit -- as otherwise we lose one in popCount.
 
-testBsS :: BitSet -> Maybe (Fixed BitSet)
+testBsS :: BitSet t -> Maybe (Fixed (BitSet t))
 testBsS k = setSucc (Fixed 0 0) (Fixed 0 7) (Fixed 4 k)
 {-# NoInline testBsS #-}
 
-instance SetPredSucc (Fixed BitSet) where
+instance SetPredSucc (Fixed (BitSet t)) where
   setPred (Fixed _ l) (Fixed _ h) (Fixed !m s) = Fixed m <$> setPred l h (s .&. complement m)
   {-# Inline setPred #-}
   --setSucc (Fixed _ l) (Fixed _ h) (Fixed !m s) = Fixed m <$> setSucc l h (s .&. complement m)
@@ -409,7 +517,7 @@ instance SetPredSucc (Fixed BitSet) where
           p   = popShiftL m <$> p''
   {-# Inline setSucc #-}
 
-instance SetPredSucc (Fixed (BitSet:>Interface i)) where
+instance SetPredSucc (Fixed (BitSet t:>Interface i)) where
   setPred (Fixed _ (l:>li)) (Fixed _ (h:>hi)) (Fixed !m (s:>i))
     | s `testBit` getIter i = (Fixed m . (:> i) . ( `setBit` getIter i)) <$> setPred l h (s .&. complement m)
     | otherwise             = (Fixed m) <$> setPred (l:>li) (h:>hi) ((s .&. complement m):>i)
@@ -419,7 +527,7 @@ instance SetPredSucc (Fixed (BitSet:>Interface i)) where
     | otherwise             = (Fixed m) <$> setSucc (l:>li) (h:>hi) ((s .&. complement m):>i)
   {-# Inline setSucc #-}
 
-instance SetPredSucc (Fixed (BitSet:>Interface i:>Interface j)) where
+instance SetPredSucc (Fixed (BitSet t:>Interface i:>Interface j)) where
   setPred (Fixed _ (l:>li:>lj)) (Fixed _ (h:>hi:>hj)) (Fixed !m (s:>i:>j))
     | s `testBit` getIter i && s `testBit` getIter j
     = (Fixed m . (\z       -> (z `setBit` getIter i `setBit` getIter j:>i:>j ))) <$> setPred l h (s .&. complement m)
@@ -439,17 +547,17 @@ instance SetPredSucc (Fixed (BitSet:>Interface i:>Interface j)) where
 
 
 
-instance ApplyMask BitSet where
+instance ApplyMask (BitSet t) where
   applyMask = popShiftL
   {-# Inline applyMask #-}
 
-instance ApplyMask (BitSet :> Interface i) where
+instance ApplyMask (BitSet t :> Interface i) where
   applyMask m (s:>i)
     | popCount s == 0 = 0:>0
     | otherwise       = popShiftL m s :> (Iter . getBitSet . popShiftL m . BitSet $ 2 ^ getIter i)
   {-# Inline applyMask #-}
 
-instance ApplyMask (BitSet :> Interface i :> Interface j) where
+instance ApplyMask (BitSet t :> Interface i :> Interface j) where
   applyMask m (s:>i:>j)
     | popCount s == 0 = 0:>0:>0
     | popCount s == 1 = s' :> i' :> Iter (getIter i')
@@ -467,12 +575,12 @@ instance (Arbitrary t, Arbitrary (Mask t)) => Arbitrary (Fixed t) where
   arbitrary = Fixed <$> arbitrary <*> arbitrary
   shrink (Fixed m s) = [ Fixed m' s' | m' <- shrink m, s' <- shrink s ]
 
-instance Arbitrary BitSet where
+instance Arbitrary (BitSet t) where
   arbitrary = BitSet <$> choose (0,2^arbitraryBitSetMax-1)
   shrink s = let s' = [ s `clearBit` a | a <- activeBitsL s ]
              in  s' ++ concatMap shrink s'
 
-instance Arbitrary (BitSet:>Interface i) where
+instance Arbitrary (BitSet t :> Interface i) where
   arbitrary = do
     s <- arbitrary
     if s==0
@@ -486,7 +594,7 @@ instance Arbitrary (BitSet:>Interface i) where
              ++ [ 0 :> Iter 0 | popCount s == 1 ]
     in  s' ++ concatMap shrink s'
 
-instance Arbitrary (BitSet:>Interface i:>Interface j) where
+instance Arbitrary (BitSet t :> Interface i :> Interface j) where
   arbitrary = do
     s <- arbitrary
     case (popCount s) of

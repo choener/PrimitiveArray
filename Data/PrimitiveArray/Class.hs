@@ -14,7 +14,8 @@ import           Control.Monad (forM_)
 import           Control.Monad.Primitive (PrimMonad)
 import           Control.Monad.ST (runST)
 import           Prelude as P
---import qualified Data.Vector.Fusion.Stream as S
+import qualified Data.Vector.Fusion.Stream.Monadic as SM
+import           Data.Vector.Fusion.Util
 
 import Data.PrimitiveArray.Index
 
@@ -136,7 +137,7 @@ fromAssocsM lb ub def xs = do
 -- | Return all associations from an array.
 
 assocs :: (IndexStream sh, PrimArrayOps arr sh elm) => arr sh elm -> [(sh,elm)]
-assocs arr = P.map (\k -> (k,unsafeIndex arr k)) . S.toList $ streamUp lb ub where
+assocs arr = P.map (\k -> (k,unsafeIndex arr k)) . unId . SM.toList $ streamUp lb ub where
   (lb,ub) = bounds arr
 {-# INLINE assocs #-}
 
@@ -163,7 +164,7 @@ fromAssocs lb ub def xs = runST $ fromAssocsM lb ub def xs >>= unsafeFreeze
 -- | Returns all elements of an immutable array as a list.
 
 toList :: (IndexStream sh, PrimArrayOps arr sh elm) => arr sh elm -> [elm]
-toList arr = let (lb,ub) = bounds arr in P.map ((!) arr) . S.toList $ streamUp lb ub
+toList arr = let (lb,ub) = bounds arr in P.map ((!) arr) . unId . SM.toList $ streamUp lb ub
 {-# INLINE toList #-}
 
 

@@ -120,9 +120,7 @@ instance IndexStream z => IndexStream (z:.PointL) where
   {-# Inline streamDown #-}
 -}
 
-instance IndexStream (PointL I)
-instance IndexStream (PointL O)
-instance IndexStream (PointL C)
+instance IndexStream (Z:.PointL t) => IndexStream (PointL t)
 
 instance Arbitrary (PointL t) where
   arbitrary = do

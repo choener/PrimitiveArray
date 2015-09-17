@@ -165,7 +165,7 @@ streamDownStep h (z,i,j)
   | otherwise = return $ Yield (z:.subword i j) (z,i,j-1)
 {-# Inline [0] streamDownStep #-}
 
-instance IndexStream (Subword I)
+instance (IndexStream (Z:.Subword t)) => IndexStream (Subword t)
 {- where
   streamUp l h = map (\(Z:.i) -> i) $ streamUp (Z:.l) (Z:.h)
   {-# INLINE streamUp #-}
@@ -173,9 +173,9 @@ instance IndexStream (Subword I)
   {-# INLINE streamDown #-}
 -}
 
-instance IndexStream (Subword O)
+--instance IndexStream (Subword O)
 
-instance IndexStream (Subword C)
+--instance IndexStream (Subword C)
 
 instance Arbitrary (Subword t) where
   arbitrary = do

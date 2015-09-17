@@ -1,16 +1,11 @@
 
 module Data.PrimitiveArray.Index.Int where
 
-import Data.Vector.Fusion.Stream.Monadic (flatten,map,Step(..))
+import Data.Vector.Fusion.Stream.Monadic (map,Step(..))
 import Prelude hiding (map)
 
-#if MIN_VERSION_vector(0,11,0)
-import Data.Vector.Fusion.Bundle.Size
-#else
-import Data.Vector.Fusion.Stream.Size
-#endif
-
 import Data.PrimitiveArray.Index.Class
+import Data.PrimitiveArray.Vector.Compat
 
 
 
@@ -27,7 +22,7 @@ instance Index Int where
   {-# Inline inBounds #-}
 
 instance IndexStream z => IndexStream (z:.Int) where
-  streamUp (ls:.l) (hs:.h) = flatten mk step Unknown $ streamUp ls hs
+  streamUp (ls:.l) (hs:.h) = flatten mk step $ streamUp ls hs
     where mk z = return (z,l)
           step (z,k)
             | k > h     = return $ Done
@@ -35,7 +30,7 @@ instance IndexStream z => IndexStream (z:.Int) where
           {-# Inline [0] mk   #-}
           {-# Inline [0] step #-}
   {-# Inline streamUp #-}
-  streamDown (ls:.l) (hs:.h) = flatten mk step Unknown $ streamDown ls hs
+  streamDown (ls:.l) (hs:.h) = flatten mk step $ streamDown ls hs
     where mk z = return (z,h)
           step (z,k)
             | k < l     = return $ Done

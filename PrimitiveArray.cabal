@@ -48,10 +48,8 @@ Library
     Data.PrimitiveArray.FillTables
     Data.PrimitiveArray.Index
     Data.PrimitiveArray.Index.Class
---    Data.PrimitiveArray.Index.Complement
     Data.PrimitiveArray.Index.Int
     Data.PrimitiveArray.Index.IOC
---    Data.PrimitiveArray.Index.Outside
     Data.PrimitiveArray.Index.PhantomInt
     Data.PrimitiveArray.Index.Point
     Data.PrimitiveArray.Index.Set

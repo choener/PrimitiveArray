@@ -7,6 +7,7 @@ import Data.Word (Word)
 import Debug.Trace
 import Test.QuickCheck hiding (Fixed(..), (.&.))
 
+import Data.PrimitiveArray.Index.IOC
 import Data.PrimitiveArray.Index.Set
 
 
@@ -15,7 +16,7 @@ import Data.PrimitiveArray.Index.Set
 -- as it is? The mask should actually freeze-fix those bits, where we are
 -- set to @1@!
 
-prop_Fixed_BitSet_setSucc (u :: Word, Fixed m s :: Fixed BitSet) = traceShow (tgo, tsu) $ tgo == tsu
+prop_Fixed_BitSet_setSucc (u :: Word, Fixed m s :: Fixed (BitSet I)) = traceShow (tgo, tsu) $ tgo == tsu
   where tgo = go s
         tsu = (getFixed <$> setSucc (Fixed 0 0) (Fixed 0 h) (Fixed m s))
         fb1 = m .&. s -- fixed bits to 1
