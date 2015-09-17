@@ -2,8 +2,13 @@
 module Data.PrimitiveArray.Index.Int where
 
 import Data.Vector.Fusion.Stream.Monadic (flatten,map,Step(..))
-import Data.Vector.Fusion.Stream.Size
 import Prelude hiding (map)
+
+#if MIN_VERSION_vector(0,11,0)
+import Data.Vector.Fusion.Bundle.Size
+#else
+import Data.Vector.Fusion.Stream.Size
+#endif
 
 import Data.PrimitiveArray.Index.Class
 

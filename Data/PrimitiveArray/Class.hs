@@ -14,7 +14,7 @@ import           Control.Monad (forM_)
 import           Control.Monad.Primitive (PrimMonad)
 import           Control.Monad.ST (runST)
 import           Prelude as P
-import qualified Data.Vector.Fusion.Stream as S
+--import qualified Data.Vector.Fusion.Stream as S
 
 import Data.PrimitiveArray.Index
 

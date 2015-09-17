@@ -1,3 +1,9 @@
+0.7.0.0
+-------
+
+- vector <= 0.11 support; including compatibility layer
+- redesigned Index structures (for dealing with Inside/Outside/Complement)
+
 0.6.1.1
 -------
 

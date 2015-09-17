@@ -13,47 +13,48 @@ import           Data.Bits
 import           Data.Bits.Extras (Ranked)
 import           Data.Hashable (Hashable)
 import           Data.Serialize
-import           Data.Vector.Fusion.Stream.Size
 import           Data.Vector.Unboxed.Deriving
 import           Data.Vector.Unboxed (Unbox(..))
-import           GHC.Generics
+import           GHC.Generics (Generic)
 import qualified Data.Vector.Fusion.Stream.Monadic as SM
 import qualified Data.Vector.Unboxed as VU
 import           Test.QuickCheck
 
 import           Data.PrimitiveArray.Index.Class
+import           Data.PrimitiveArray.Index.IOC
+import           Data.PrimitiveArray.Vector.Compat
 
 
 
 -- | A point in a left-linear grammar. The syntactic symbol is in left-most
 -- position.
 
-newtype PointL = PointL {fromPointL :: Int}
+newtype PointL t = PointL {fromPointL :: Int}
   deriving (Eq,Read,Show,Generic)
 
 -- | A point in a right-linear grammars.
 
-newtype PointR = PointR {fromPointR :: Int}
+newtype PointR t = PointR {fromPointR :: Int}
   deriving (Eq,Read,Show,Generic)
 
 
 
 derivingUnbox "PointL"
-  [t| PointL -> Int    |]
+  [t| forall t . PointL t -> Int    |]
   [| \ (PointL i) -> i |]
   [| \ i -> PointL i   |]
 
-instance Binary    PointL
-instance Serialize PointL
-instance FromJSON  PointL
-instance ToJSON    PointL
-instance Hashable  PointL
+instance Binary    (PointL t)
+instance Serialize (PointL t)
+instance FromJSON  (PointL t)
+instance ToJSON    (PointL t)
+instance Hashable  (PointL t)
 
-instance NFData PointL where
+instance NFData (PointL t) where
   rnf (PointL l) = rnf l
   {-# Inline rnf #-}
 
-instance Index PointL where
+instance Index (PointL t) where
   linearIndex _ _ (PointL z) = z
   {-# INLINE linearIndex #-}
   smallestLinearIndex (PointL l) = error "still needed?"
@@ -65,6 +66,41 @@ instance Index PointL where
   inBounds (_) (PointL h) (PointL x) = 0<=x && x<=h
   {-# INLINE inBounds #-}
 
+instance IndexStream z => IndexStream (z:.PointL I) where
+  streamUp   (ls:.PointL lf) (hs:.PointL ht) = flatten (streamUpMk   lf) (streamUpStep   ht) $ streamUp ls hs
+  streamDown (ls:.PointL lf) (hs:.PointL ht) = flatten (streamDownMk ht) (streamDownStep lf) $ streamDown ls hs
+  {-# Inline streamUp #-}
+  {-# Inline streamDown #-}
+
+instance IndexStream z => IndexStream (z:.PointL O) where
+  streamUp   (ls:.PointL lf) (hs:.PointL ht) = flatten (streamDownMk ht) (streamDownStep lf) $ streamUp   ls hs
+  streamDown (ls:.PointL lf) (hs:.PointL ht) = flatten (streamUpMk   lf) (streamUpStep   ht) $ streamDown ls hs
+  {-# Inline streamUp #-}
+  {-# Inline streamDown #-}
+
+instance IndexStream z => IndexStream (z:.PointL C) where
+  streamUp   (ls:.PointL lf) (hs:.PointL ht) = flatten (streamUpMk   lf) (streamUpStep   ht) $ streamUp ls hs
+  streamDown (ls:.PointL lf) (hs:.PointL ht) = flatten (streamDownMk ht) (streamDownStep lf) $ streamDown ls hs
+  {-# Inline streamUp #-}
+  {-# Inline streamDown #-}
+
+streamUpMk lf z = return (z,lf)
+{-# Inline [0] streamUpMk #-}
+
+streamUpStep ht (z,k)
+  | k > ht    = return $ SM.Done
+  | otherwise = return $ SM.Yield (z:.PointL k) (z,k+1)
+{-# Inline [0] streamUpStep #-}
+
+streamDownMk ht z = return (z,ht)
+{-# Inline [0] streamDownMk #-}
+
+streamDownStep lf (z,k)
+  | k < lf    = return $ SM.Done
+  | otherwise = return $ SM.Yield (z:.PointL k) (z,k-1)
+{-# Inline [0] streamDownStep #-}
+
+{-
 instance IndexStream z => IndexStream (z:.PointL) where
   streamUp (ls:.PointL lf) (hs:.PointL ht) = SM.flatten mk step Unknown $ streamUp ls hs
     where mk z = return (z,lf)
@@ -82,10 +118,13 @@ instance IndexStream z => IndexStream (z:.PointL) where
           {-# Inline [0] mk   #-}
           {-# Inline [0] step #-}
   {-# Inline streamDown #-}
+-}
 
-instance IndexStream PointL
+instance IndexStream (PointL I)
+instance IndexStream (PointL O)
+instance IndexStream (PointL C)
 
-instance Arbitrary PointL where
+instance Arbitrary (PointL t) where
   arbitrary = do
     b <- choose (0,100)
     return $ PointL b
@@ -95,21 +134,26 @@ instance Arbitrary PointL where
 
 
 
+-- * @PointR@
+--
+-- TODO complete instances
+
 derivingUnbox "PointR"
-  [t| PointR -> Int    |]
+  [t| forall t . PointR t -> Int    |]
   [| \ (PointR i) -> i |]
   [| \ i -> PointR i   |]
 
-instance Binary    PointR
-instance Serialize PointR
-instance FromJSON  PointR
-instance ToJSON    PointR
+instance Binary    (PointR t)
+instance Serialize (PointR t)
+instance FromJSON  (PointR t)
+instance ToJSON    (PointR t)
+instance Hashable  (PointR t)
 
-instance NFData PointR where
+instance NFData (PointR t) where
   rnf (PointR l) = rnf l
   {-# Inline rnf #-}
 
-instance Index PointR where
+instance Index (PointR t) where
   linearIndex l _ (PointR z) = undefined
   {-# INLINE linearIndex #-}
   smallestLinearIndex = undefined

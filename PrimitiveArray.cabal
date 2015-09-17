@@ -1,5 +1,5 @@
 Name:           PrimitiveArray
-Version:        0.6.1.1
+Version:        0.7.0.0
 License:        BSD3
 License-file:   LICENSE
 Maintainer:     choener@bioinf.uni-leipzig.de
@@ -11,7 +11,7 @@ Stability:      Experimental
 Category:       Data
 Build-type:     Simple
 Cabal-version:  >=1.10.0
-tested-with:    GHC == 7.8.4, GHC == 7.10.1
+tested-with:    GHC == 7.8.4, GHC == 7.10.2
 Synopsis:       Efficient multidimensional arrays
 Description:
                 <http://www.bioinf.uni-leipzig.de/Software/gADP/ generalized Algebraic Dynamic Programming>
@@ -48,14 +48,16 @@ Library
     Data.PrimitiveArray.FillTables
     Data.PrimitiveArray.Index
     Data.PrimitiveArray.Index.Class
-    Data.PrimitiveArray.Index.Complement
+--    Data.PrimitiveArray.Index.Complement
     Data.PrimitiveArray.Index.Int
-    Data.PrimitiveArray.Index.Outside
+    Data.PrimitiveArray.Index.IOC
+--    Data.PrimitiveArray.Index.Outside
     Data.PrimitiveArray.Index.PhantomInt
     Data.PrimitiveArray.Index.Point
     Data.PrimitiveArray.Index.Set
     Data.PrimitiveArray.Index.Subword
     Data.PrimitiveArray.QuickCheck.Index.Set
+    Data.PrimitiveArray.Vector.Compat
   build-depends: base                     >= 4.7      && < 4.9
                , aeson                    >= 0.8      && < 0.10
                , binary                   >= 0.7      && < 0.8
@@ -66,10 +68,11 @@ Library
                , OrderedBits              >= 0.0.0.1  && < 0.0.1.0
                , primitive                >= 0.5.4    && < 0.7
                , QuickCheck               >= 2.7      && < 2.9
-               , vector                   >= 0.10     && < 0.11
+               , vector                   >= 0.10     && < 0.12
                , vector-binary-instances  >= 0.2      && < 0.3
                , vector-th-unbox          >= 0.2      && < 0.3
   default-extensions: BangPatterns
+                    , CPP
                     , DefaultSignatures
                     , DeriveDataTypeable
                     , DeriveGeneric

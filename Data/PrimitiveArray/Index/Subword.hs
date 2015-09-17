@@ -9,14 +9,15 @@ import Data.Aeson (FromJSON,ToJSON)
 import Data.Binary (Binary)
 import Data.Hashable (Hashable)
 import Data.Serialize (Serialize)
-import Data.Vector.Fusion.Stream.Monadic (Step(..), flatten, map)
-import Data.Vector.Fusion.Stream.Size
+import Data.Vector.Fusion.Stream.Monadic (Step(..), map)
 import Data.Vector.Unboxed.Deriving
 import GHC.Generics (Generic)
 import Prelude hiding (map)
 import Test.QuickCheck (Arbitrary(..), choose)
 
 import Data.PrimitiveArray.Index.Class
+import Data.PrimitiveArray.Index.IOC
+import Data.PrimitiveArray.Vector.Compat
 
 
 
@@ -28,25 +29,27 @@ import Data.PrimitiveArray.Index.Class
 -- the smallest. We do, however, use (0,0) as the smallest as (0,k) gives
 -- successively smaller upper triangular parts.
 
-newtype Subword = Subword {fromSubword :: (Int:.Int)}
+newtype Subword t = Subword {fromSubword :: (Int:.Int)}
   deriving (Eq,Ord,Show,Generic,Read)
 
 derivingUnbox "Subword"
-  [t| Subword -> (Int,Int) |]
+  [t| forall t . Subword t -> (Int,Int) |]
   [| \ (Subword (i:.j)) -> (i,j) |]
   [| \ (i,j) -> Subword (i:.j) |]
 
-instance Binary    Subword
-instance Serialize Subword
-instance FromJSON  Subword
-instance ToJSON    Subword
-instance Hashable  Subword
+instance Binary    (Subword t)
+instance Serialize (Subword t)
+instance FromJSON  (Subword t)
+instance ToJSON    (Subword t)
+instance Hashable  (Subword t)
 
-instance NFData Subword where
+instance NFData (Subword t) where
   rnf (Subword (i:.j)) = i `seq` rnf j
   {-# Inline rnf #-}
 
-subword :: Int -> Int -> Subword
+-- | Create a @Subword t@ where @t@ is inferred.
+
+subword :: Int -> Int -> Subword t
 subword i j = Subword (i:.j)
 {-# INLINE subword #-}
 
@@ -61,7 +64,7 @@ triangularNumber x = (x * (x+1)) `quot` 2
 -- | Size of an upper triangle starting at 'i' and ending at 'j'. "(0,N)" what
 -- be the normal thing to use.
 
-upperTri :: Subword -> Int
+upperTri :: Subword t -> Int
 upperTri (Subword (i:.j)) = triangularNumber $ j-i+1
 {-# INLINE upperTri #-}
 
@@ -71,19 +74,19 @@ upperTri (Subword (i:.j)) = triangularNumber $ j-i+1
 --
 -- TODO probably doesn't work right with non-zero base ?!
 
-subwordIndex :: Subword -> Subword -> Int
+subwordIndex :: Subword s -> Subword t -> Int
 subwordIndex (Subword (l:.n)) (Subword (i:.j)) = adr n (i,j) -- - adr n (l,n)
   where
     adr n (i,j) = (n+1)*i - triangularNumber i + j
 {-# INLINE subwordIndex #-}
 
-subwordFromIndex :: Subword -> Int -> Subword
+subwordFromIndex :: Subword s -> Int -> Subword t
 subwordFromIndex = error "subwordFromIndex not implemented"
 {-# INLINE subwordFromIndex #-}
 
 
 
-instance Index Subword where
+instance Index (Subword t) where
   linearIndex _ h i = subwordIndex h i
   {-# Inline linearIndex #-}
   smallestLinearIndex _ = error "still needed?"
@@ -95,8 +98,17 @@ instance Index Subword where
   inBounds _ (Subword (_:.h)) (Subword (i:.j)) = 0<=i && i<=j && j<=h
   {-# Inline inBounds #-}
 
-instance IndexStream z => IndexStream (z:.Subword) where
-  streamUp (ls:.Subword (l:._)) (hs:.Subword (_:.h)) = flatten mk step Unknown $ streamUp ls hs
+-- | @Subword I@ (inside)
+
+instance IndexStream z => IndexStream (z:.Subword I) where
+  streamUp   (ls:.Subword (l:._)) (hs:.Subword (_:.h)) = flatten (streamUpMk     h) (streamUpStep   l h) $ streamUp   ls hs
+  streamDown (ls:.Subword (l:._)) (hs:.Subword (_:.h)) = flatten (streamDownMk l h) (streamDownStep   h) $ streamDown ls hs
+  {-# Inline streamUp #-}
+  {-# Inline streamDown #-}
+
+{-
+instance IndexStream z => IndexStream (z:.Subword I) where
+  streamUp (ls:.Subword (l:._)) (hs:.Subword (_:.h)) = flatten mk step $ streamUp ls hs
     where mk z = return (z,h,h)
           step (z,i,j)
             | i < l     = return $ Done
@@ -105,7 +117,7 @@ instance IndexStream z => IndexStream (z:.Subword) where
           {-# Inline [0] mk   #-}
           {-# Inline [0] step #-}
   {-# Inline streamUp #-}
-  streamDown (ls:.Subword (l:._)) (hs:.Subword (_:.h)) = flatten mk step Unknown $ streamDown ls hs
+  streamDown (ls:.Subword (l:._)) (hs:.Subword (_:.h)) = flatten mk step $ streamDown ls hs
     where mk z = return (z,l,h)
           step (z,i,j)
             | i > h     = return $ Done
@@ -114,16 +126,58 @@ instance IndexStream z => IndexStream (z:.Subword) where
           {-# Inline [0] mk   #-}
           {-# Inline [0] step #-}
   {-# Inline streamDown #-}
+-}
 
--- Default methods don't inline in a good way!
+-- | @Subword O@ (outside).
+--
+-- Note: @streamUp@ really needs to use @streamDownMk@ / @streamDownStep@
+-- for the right order of indices!
 
-instance IndexStream Subword where
+instance IndexStream z => IndexStream (z:.Subword O) where
+  streamUp   (ls:.Subword (l:._)) (hs:.Subword (_:.h)) = flatten (streamDownMk l h) (streamDownStep   h) $ streamUp   ls hs
+  streamDown (ls:.Subword (l:._)) (hs:.Subword (_:.h)) = flatten (streamUpMk     h) (streamUpStep   l h) $ streamDown ls hs
+  {-# Inline streamUp #-}
+  {-# Inline streamDown #-}
+
+instance IndexStream z => IndexStream (z:.Subword C) where
+  streamUp   (ls:.Subword (l:._)) (hs:.Subword (_:.h)) = flatten (streamUpMk     h) (streamUpStep   l h) $ streamUp   ls hs
+  streamDown (ls:.Subword (l:._)) (hs:.Subword (_:.h)) = flatten (streamDownMk l h) (streamDownStep   h) $ streamDown ls hs
+  {-# Inline streamUp #-}
+  {-# Inline streamDown #-}
+
+-- | generic @mk@ for @streamUp@ / @streamDown@
+
+streamUpMk h z = return (z,h,h)
+{-# Inline [0] streamUpMk #-}
+
+streamUpStep l h (z,i,j)
+  | i < l     = return $ Done
+  | j > h     = return $ Skip (z,i-1,i-1)
+  | otherwise = return $ Yield (z:.subword i j) (z,i,j+1)
+{-# Inline [0] streamUpStep #-}
+
+streamDownMk l h z = return (z,l,h)
+{-# Inline [0] streamDownMk #-}
+
+streamDownStep h (z,i,j)
+  | i > h     = return $ Done
+  | j < i     = return $ Skip (z,i+1,h)
+  | otherwise = return $ Yield (z:.subword i j) (z,i,j-1)
+{-# Inline [0] streamDownStep #-}
+
+instance IndexStream (Subword I)
+{- where
   streamUp l h = map (\(Z:.i) -> i) $ streamUp (Z:.l) (Z:.h)
   {-# INLINE streamUp #-}
   streamDown l h = map (\(Z:.i) -> i) $ streamDown (Z:.l) (Z:.h)
   {-# INLINE streamDown #-}
+-}
 
-instance Arbitrary Subword where
+instance IndexStream (Subword O)
+
+instance IndexStream (Subword C)
+
+instance Arbitrary (Subword t) where
   arbitrary = do
     a <- choose (0,100)
     b <- choose (0,100)

@@ -8,9 +8,9 @@ module Data.PrimitiveArray.FillTables where
 
 import Control.Monad.Primitive
 import Control.Monad (when)
-import Data.Vector.Fusion.Stream as S
+--import Data.Vector.Fusion.Stream as S
 import Data.Vector.Fusion.Stream.Monadic as M
-import Data.Vector.Fusion.Stream.Size
+--import Data.Vector.Fusion.Stream.Size
 
 import Data.PrimitiveArray.Class
 import Data.PrimitiveArray.Index

@@ -13,7 +13,6 @@ import           Data.Bits
 import           Data.Bits.Extras
 import           Data.Hashable (Hashable)
 import           Data.Serialize (Serialize)
-import           Data.Vector.Fusion.Stream.Size
 import           Data.Vector.Unboxed.Deriving
 import           Data.Vector.Unboxed (Unbox(..))
 import           Debug.Trace
@@ -24,6 +23,8 @@ import           Test.QuickCheck (Arbitrary(..), choose, elements)
 
 import           Data.Bits.Ordered
 import           Data.PrimitiveArray.Index.Class
+import           Data.PrimitiveArray.Index.IOC
+import           Data.PrimitiveArray.Vector.Compat
 
 
 
@@ -183,14 +184,14 @@ instance Index BitSet where
 
 
 instance IndexStream z => IndexStream (z:.BitSet) where
-  streamUp (ls:.l) (hs:.h) = SM.flatten mk step Unknown $ streamUp ls hs
+  streamUp (ls:.l) (hs:.h) = flatten mk step $ streamUp ls hs
     where mk z = return (z , (if l <= h then Just l else Nothing))
           step (z , Nothing) = return $ SM.Done
           step (z , Just t ) = return $ SM.Yield (z:.t) (z , setSucc l h t)
           {-# Inline [0] mk   #-}
           {-# Inline [0] step #-}
   {-# Inline streamUp   #-}
-  streamDown (ls:.l) (hs:.h) = SM.flatten mk step Unknown $ streamDown ls hs
+  streamDown (ls:.l) (hs:.h) = flatten mk step $ streamDown ls hs
     where mk z = return (z :. (if l <= h then Just h else Nothing))
           step (z :. Nothing) = return $ SM.Done
           step (z :. Just t ) = return $ SM.Yield (z:.t) (z :. setPred l h t)
@@ -199,14 +200,14 @@ instance IndexStream z => IndexStream (z:.BitSet) where
   {-# Inline streamDown #-}
 
 instance IndexStream z => IndexStream (z:.(BitSet:>Interface i)) where
-  streamUp (ls:.l@(sl:>_)) (hs:.h@(sh:>_)) = SM.flatten mk step Unknown $ streamUp ls hs
+  streamUp (ls:.l@(sl:>_)) (hs:.h@(sh:>_)) = flatten mk step $ streamUp ls hs
     where mk z = return (z, (if sl<=sh then Just (sl:>(Iter . max 0 $ lsbZ sl)) else Nothing))
           step (z , Nothing) = return $ SM.Done
           step (z,  Just t ) = return $ SM.Yield (z:.t) (z , setSucc l h t)
           {-# Inline [0] mk   #-}
           {-# Inline [0] step #-}
   {-# Inline streamUp #-}
-  streamDown (ls:.l@(sl:>_)) (hs:.h@(sh:>_)) = SM.flatten mk step Unknown $ streamDown ls hs
+  streamDown (ls:.l@(sl:>_)) (hs:.h@(sh:>_)) = flatten mk step $ streamDown ls hs
     where mk z = return (z, (if sl<=sh then Just (sh:>(Iter . max 0 $ lsbZ sh)) else Nothing))
           step (z , Nothing) = return $ SM.Done
           step (z , Just t ) = return $ SM.Yield (z:.t) (z , setPred l h t)
@@ -215,7 +216,7 @@ instance IndexStream z => IndexStream (z:.(BitSet:>Interface i)) where
   {-# Inline streamDown #-}
 
 instance IndexStream z => IndexStream (z:.(BitSet:>Interface i:>Interface j)) where
-  streamUp (ls:.l@(sl:>_:>_)) (hs:.h@(sh:>_:>_)) = SM.flatten mk step Unknown $ streamUp ls hs
+  streamUp (ls:.l@(sl:>_:>_)) (hs:.h@(sh:>_:>_)) = flatten mk step $ streamUp ls hs
     where mk z | sl > sh   = return (z , Nothing)
                | cl == 0   = return (z , Just (0:>0:>0))
                | cl == 1   = let i = lsbZ sl
@@ -228,7 +229,7 @@ instance IndexStream z => IndexStream (z:.(BitSet:>Interface i:>Interface j)) wh
           {-# Inline [0] mk   #-}
           {-# Inline [0] step #-}
   {-# Inline streamUp #-}
-  streamDown (ls:.l@(sl:>_:>_)) (hs:.h@(sh:>_:>_)) = SM.flatten mk step Unknown $ streamDown ls hs
+  streamDown (ls:.l@(sl:>_:>_)) (hs:.h@(sh:>_:>_)) = flatten mk step $ streamDown ls hs
     where mk z | sl > sh   = return (z , Nothing)
                | ch == 0   = return (z , Just (0:>0:>0))
                | ch == 1   = let i = lsbZ sh
