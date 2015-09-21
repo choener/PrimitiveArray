@@ -242,6 +242,18 @@ streamDownBsStep l h (z , Just t ) = return $ SM.Yield (z:.t) (z , setPred l h t
 
 -- ** @BS1@
 
+instance Index (BS1 i t) where
+  linearIndex (BS1 ls li) (BS1 hs hi) (BS1 s i) = linearIndex (ls:.li) (hs:.hi) (s:.i)
+  {-# INLINE linearIndex #-}
+  smallestLinearIndex (BS1 s i) = smallestLinearIndex (s:.i)
+  {-# INLINE smallestLinearIndex #-}
+  largestLinearIndex (BS1 s i) = largestLinearIndex (s:.i)
+  {-# INLINE largestLinearIndex #-}
+  size (BS1 ls li) (BS1 hs hi) = size (ls:.li) (hs:.hi)
+  {-# INLINE size #-}
+  inBounds (BS1 ls li) (BS1 hs hi) (BS1 s i) = inBounds (ls:.li) (hs:.hi) (s:.i)
+  {-# INLINE inBounds #-}
+
 instance IndexStream z => IndexStream (z:.BS1 i I) where
   streamUp   (ls:.l) (hs:.h) = flatten (streamUpBsIMk   l h) (streamUpBsIStep   l h) $ streamUp   ls hs
   streamDown (ls:.l) (hs:.h) = flatten (streamDownBsIMk l h) (streamDownBsIStep l h) $ streamDown ls hs
@@ -277,6 +289,20 @@ streamDownBsIStep l h (z , Just t ) = return $ SM.Yield (z:.t) (z , setPred l h 
 {-# Inline [0] streamDownBsIStep #-}
 
 
+
+-- ** BS2
+
+instance Index (BS2 i j t) where
+  linearIndex (BS2 ls li lj) (BS2 hs hi hj) (BS2 s i j) = linearIndex (ls:.li:.lj) (hs:.hi:.hj) (s:.i:.j)
+  {-# INLINE linearIndex #-}
+  smallestLinearIndex (BS2 s i j) = smallestLinearIndex (s:.i:.j)
+  {-# INLINE smallestLinearIndex #-}
+  largestLinearIndex (BS2 s i j) = largestLinearIndex (s:.i:.j)
+  {-# INLINE largestLinearIndex #-}
+  size (BS2 ls li lj) (BS2 hs hi hj) = size (ls:.li:.lj) (hs:.hi:.hj)
+  {-# INLINE size #-}
+  inBounds (BS2 ls li lj) (BS2 hs hi hj) (BS2 s i j) = inBounds (ls:.li:.lj) (hs:.hi:.hj) (s:.i:.j)
+  {-# INLINE inBounds #-}
 
 instance IndexStream z => IndexStream (z:.BS2 i j I) where
   streamUp   (ls:.l) (hs:.h) = flatten (streamUpBsIiMk   l h) (streamUpBsIiStep   l h) $ streamUp   ls hs
@@ -439,11 +465,11 @@ instance SetPredSucc (BS2 i j t) where
 
 
 
-type instance Mask (BitSet t) = BitSet t
+type instance Mask (BitSet t)  = BitSet t
 
-type instance Mask (BS1 i t)  = BitSet t
+type instance Mask (BS1 i t)   = BitSet t
 
-type instance Mask (BitSet t :> Interface i :> Interface j) = BitSet t
+type instance Mask (BS2 i j t) = BitSet t
 
 
 
@@ -504,25 +530,24 @@ instance SetPredSucc (Fixed (BS1 i t)) where
     | otherwise             = (Fixed m) <$> setSucc (BS1 l li) (BS1 h hi) (BS1 (s .&. complement m) i)
   {-# Inline setSucc #-}
 
-instance SetPredSucc (Fixed (BitSet t:>Interface i:>Interface j)) where
-{-
-  setPred (Fixed _ (l:>li:>lj)) (Fixed _ (h:>hi:>hj)) (Fixed !m (s:>i:>j))
+instance SetPredSucc (Fixed (BS2 i j t)) where
+  setPred (Fixed _ (BS2 l li lj)) (Fixed _ (BS2 h hi hj)) (Fixed !m (BS2 s i j))
     | s `testBit` getIter i && s `testBit` getIter j
-    = (Fixed m . (\z       -> (z `setBit` getIter i `setBit` getIter j:>i:>j ))) <$> setPred l h (s .&. complement m)
+    = (Fixed m . (\z       -> BS2 (z `setBit` getIter i `setBit` getIter j) i j)) <$> setPred l h (s .&. complement m)
     | s `testBit` getIter i
-    = (Fixed m . (\(z:>j') -> (z `setBit` getIter i                   :>i:>j'))) <$> setPred (l:>lj) (h:>hj) (s .&. complement m :>j)
+    = (Fixed m . (\(BS1 z j') -> BS2 (z `setBit` getIter i) i j')) <$> setPred (BS1 l lj) (BS1 h hj) (BS1 (s .&. complement m) j)
     | s `testBit` getIter j
-    = (Fixed m . (\(z:>i') -> (z `setBit` getIter j                   :>i':>j))) <$> setPred (l:>li) (h:>hi) (s .&. complement m :>i)
+    = (Fixed m . (\(BS1 z i') -> BS2 (z `setBit` getIter j) i' j)) <$> setPred (BS1 l li) (BS1 h hi) (BS1 (s .&. complement m) i)
   {-# Inline setPred #-}
-  setSucc (Fixed _ (l:>li:>lj)) (Fixed _ (h:>hi:>hj)) (Fixed !m (s:>i:>j))
+  setSucc (Fixed _ (BS2 l li lj)) (Fixed _ (BS2 h hi hj)) (Fixed !m (BS2 s i j))
     | s `testBit` getIter i && s `testBit` getIter j
-    = (Fixed m . (\z       -> (z `setBit` getIter i `setBit` getIter j:>i:>j ))) <$> setSucc l h (s .&. complement m)
+    = (Fixed m . (\z       -> BS2 (z `setBit` getIter i `setBit` getIter j) i j)) <$> setSucc l h (s .&. complement m)
     | s `testBit` getIter i
-    = (Fixed m . (\(z:>j') -> (z `setBit` getIter i                   :>i:>j'))) <$> setSucc (l:>lj) (h:>hj) (s .&. complement m :>j)
+    = (Fixed m . (\(BS1 z j') -> BS2 (z `setBit` getIter i) i j')) <$> setSucc (BS1 l lj) (BS1 h hj) (BS1 (s .&. complement m) j)
     | s `testBit` getIter j
-    = (Fixed m . (\(z:>i') -> (z `setBit` getIter j                   :>i':>j))) <$> setSucc (l:>li) (h:>hi) (s .&. complement m :>i)
+    = (Fixed m . (\(BS1 z i') -> BS2 (z `setBit` getIter j) i' j)) <$> setSucc (BS1 l li) (BS1 h hi) (BS1 (s .&. complement m) i)
   {-# Inline setSucc #-}
--}
+
 
 
 instance ApplyMask (BitSet t) where
@@ -535,14 +560,14 @@ instance ApplyMask (BS1 i t) where
     | otherwise       = BS1 (popShiftL m s) (Iter . getBitSet . popShiftL m . BitSet $ 2 ^ getIter i)
   {-# Inline applyMask #-}
 
-instance ApplyMask (BitSet t :> Interface i :> Interface j) where
-  applyMask m (s:>i:>j)
-    | popCount s == 0 = 0:>0:>0
-    | popCount s == 1 = s' :> i' :> Iter (getIter i')
-    | otherwise       = s' :> i' :> j'
+instance ApplyMask (BS2 i j t) where
+  applyMask m (BS2 s i j)
+    | popCount s == 0 = BS2 0 0 0
+    | popCount s == 1 = BS2 s' i' (Iter $ getIter i')
+    | otherwise       = BS2 s' i' j'
     where s' = popShiftL m s
-          i' = Iter . getBitSet . popShiftL m . BitSet $ 2 ^ getIter i
-          j' = Iter . getBitSet . popShiftL m . BitSet $ 2 ^ getIter j
+          i' = Iter . getBitSet . popShiftL m $ (BitSet $ 2 ^ getIter i :: BitSet t)
+          j' = Iter . getBitSet . popShiftL m $ (BitSet $ 2 ^ getIter j :: BitSet t)
   {-# Inline applyMask #-}
 
 
@@ -558,38 +583,38 @@ instance Arbitrary (BitSet t) where
   shrink s = let s' = [ s `clearBit` a | a <- activeBitsL s ]
              in  s' ++ concatMap shrink s'
 
-instance Arbitrary (BitSet t :> Interface i) where
+instance Arbitrary (BS1 i t) where
   arbitrary = do
     s <- arbitrary
     if s==0
-      then return (s:>Iter 0)
+      then return (BS1 s 0)
       else do i <- elements $ activeBitsL s
-              return (s:>Iter i)
-  shrink (s:>i) =
-    let s' = [ (s `clearBit` a:>i)
+              return (BS1 s $ Iter i)
+  shrink (BS1 s i) =
+    let s' = [ BS1 (s `clearBit` a) i
              | a <- activeBitsL s
              , Iter a /= i ]
-             ++ [ 0 :> Iter 0 | popCount s == 1 ]
+             ++ [ BS1 0 0 | popCount s == 1 ]
     in  s' ++ concatMap shrink s'
 
-instance Arbitrary (BitSet t :> Interface i :> Interface j) where
+instance Arbitrary (BS2 i j t) where
   arbitrary = do
     s <- arbitrary
     case (popCount s) of
-      0 -> return (s:>Iter 0:>Iter 0)
+      0 -> return (BS2 s 0 0)
       1 -> do i <- elements $ activeBitsL s
-              return (s:>Iter i:>Iter i)
+              return (BS2 s (Iter i) (Iter i))
       _ -> do i <- elements $ activeBitsL s
               j <- elements $ activeBitsL (s `clearBit` i)
-              return (s:>Iter i:>Iter j)
-  shrink (s:>i:>j) =
-    let s' = [ (s `clearBit` a:>i:>j)
+              return (BS2 s (Iter i) (Iter j))
+  shrink (BS2 s i j) =
+    let s' = [ BS2 (s `clearBit` a) i j
              | a <- activeBitsL s
              , Iter a /= i, Iter a /= j ]
-             ++ [ 0 `setBit` a :> Iter a :> Iter a
+             ++ [ BS2 (0 `setBit` a) (Iter a) (Iter a)
                 | popCount s == 2
                 , a <- activeBitsL s ]
-             ++ [ 0 :> Iter 0 :> Iter 0
+             ++ [ BS2 0 0 0
                 | popCount s == 1 ]
     in  s' ++ concatMap shrink s'
 
