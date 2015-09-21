@@ -38,7 +38,10 @@ import           Data.PrimitiveArray.Vector.Compat
 -- these to reduce programming overhead.
 
 newtype Interface t = Iter { getIter :: Int }
-  deriving (Eq,Ord,Read,Show,Generic,Num)
+  deriving (Eq,Ord,Generic,Num)
+
+instance Show (Interface t) where
+  show (Iter i) = "(I:" ++ show i ++ ")"
 
 -- | Declare the interface to be the start of a path.
 
@@ -76,11 +79,19 @@ bitSetC = BitSet
 
 -- | A bitset with one interface.
 
-type BS1I t i = BitSet t :> Interface i
+-- type BS1I t i = BitSet t :> Interface i
+
+data BS1I i t = BS1I !(BitSet t) !(Interface i)
+
+deriving instance Show (BS1I i t)
 
 -- | A bitset with two interfaces.
 
-type BS2I t i j = BitSet t :> Interface i :> Interface j
+-- type BS2I t i j = BitSet t :> Interface i :> Interface j
+
+data BS2I i j t = BS2I !(BitSet t) !(Interface i) !(Interface j)
+
+deriving instance Show (BS2I i j t)
 
 -- | Successor and Predecessor for sets. Designed as a class to accomodate
 -- sets with interfaces and without interfaces with one function.
@@ -291,6 +302,16 @@ streamDownBsIStep l h (z , Just t ) = return $ SM.Yield (z:.t) (z , setPred l h 
 
 instance IndexStream (Z:.(BitSet t :> Interface i)) => IndexStream (BitSet t :> Interface i)
 
+instance IndexStream (z:.(BitSet t:>Interface i)) => IndexStream (z:.BS1I i t) where
+  streamUp   (ls:.BS1I sl il) (hs:.BS1I sh ih) = SM.map (\(z:.(sk:>ik)) -> z:.BS1I sk ik) $ streamUp   (ls:.(sl:>il)) (hs:.(sh:>ih))
+  streamDown (ls:.BS1I sl il) (hs:.BS1I sh ih) = SM.map (\(z:.(sk:>ik)) -> z:.BS1I sk ik) $ streamDown (ls:.(sl:>il)) (hs:.(sh:>ih))
+  {-# Inline streamUp #-}
+  {-# Inline streamDown #-}
+
+instance IndexStream (Z:.BS1I i t) => IndexStream (BS1I i t)
+
+
+
 instance IndexStream z => IndexStream (z:.(BitSet I:>Interface i:>Interface j)) where
   streamUp   (ls:.l) (hs:.h) = flatten (streamUpBsIiMk   l h) (streamUpBsIiStep   l h) $ streamUp   ls hs
   streamDown (ls:.l) (hs:.h) = flatten (streamDownBsIiMk l h) (streamDownBsIiStep l h) $ streamDown ls hs
@@ -364,6 +385,16 @@ streamDownBsIiStep l h (z , Just t ) = return $ SM.Yield (z:.t) (z , setPred l h
 {-# Inline [0] streamDownBsIiStep #-}
 
 instance IndexStream (Z:.(BitSet t :> Interface i :> Interface j)) => IndexStream (BitSet t :> Interface i :> Interface j)
+
+instance IndexStream (z:.(BitSet t:>Interface i:>Interface j)) => IndexStream (z:.BS2I i j t) where
+  streamUp   (ls:.BS2I sl il jl) (hs:.BS2I sh ih jh) = SM.map (\(z:.(sk:>ik:>jk)) -> z:.BS2I sk ik jk) $ streamUp   (ls:.(sl:>il:>jl)) (hs:.(sh:>ih:>jh))
+  streamDown (ls:.BS2I sl il jl) (hs:.BS2I sh ih jh) = SM.map (\(z:.(sk:>ik:>jk)) -> z:.BS2I sk ik jk) $ streamDown (ls:.(sl:>il:>jl)) (hs:.(sh:>ih:>jh))
+  {-# Inline streamUp #-}
+  {-# Inline streamDown #-}
+
+instance IndexStream (Z:.BS2I i j t) => IndexStream (BS2I i j t)
+
+
 
 instance SetPredSucc (BitSet t) where
   setSucc l h s

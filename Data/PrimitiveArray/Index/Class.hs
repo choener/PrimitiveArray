@@ -47,11 +47,15 @@ instance (Arbitrary a, Arbitrary b) => Arbitrary (a :. b) where
 
 
 
-infixl 3 :>
+infixr 3 :>
 
 -- | A different version of strict pairs. Makes for simpler type inference in
 -- multi-tape grammars. We use @:>@ when we have special needs, like
 -- non-recursive instances on inductives tuples, as used for set indices.
+--
+-- This one is @infixr@ so that in @a :> b@ we can have the main type in
+-- @a@ and the specializing types in @b@ and then dispatch on @a :> ts@
+-- with @ts@ maybe a chain of @:>@.
 
 data a :> b = !a :> !b
   deriving (Eq,Ord,Show,Generic)

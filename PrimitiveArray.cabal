@@ -76,6 +76,7 @@ Library
                     , DeriveGeneric
                     , FlexibleContexts
                     , FlexibleInstances
+                    , GADTs
                     , GeneralizedNewtypeDeriving
                     , MultiParamTypeClasses
                     , RankNTypes
