@@ -6,7 +6,8 @@ resolver: lts-3.9
 # Local packages, usually specified by relative directory name
 packages:
 - '.'
-- ../Lib-OrderedBits/
+- location: ../Lib-OrderedBits/
+  extra-dep: true
 
 # Packages to be pulled from upstream that are not in the resolver (e.g., acme-missiles-0.3)
 extra-deps:
