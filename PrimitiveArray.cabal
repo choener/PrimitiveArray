@@ -54,6 +54,7 @@ Library
     Data.PrimitiveArray.Index.Point
     Data.PrimitiveArray.Index.Set
     Data.PrimitiveArray.Index.Subword
+    Data.PrimitiveArray.Index.Unit
     Data.PrimitiveArray.QuickCheck.Index.Set
     Data.PrimitiveArray.Vector.Compat
   build-depends: base                     >= 4.7      && < 4.9
