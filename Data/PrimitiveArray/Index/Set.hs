@@ -224,16 +224,21 @@ instance IndexStream z => IndexStream (z:.BitSet C) where
 
 instance IndexStream (Z:.BitSet t) => IndexStream (BitSet t)
 
+
+streamUpBsMk :: (Monad m, Ord a) => a -> a -> t -> m (t, Maybe a)
 streamUpBsMk l h z = return (z, if l <= h then Just l else Nothing)
 {-# Inline [0] streamUpBsMk #-}
 
+streamUpBsStep :: (Monad m, SetPredSucc s) => s -> s -> (t, Maybe s) -> m (SM.Step (t, Maybe s) (t :. s))
 streamUpBsStep l h (z , Nothing) = return $ SM.Done
 streamUpBsStep l h (z , Just t ) = return $ SM.Yield (z:.t) (z , setSucc l h t)
 {-# Inline [0] streamUpBsStep #-}
 
+streamDownBsMk :: (Monad m, Ord a) => a -> a -> t -> m (t, Maybe a)
 streamDownBsMk l h z = return (z, if l <=h then Just h else Nothing)
 {-# Inline [0] streamDownBsMk #-}
 
+streamDownBsStep :: (Monad m, SetPredSucc s) => s -> s -> (t, Maybe s) -> m (SM.Step (t, Maybe s) (t :. s))
 streamDownBsStep l h (z , Nothing) = return $ SM.Done
 streamDownBsStep l h (z , Just t ) = return $ SM.Yield (z:.t) (z , setPred l h t)
 {-# Inline [0] streamDownBsStep #-}
@@ -274,16 +279,20 @@ instance IndexStream z => IndexStream (z:.BS1 i C) where
 
 instance IndexStream (Z:.BS1 i t) => IndexStream (BS1 i t)
 
+streamUpBsIMk :: (Monad m) => BS1 a i -> BS1 b i -> z -> m (z, Maybe (BS1 c i))
 streamUpBsIMk (BS1 sl _) (BS1 sh _) z = return (z, if sl <= sh then Just (BS1 sl (Iter . max 0 $ lsbZ sl)) else Nothing)
 {-# Inline [0] streamUpBsIMk #-}
 
+streamUpBsIStep :: (Monad m, SetPredSucc s) => s -> s -> (t, Maybe s) -> m (SM.Step (t, Maybe s) (t :. s))
 streamUpBsIStep l h (z , Nothing) = return $ SM.Done
 streamUpBsIStep l h (z,  Just t ) = return $ SM.Yield (z:.t) (z , setSucc l h t)
 {-# Inline [0] streamUpBsIStep #-}
 
+streamDownBsIMk :: (Monad m) => BS1 a i -> BS1 b i -> z -> m (z, Maybe (BS1 c i))
 streamDownBsIMk (BS1 sl _) (BS1 sh _) z = return (z, if sl <= sh then Just (BS1 sl (Iter . max 0 $ lsbZ sh)) else Nothing)
 {-# Inline [0] streamDownBsIMk #-}
 
+streamDownBsIStep :: (Monad m, SetPredSucc s) => s -> s -> (t, Maybe s) -> m (SM.Step (t, Maybe s) (t :. s))
 streamDownBsIStep l h (z , Nothing) = return $ SM.Done
 streamDownBsIStep l h (z , Just t ) = return $ SM.Yield (z:.t) (z , setPred l h t)
 {-# Inline [0] streamDownBsIStep #-}
@@ -324,6 +333,7 @@ instance IndexStream z => IndexStream (z:.BS2 i j C) where
 
 instance IndexStream (Z:.BS2 i j t) => IndexStream (BS2 i j t)
 
+streamUpBsIiMk :: (Monad m) => BS2 a b i -> BS2 c d i -> z -> m (z, Maybe (BS2 e f i))
 streamUpBsIiMk (BS2 sl _ _) (BS2 sh _ _) z
   | sl > sh   = return (z , Nothing)
   | cl == 0   = return (z , Just (BS2 0 0 0))
@@ -334,10 +344,12 @@ streamUpBsIiMk (BS2 sl _ _) (BS2 sh _ _) z
   where cl = popCount sl
 {-# Inline [0] streamUpBsIiMk #-}
 
+streamUpBsIiStep :: (Monad m, SetPredSucc s) => s -> s -> (t, Maybe s) -> m (SM.Step (t, Maybe s) (t :. s))
 streamUpBsIiStep l h (z , Nothing) = return $ SM.Done
 streamUpBsIiStep l h (z , Just t ) = return $ SM.Yield (z:.t) (z , setSucc l h t)
 {-# Inline [0] streamUpBsIiStep #-}
 
+streamDownBsIiMk :: (Monad m) => BS2 a b i -> BS2 c d i -> z -> m (z, Maybe (BS2 e f i))
 streamDownBsIiMk (BS2 sl _ _) (BS2 sh _ _) z
   | sl > sh   = return (z , Nothing)
   | ch == 0   = return (z , Just (BS2 0 0 0))
@@ -348,6 +360,7 @@ streamDownBsIiMk (BS2 sl _ _) (BS2 sh _ _) z
   where ch = popCount sh
 {-# Inline [0] streamDownBsIiMk #-}
 
+streamDownBsIiStep :: (Monad m, SetPredSucc s) => s -> s -> (t, Maybe s) -> m (SM.Step (t, Maybe s) (t :. s))
 streamDownBsIiStep l h (z , Nothing) = return $ SM.Done
 streamDownBsIiStep l h (z , Just t ) = return $ SM.Yield (z:.t) (z , setPred l h t)
 {-# Inline [0] streamDownBsIiStep #-}
