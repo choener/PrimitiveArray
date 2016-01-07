@@ -191,8 +191,8 @@ instance (IndexStream (Z:.Subword t)) => IndexStream (Subword t)
 
 instance Arbitrary (Subword t) where
   arbitrary = do
-    a <- choose (0,100)
-    b <- choose (0,100)
+    a <- choose (0,20)
+    b <- choose (0,20)
     return $ Subword (min a b :. max a b)
   shrink (Subword (i:.j))
     | i<j       = [Subword (i:.j-1), Subword (i+1:.j)]
