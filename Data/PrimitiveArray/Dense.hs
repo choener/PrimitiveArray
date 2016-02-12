@@ -24,7 +24,7 @@ import           Data.Aeson (ToJSON,FromJSON)
 import           Data.Binary (Binary)
 import           Data.Serialize (Serialize)
 import           Data.Vector.Binary
-import           Data.Vector.Cereal
+import           Data.Vector.Serialize
 import           Data.Vector.Generic.Mutable as GM hiding (length)
 import           Data.Vector.Unboxed.Mutable (Unbox)
 import           GHC.Generics (Generic)
