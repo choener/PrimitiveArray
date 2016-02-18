@@ -43,6 +43,7 @@ extra-source-files:
 Library
   Exposed-modules:
     Data.PrimitiveArray
+    Data.PrimitiveArray.Checked
     Data.PrimitiveArray.Class
     Data.PrimitiveArray.Dense
     Data.PrimitiveArray.FillTables
