@@ -20,8 +20,8 @@ import           Data.PrimitiveArray hiding ((!))
 
 --(!) :: PrimArrayOps arr sh elm => arr sh elm -> sh -> elm
 (!) arr@(Unboxed l h v) idx
-  | not (uncurry inBounds (bounds arr) idx) = error "(!) / inBounds: out of bounds!"
-  | li < 0 || li >= len = error "(!) / linearIndex: out of bounds!"
+  | not (uncurry inBounds (bounds arr) idx) = error $ "(!) / inBounds: out of bounds! " ++ show (l,h,idx)
+  | li < 0 || li >= len = error $ "(!) / linearIndex: out of bounds! " ++ show (l,h,li,len,idx)
   | otherwise = unsafeIndex arr idx
   where li  = linearIndex l h idx
         len = VG.length v
