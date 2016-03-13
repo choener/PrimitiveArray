@@ -1,3 +1,8 @@
+0.7.0.1
+-------
+
+- Data.PrimitiveArray.Checked to capture index out-of-bounds problems
+
 0.7.0.0
 -------
 
