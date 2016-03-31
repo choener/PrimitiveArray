@@ -74,7 +74,7 @@ instance (Index sh, Unbox elm) => MPrimArrayOps Unboxed sh elm where
     forM_ [0 .. size l h -1] $ \k -> unsafeWrite mba k def
     return ma
   readM  (MUnboxed l h mba) idx     = assert (inBounds l h idx) $ unsafeRead  mba (linearIndex l h idx)
-  writeM (MUnboxed l h mba) idx elm = write mba (linearIndex l h idx) elm
+  writeM (MUnboxed l h mba) idx elm = unsafeWrite mba (linearIndex l h idx) elm
   {-# INLINE boundsM #-}
   {-# INLINE fromListM #-}
   {-# INLINE newM #-}

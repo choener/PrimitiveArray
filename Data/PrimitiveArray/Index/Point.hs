@@ -1,4 +1,6 @@
 
+{-# Language MagicHash #-}
+
 -- | @Point@ index structures are used for left- and right-linear grammars.
 -- Such grammars have at most one syntactic symbol on each r.h.s. of a rule.
 -- The syntactic symbol needs to be in an outermost position.
@@ -19,6 +21,7 @@ import           GHC.Generics (Generic)
 import qualified Data.Vector.Fusion.Stream.Monadic as SM
 import qualified Data.Vector.Unboxed as VU
 import           Test.QuickCheck
+import           GHC.Exts
 
 import           Data.PrimitiveArray.Index.Class
 import           Data.PrimitiveArray.Index.IOC
@@ -96,20 +99,22 @@ instance IndexStream z => IndexStream (z:.PointL C) where
   {-# Inline streamUp #-}
   {-# Inline streamDown #-}
 
-streamUpMk lf z = return (z,lf)
+data SP z = SP !z !Int#
+
+streamUpMk (I# lf) z = return $ SP z lf
 {-# Inline [0] streamUpMk #-}
 
-streamUpStep ht (z,k)
-  | k > ht    = return $ SM.Done
-  | otherwise = return $ SM.Yield (z:.PointL k) (z,k+1)
+streamUpStep (I# ht) (SP z k)
+  | 1# <- k ># ht = return $ SM.Done
+  | otherwise     = return $ SM.Yield (z:.PointL (I# k)) (SP z (k +# 1#))
 {-# Inline [0] streamUpStep #-}
 
-streamDownMk ht z = return (z,ht)
+streamDownMk (I# ht) z = return $ SP z ht
 {-# Inline [0] streamDownMk #-}
 
-streamDownStep lf (z,k)
-  | k < lf    = return $ SM.Done
-  | otherwise = return $ SM.Yield (z:.PointL k) (z,k-1)
+streamDownStep (I# lf) (SP z k)
+  | 1# <- k <# lf = return $ SM.Done
+  | otherwise     = return $ SM.Yield (z:.PointL (I# k)) (SP z (k -# 1#))
 {-# Inline [0] streamDownStep #-}
 
 {-
