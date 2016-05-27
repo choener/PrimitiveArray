@@ -1,0 +1,16 @@
+resolver: nightly-2016-05-27
+
+packages:
+- .
+- location:
+    git: https://github.com/ekmett/bits
+    commit: ff98de1305cd39f2e888135e33b08b3c1592ae53
+  extra-dep: true
+- location: ../Lib-OrderedBits
+  extra-dep: true
+
+extra-deps:
+- cereal-vector-0.2.0.1
+
+flags: {}
+
