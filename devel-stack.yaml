@@ -1,5 +1,9 @@
-resolver: lts-5.10
+resolver: lts-6.4
+
 packages:
 - '.'
-extra-deps:
-- OrderedBits-0.0.1.0
+- location: ../Lib-OrderedBits
+  extra-dep: true
+
+extra-deps: []
+

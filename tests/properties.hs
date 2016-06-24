@@ -1,8 +1,9 @@
 
 module Main where
 
-import           Test.Framework.Providers.QuickCheck2
-import           Test.Framework.TH
+import           Test.Tasty
+import           Test.Tasty.QuickCheck (testProperty)
+import           Test.Tasty.TH
 
 import qualified  Data.PrimitiveArray.QuickCheck.Index.Set as QCS
 

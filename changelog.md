@@ -1,3 +1,9 @@
+0.7.0.2
+-------
+
+- minor updates to dependencies
+- tasty framework
+
 0.7.0.1
 -------
 
