@@ -118,28 +118,6 @@ instance IndexStream z => IndexStream (z:.Subword I) where
   {-# Inline streamUp #-}
   {-# Inline streamDown #-}
 
-{-
-instance IndexStream z => IndexStream (z:.Subword I) where
-  streamUp (ls:.Subword (l:._)) (hs:.Subword (_:.h)) = flatten mk step $ streamUp ls hs
-    where mk z = return (z,h,h)
-          step (z,i,j)
-            | i < l     = return $ Done
-            | j > h     = return $ Skip (z,i-1,i-1)
-            | otherwise = return $ Yield (z:.subword i j) (z,i,j+1)
-          {-# Inline [0] mk   #-}
-          {-# Inline [0] step #-}
-  {-# Inline streamUp #-}
-  streamDown (ls:.Subword (l:._)) (hs:.Subword (_:.h)) = flatten mk step $ streamDown ls hs
-    where mk z = return (z,l,h)
-          step (z,i,j)
-            | i > h     = return $ Done
-            | j < i     = return $ Skip (z,i+1,h)
-            | otherwise = return $ Yield (z:.subword i j) (z,i,j-1)
-          {-# Inline [0] mk   #-}
-          {-# Inline [0] step #-}
-  {-# Inline streamDown #-}
--}
-
 -- | @Subword O@ (outside).
 --
 -- Note: @streamUp@ really needs to use @streamDownMk@ / @streamDownStep@
@@ -150,6 +128,8 @@ instance IndexStream z => IndexStream (z:.Subword O) where
   streamDown (ls:.Subword (l:._)) (hs:.Subword (_:.h)) = flatten (streamUpMk     h) (streamUpStep   l h) $ streamDown ls hs
   {-# Inline streamUp #-}
   {-# Inline streamDown #-}
+
+-- | @Subword C@ (complement)
 
 instance IndexStream z => IndexStream (z:.Subword C) where
   streamUp   (ls:.Subword (l:._)) (hs:.Subword (_:.h)) = flatten (streamUpMk     h) (streamUpStep   l h) $ streamUp   ls hs
@@ -178,16 +158,6 @@ streamDownStep h (z,i,j)
 {-# Inline [0] streamDownStep #-}
 
 instance (IndexStream (Z:.Subword t)) => IndexStream (Subword t)
-{- where
-  streamUp l h = map (\(Z:.i) -> i) $ streamUp (Z:.l) (Z:.h)
-  {-# INLINE streamUp #-}
-  streamDown l h = map (\(Z:.i) -> i) $ streamDown (Z:.l) (Z:.h)
-  {-# INLINE streamDown #-}
--}
-
---instance IndexStream (Subword O)
-
---instance IndexStream (Subword C)
 
 instance Arbitrary (Subword t) where
   arbitrary = do

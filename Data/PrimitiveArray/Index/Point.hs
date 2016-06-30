@@ -17,11 +17,12 @@ import           Data.Hashable (Hashable)
 import           Data.Serialize
 import           Data.Vector.Unboxed.Deriving
 import           Data.Vector.Unboxed (Unbox(..))
+import           GHC.Exts
 import           GHC.Generics (Generic)
 import qualified Data.Vector.Fusion.Stream.Monadic as SM
 import qualified Data.Vector.Unboxed as VU
-import           Test.QuickCheck
-import           GHC.Exts
+import           Test.QuickCheck as TQ
+import           Test.SmallCheck.Series as TS
 
 import           Data.PrimitiveArray.Index.Class
 import           Data.PrimitiveArray.Index.IOC
@@ -33,7 +34,7 @@ import           Data.PrimitiveArray.Vector.Compat
 -- position.
 
 newtype PointL t = PointL {fromPointL :: Int}
-  deriving (Eq,Read,Show,Generic)
+  deriving (Eq,Ord,Read,Show,Generic)
 
 pointLI :: Int -> PointL I
 pointLI = PointL
@@ -50,7 +51,7 @@ pointLC = PointL
 -- | A point in a right-linear grammars.
 
 newtype PointR t = PointR {fromPointR :: Int}
-  deriving (Eq,Read,Show,Generic)
+  deriving (Eq,Ord,Read,Show,Generic)
 
 
 
@@ -117,26 +118,6 @@ streamDownStep (I# lf) (SP z k)
   | otherwise     = return $ SM.Yield (z:.PointL (I# k)) (SP z (k -# 1#))
 {-# Inline [0] streamDownStep #-}
 
-{-
-instance IndexStream z => IndexStream (z:.PointL) where
-  streamUp (ls:.PointL lf) (hs:.PointL ht) = SM.flatten mk step Unknown $ streamUp ls hs
-    where mk z = return (z,lf)
-          step (z,k)
-            | k > ht    = return $ SM.Done
-            | otherwise = return $ SM.Yield (z:.PointL k) (z,k+1)
-          {-# Inline [0] mk   #-}
-          {-# Inline [0] step #-}
-  {-# Inline streamUp #-}
-  streamDown (ls:.PointL lf) (hs:.PointL ht) = SM.flatten mk step Unknown $ streamDown ls hs
-    where mk z = return (z,ht)
-          step (z,k)
-            | k < lf    = return $ SM.Done
-            | otherwise = return $ SM.Yield (z:.PointL k) (z,k-1)
-          {-# Inline [0] mk   #-}
-          {-# Inline [0] step #-}
-  {-# Inline streamDown #-}
--}
-
 instance IndexStream (Z:.PointL t) => IndexStream (PointL t)
 
 instance Arbitrary (PointL t) where
@@ -146,6 +127,9 @@ instance Arbitrary (PointL t) where
   shrink (PointL j)
     | 0<j = [PointL $ j-1]
     | otherwise = []
+
+instance Monad m => Serial m (PointL t) where
+  series = PointL . TS.getNonNegative <$> series
 
 
 
