@@ -1,8 +1,9 @@
-0.7.0.2
+0.7.1.0
 -------
 
 - minor updates to dependencies
 - tasty framework
+- Subword/upper triangular indexing provided by DPutils
 
 0.7.0.1
 -------

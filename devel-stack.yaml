@@ -4,6 +4,8 @@ packages:
 - '.'
 - location: ../Lib-OrderedBits
   extra-dep: true
+- location: ../Lib-DPutils
+  extra-dep: true
 
 extra-deps: []
 

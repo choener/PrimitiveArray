@@ -1,5 +1,5 @@
 Name:           PrimitiveArray
-Version:        0.7.0.2
+Version:        0.7.1.0
 License:        BSD3
 License-file:   LICENSE
 Maintainer:     choener@bioinf.uni-leipzig.de
@@ -65,13 +65,15 @@ Library
                , cereal-vector            >= 0.2      &&  < 0.3
                , deepseq                  >= 1.3      &&  < 1.5
                , hashable                 >= 1.2      &&  < 1.3
-               , OrderedBits              >= 0.0.1.1  &&  < 0.0.2.0
                , primitive                >= 0.5.4    &&  < 0.7
                , QuickCheck               >= 2.7      &&  < 2.9
                , smallcheck               >= 1.1      &&  < 1.2
                , vector                   >= 0.10     &&  < 0.12
                , vector-binary-instances  >= 0.2      &&  < 0.3
                , vector-th-unbox          >= 0.2      &&  < 0.3
+               --
+               , OrderedBits              >= 0.0.1.1  &&  < 0.0.2.0
+               , DPutils                  >= 0.0.0    &&  < 0.0.1
   default-extensions: BangPatterns
                     , CPP
                     , DefaultSignatures
