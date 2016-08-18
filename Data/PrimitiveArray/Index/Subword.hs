@@ -5,6 +5,7 @@
 module Data.PrimitiveArray.Index.Subword where
 
 import Control.DeepSeq (NFData(..))
+import Control.Monad (filterM, guard)
 import Data.Aeson (FromJSON,ToJSON)
 import Data.Binary (Binary)
 import Data.Hashable (Hashable)
@@ -14,6 +15,7 @@ import Data.Vector.Unboxed.Deriving
 import GHC.Generics (Generic)
 import Prelude hiding (map)
 import Test.QuickCheck (Arbitrary(..), choose)
+import Test.SmallCheck.Series as TS
 
 import Math.TriangularNumbers
 
@@ -138,4 +140,17 @@ instance Arbitrary (Subword t) where
   shrink (Subword (i:.j))
     | i<j       = [Subword (i:.j-1), Subword (i+1:.j)]
     | otherwise = []
+
+instance Monad m => Serial m (Subword t) where
+  series = do
+    i <- TS.getNonNegative <$> series
+    j <- TS.getNonNegative <$> series
+    guard $ i<=j
+    return $ subword i j
+    {-
+    let nns :: Series m Int = TS.getNonNegative <$> series
+    ps <- nns >< nns
+    let qs = [ subword i j | (i,j) <- ps, i<=j ]
+    return qs
+    -}
 

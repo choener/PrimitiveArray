@@ -107,6 +107,7 @@ test-suite properties
   other-modules:
     QuickCheck
     SmallCheck
+    Common
   ghc-options:
     -threaded -rtsopts -with-rtsopts=-N
   hs-source-dirs:
