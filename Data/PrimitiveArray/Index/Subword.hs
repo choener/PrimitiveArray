@@ -15,6 +15,8 @@ import GHC.Generics (Generic)
 import Prelude hiding (map)
 import Test.QuickCheck (Arbitrary(..), choose)
 
+import Math.TriangularNumbers
+
 import Data.PrimitiveArray.Index.Class
 import Data.PrimitiveArray.Index.IOC
 import Data.PrimitiveArray.Vector.Compat
@@ -65,47 +67,16 @@ subwordC :: Int -> Int -> Subword C
 subwordC i j = Subword (i:.j)
 {-# INLINE subwordC #-}
 
--- | triangular numbers
---
--- A000217
-
-triangularNumber :: Int -> Int
-triangularNumber x = (x * (x+1)) `quot` 2
-{-# INLINE triangularNumber #-}
-
--- | Size of an upper triangle starting at 'i' and ending at 'j'. "(0,N)" what
--- be the normal thing to use.
-
-upperTri :: Subword t -> Int
-upperTri (Subword (i:.j)) = triangularNumber $ j-i+1
-{-# INLINE upperTri #-}
-
--- | Subword indexing. Given the longest subword and the current subword,
--- calculate a linear index "[0,..]". "(l,n)" in this case means "l"ower bound,
--- length "n". And "(i,j)" is the normal index.
---
--- TODO probably doesn't work right with non-zero base ?!
-
-subwordIndex :: Subword s -> Subword t -> Int
-subwordIndex (Subword (l:.n)) (Subword (i:.j)) = adr n (i,j) -- - adr n (l,n)
-  where
-    adr n (i,j) = (n+1)*i - triangularNumber i + j
-{-# INLINE subwordIndex #-}
-
-subwordFromIndex :: Subword s -> Int -> Subword t
-subwordFromIndex = error "subwordFromIndex not implemented"
-{-# INLINE subwordFromIndex #-}
-
 
 
 instance Index (Subword t) where
-  linearIndex _ h i = subwordIndex h i
+  linearIndex _ (Subword (_:.n)) (Subword (i:.j)) = toLinear n (i,j)
   {-# Inline linearIndex #-}
   smallestLinearIndex _ = error "still needed?"
   {-# Inline smallestLinearIndex #-}
-  largestLinearIndex h = upperTri h -1
+  largestLinearIndex (Subword (i:.j)) = upperTri (i,j) - 1
   {-# Inline largestLinearIndex #-}
-  size _ h = upperTri h
+  size _ (Subword (i:.j)) = upperTri (i,j)
   {-# Inline size #-}
   inBounds _ (Subword (_:.h)) (Subword (i:.j)) = 0<=i && i<=j && j<=h
   {-# Inline inBounds #-}
