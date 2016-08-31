@@ -4,6 +4,7 @@
 
 module Data.PrimitiveArray.Index.Unit where
 
+import Control.Applicative (pure)
 import Control.DeepSeq (NFData(..))
 import Data.Aeson (FromJSON,ToJSON)
 import Data.Binary (Binary)

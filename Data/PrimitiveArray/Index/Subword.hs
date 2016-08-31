@@ -4,6 +4,7 @@
 
 module Data.PrimitiveArray.Index.Subword where
 
+import Control.Applicative ((<$>))
 import Control.DeepSeq (NFData(..))
 import Control.Monad (filterM, guard)
 import Data.Aeson (FromJSON,ToJSON)
