@@ -77,9 +77,9 @@ instance Index (Subword t) where
   {-# Inline linearIndex #-}
   smallestLinearIndex _ = error "still needed?"
   {-# Inline smallestLinearIndex #-}
-  largestLinearIndex (Subword (i:.j)) = upperTri (i,j) - 1
+  largestLinearIndex (Subword (i:.j)) = linearizeUppertri (i,j) - 1
   {-# Inline largestLinearIndex #-}
-  size _ (Subword (i:.j)) = upperTri (i,j)
+  size _ (Subword (i:.j)) = linearizeUppertri (i,j)
   {-# Inline size #-}
   inBounds _ (Subword (_:.h)) (Subword (i:.j)) = 0<=i && i<=j && j<=h
   {-# Inline inBounds #-}
