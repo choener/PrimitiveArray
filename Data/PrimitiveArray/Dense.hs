@@ -77,7 +77,7 @@ instance (Index sh, Unbox elm) => MPrimArrayOps Unboxed sh elm where
   writeM (MUnboxed l h mba) idx elm = unsafeWrite mba (linearIndex l h idx) elm
   {-# INLINE boundsM #-}
   {-# INLINE fromListM #-}
-  {-# INLINE newM #-}
+  {-# NoInline newM #-}
   {-# INLINE newWithM #-}
   {-# INLINE readM #-}
   {-# INLINE writeM #-}
@@ -139,7 +139,7 @@ instance (Index sh) => MPrimArrayOps Boxed sh elm where
   writeM (MBoxed l h mba) idx elm = assert (inBounds l h idx) $ GM.write mba (linearIndex l h idx) elm
   {-# INLINE boundsM #-}
   {-# INLINE fromListM #-}
-  {-# INLINE newM #-}
+  {-# NoInline newM #-}
   {-# INLINE newWithM #-}
   {-# INLINE readM #-}
   {-# INLINE writeM #-}
