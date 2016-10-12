@@ -6,7 +6,7 @@ module Data.PrimitiveArray.Index.Unit where
 
 import Control.Applicative (pure)
 import Control.DeepSeq (NFData(..))
-import Data.Aeson (FromJSON,ToJSON)
+import Data.Aeson (FromJSON,FromJSONKey,ToJSON,ToJSONKey)
 import Data.Binary (Binary)
 import Data.Hashable (Hashable)
 import Data.Serialize (Serialize)
@@ -28,11 +28,13 @@ derivingUnbox "Unit"
   [| \ Unit -> ()   |]
   [| \ ()   -> Unit |]
 
-instance Binary    (Unit t)
-instance Serialize (Unit t)
-instance FromJSON  (Unit t)
-instance ToJSON    (Unit t)
-instance Hashable  (Unit t)
+instance Binary       (Unit t)
+instance Serialize    (Unit t)
+instance FromJSON     (Unit t)
+instance FromJSONKey  (Unit t)
+instance ToJSON       (Unit t)
+instance ToJSONKey    (Unit t)
+instance Hashable     (Unit t)
 
 instance NFData (Unit t) where
   rnf Unit = ()

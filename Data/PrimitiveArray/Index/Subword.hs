@@ -7,7 +7,7 @@ module Data.PrimitiveArray.Index.Subword where
 import Control.Applicative ((<$>))
 import Control.DeepSeq (NFData(..))
 import Control.Monad (filterM, guard)
-import Data.Aeson (FromJSON,ToJSON)
+import Data.Aeson (FromJSON,FromJSONKey,ToJSON,ToJSONKey)
 import Data.Binary (Binary)
 import Data.Hashable (Hashable)
 import Data.Serialize (Serialize)
@@ -42,11 +42,13 @@ derivingUnbox "Subword"
   [| \ (Subword (i:.j)) -> (i,j) |]
   [| \ (i,j) -> Subword (i:.j) |]
 
-instance Binary    (Subword t)
-instance Serialize (Subword t)
-instance FromJSON  (Subword t)
-instance ToJSON    (Subword t)
-instance Hashable  (Subword t)
+instance Binary       (Subword t)
+instance Serialize    (Subword t)
+instance FromJSON     (Subword t)
+instance FromJSONKey  (Subword t)
+instance ToJSON       (Subword t)
+instance ToJSONKey    (Subword t)
+instance Hashable     (Subword t)
 
 instance NFData (Subword t) where
   rnf (Subword (i:.j)) = i `seq` rnf j

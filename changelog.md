@@ -1,3 +1,8 @@
+0.7.2.0
+-------
+
+- JSONKey (To/From) for index types.
+
 0.7.1.0
 -------
 

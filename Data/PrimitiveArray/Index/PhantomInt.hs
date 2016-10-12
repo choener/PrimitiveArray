@@ -4,7 +4,7 @@
 module Data.PrimitiveArray.Index.PhantomInt where
 
 import Control.DeepSeq (NFData(..))
-import Data.Aeson (FromJSON,ToJSON)
+import Data.Aeson (FromJSON,FromJSONKey,ToJSON,ToJSONKey)
 import Data.Binary (Binary)
 import Data.Data
 import Data.Hashable (Hashable)
@@ -44,12 +44,14 @@ pIntC = PInt
 derivingUnbox "PInt"
   [t| forall t p . PInt t p -> Int |]  [| getPInt |]  [| PInt |]
 
-instance Binary    (PInt t p)
-instance Serialize (PInt t p)
-instance FromJSON  (PInt t p)
-instance ToJSON    (PInt t p)
-instance Hashable  (PInt t p)
-instance NFData    (PInt t p)
+instance Binary       (PInt t p)
+instance Serialize    (PInt t p)
+instance FromJSON     (PInt t p)
+instance FromJSONKey  (PInt t p)
+instance ToJSON       (PInt t p)
+instance ToJSONKey    (PInt t p)
+instance Hashable     (PInt t p)
+instance NFData       (PInt t p)
 
 instance Index (PInt t p) where
   linearIndex _ _ (PInt k) = k

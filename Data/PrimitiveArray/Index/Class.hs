@@ -35,6 +35,9 @@ instance (ToJSON    a, ToJSON    b) => ToJSON    (a:.b)
 instance (FromJSON  a, FromJSON  b) => FromJSON  (a:.b)
 instance (Hashable  a, Hashable  b) => Hashable  (a:.b)
 
+instance (ToJSON a  , ToJSONKey   a, ToJSON b  , ToJSONKey   b) => ToJSONKey   (a:.b)
+instance (FromJSON a, FromJSONKey a, FromJSON b, FromJSONKey b) => FromJSONKey (a:.b)
+
 deriving instance (Read a, Read b) => Read (a:.b)
 
 instance (NFData a, NFData b) => NFData (a:.b) where

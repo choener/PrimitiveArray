@@ -60,11 +60,13 @@ derivingUnbox "PointL"
   [| \ (PointL i) -> i |]
   [| \ i -> PointL i   |]
 
-instance Binary    (PointL t)
-instance Serialize (PointL t)
-instance FromJSON  (PointL t)
-instance ToJSON    (PointL t)
-instance Hashable  (PointL t)
+instance Binary       (PointL t)
+instance Serialize    (PointL t)
+instance FromJSON     (PointL t)
+instance FromJSONKey  (PointL t)
+instance ToJSON       (PointL t)
+instance ToJSONKey    (PointL t)
+instance Hashable     (PointL t)
 
 instance NFData (PointL t) where
   rnf (PointL l) = rnf l
