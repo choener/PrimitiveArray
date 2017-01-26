@@ -37,11 +37,11 @@ import           Data.PrimitiveArray.Vector.Compat
 -- These include a @First@ element and a @Last@ element. We phantom-type
 -- these to reduce programming overhead.
 
-newtype Interface t = Iter { getIter :: Int }
+newtype Boundary t = Boundary { getBoundary :: Int }
   deriving (Eq,Ord,Generic,Num)
 
-instance Show (Interface t) where
-  show (Iter i) = "(I:" ++ show i ++ ")"
+instance Show (Boundary t) where
+  show (Boundary i) = "(I:" ++ show i ++ ")"
 
 -- | Declare the interface to be the start of a path.
 
@@ -79,17 +79,17 @@ bitSetC = BitSet
 
 -- | A bitset with one interface.
 
--- type BS1 t i = BitSet t :> Interface i
+-- type BS1 t i = BitSet t :> Boundary i
 
-data BS1 i t = BS1 !(BitSet t) !(Interface i)
+data BS1 i t = BS1 !(BitSet t) !(Boundary i)
 
 deriving instance Show (BS1 i t)
 
 -- | A bitset with two interfaces.
 
--- type BS2 t i j = BitSet t :> Interface i :> Interface j
+-- type BS2 t i j = BitSet t :> Boundary i :> Boundary j
 
-data BS2 i j t = BS2 !(BitSet t) !(Interface i) !(Interface j)
+data BS2 i j t = BS2 !(BitSet t) !(Boundary i) !(Boundary j)
 
 deriving instance Show (BS2 i j t)
 
@@ -145,29 +145,29 @@ class ApplyMask s where
 
 
 
-derivingUnbox "Interface"
-  [t| forall t . Interface t -> Int |]
-  [| \(Iter i) -> i            |]
-  [| Iter                      |]
+derivingUnbox "Boundary"
+  [t| forall t . Boundary t -> Int |]
+  [| \(Boundary i) -> i            |]
+  [| Boundary                      |]
 
-instance Binary    (Interface t)
-instance Serialize (Interface t)
-instance ToJSON    (Interface t)
-instance FromJSON  (Interface t)
-instance Hashable  (Interface t)
+instance Binary    (Boundary t)
+instance Serialize (Boundary t)
+instance ToJSON    (Boundary t)
+instance FromJSON  (Boundary t)
+instance Hashable  (Boundary t)
 
-instance NFData (Interface t) where
-  rnf (Iter i) = rnf i
+instance NFData (Boundary t) where
+  rnf (Boundary i) = rnf i
   {-# Inline rnf #-}
 
-instance Index (Interface i) where
-  linearIndex l _ (Iter z) = z - smallestLinearIndex l
+instance Index (Boundary i) where
+  linearIndex l _ (Boundary z) = z - smallestLinearIndex l
   {-# INLINE linearIndex #-}
-  smallestLinearIndex (Iter l) = l
+  smallestLinearIndex (Boundary l) = l
   {-# INLINE smallestLinearIndex #-}
-  largestLinearIndex (Iter h) = h
+  largestLinearIndex (Boundary h) = h
   {-# INLINE largestLinearIndex #-}
-  size (Iter l) (Iter h) = h - l + 1
+  size (Boundary l) (Boundary h) = h - l + 1
   {-# INLINE size #-}
   inBounds l h z = l <= z && z <= h
   {-# INLINE inBounds #-}
@@ -280,7 +280,7 @@ instance IndexStream z => IndexStream (z:.BS1 i C) where
 instance IndexStream (Z:.BS1 i t) => IndexStream (BS1 i t)
 
 streamUpBsIMk :: (Monad m) => BS1 a i -> BS1 b i -> z -> m (z, Maybe (BS1 c i))
-streamUpBsIMk (BS1 sl _) (BS1 sh _) z = return (z, if sl <= sh then Just (BS1 sl (Iter . max 0 $ lsbZ sl)) else Nothing)
+streamUpBsIMk (BS1 sl _) (BS1 sh _) z = return (z, if sl <= sh then Just (BS1 sl (Boundary . max 0 $ lsbZ sl)) else Nothing)
 {-# Inline [0] streamUpBsIMk #-}
 
 streamUpBsIStep :: (Monad m, SetPredSucc s) => s -> s -> (t, Maybe s) -> m (SM.Step (t, Maybe s) (t :. s))
@@ -289,7 +289,7 @@ streamUpBsIStep l h (z,  Just t ) = return $ SM.Yield (z:.t) (z , setSucc l h t)
 {-# Inline [0] streamUpBsIStep #-}
 
 streamDownBsIMk :: (Monad m) => BS1 a i -> BS1 b i -> z -> m (z, Maybe (BS1 c i))
-streamDownBsIMk (BS1 sl _) (BS1 sh _) z = return (z, if sl <= sh then Just (BS1 sl (Iter . max 0 $ lsbZ sh)) else Nothing)
+streamDownBsIMk (BS1 sl _) (BS1 sh _) z = return (z, if sl <= sh then Just (BS1 sl (Boundary . max 0 $ lsbZ sh)) else Nothing)
 {-# Inline [0] streamDownBsIMk #-}
 
 streamDownBsIStep :: (Monad m, SetPredSucc s) => s -> s -> (t, Maybe s) -> m (SM.Step (t, Maybe s) (t :. s))
@@ -338,9 +338,9 @@ streamUpBsIiMk (BS2 sl _ _) (BS2 sh _ _) z
   | sl > sh   = return (z , Nothing)
   | cl == 0   = return (z , Just (BS2 0 0 0))
   | cl == 1   = let i = lsbZ sl
-                in  return (z , Just (BS2 sl (Iter i) (Iter i)))
+                in  return (z , Just (BS2 sl (Boundary i) (Boundary i)))
   | otherwise = let i = lsbZ sl; j = lsbZ (sl `clearBit` i)
-                in  return (z , Just (BS2 sl (Iter i) (Iter j)))
+                in  return (z , Just (BS2 sl (Boundary i) (Boundary j)))
   where cl = popCount sl
 {-# Inline [0] streamUpBsIiMk #-}
 
@@ -354,9 +354,9 @@ streamDownBsIiMk (BS2 sl _ _) (BS2 sh _ _) z
   | sl > sh   = return (z , Nothing)
   | ch == 0   = return (z , Just (BS2 0 0 0))
   | ch == 1   = let i = lsbZ sh
-                in  return (z , Just (BS2 sh (Iter i) (Iter i)))
+                in  return (z , Just (BS2 sh (Boundary i) (Boundary i)))
   | otherwise = let i = lsbZ sh; j = lsbZ sh
-                in  return (z , Just (BS2 sh (Iter i) (Iter j)))
+                in  return (z , Just (BS2 sh (Boundary i) (Boundary j)))
   where ch = popCount sh
 {-# Inline [0] streamDownBsIiMk #-}
 
@@ -389,28 +389,28 @@ instance SetPredSucc (BitSet t) where
   {-# Inline setPred #-}
 
 instance SetPredSucc (BS1 i t) where
-  setSucc (BS1 l il) (BS1 h ih) (BS1 s (Iter is))
+  setSucc (BS1 l il) (BS1 h ih) (BS1 s (Boundary is))
     | cs > ch                          = Nothing
-    | Just is' <- maybeNextActive is s = Just $ BS1 s  (Iter is')
-    | Just s'  <- popPermutation ch s  = Just $ BS1 s' (Iter $ lsbZ s')
+    | Just is' <- maybeNextActive is s = Just $ BS1 s  (Boundary is')
+    | Just s'  <- popPermutation ch s  = Just $ BS1 s' (Boundary $ lsbZ s')
     | cs >= ch                         = Nothing
-    | cs < ch                          = let s' = BitSet $ 2^(cs+1)-1 in Just (BS1 s' (Iter (lsbZ s')))
+    | cs < ch                          = let s' = BitSet $ 2^(cs+1)-1 in Just (BS1 s' (Boundary (lsbZ s')))
     where ch = popCount h
           cs = popCount s
   {-# Inline setSucc #-}
-  setPred (BS1 l il) (BS1 h ih) (BS1 s (Iter is))
+  setPred (BS1 l il) (BS1 h ih) (BS1 s (Boundary is))
     | cs < cl                          = Nothing
-    | Just is' <- maybeNextActive is s = Just $ BS1 s  (Iter is')
-    | Just s'  <- popPermutation ch s  = Just $ BS1 s' (Iter  $ lsbZ s')
+    | Just is' <- maybeNextActive is s = Just $ BS1 s  (Boundary is')
+    | Just s'  <- popPermutation ch s  = Just $ BS1 s' (Boundary  $ lsbZ s')
     | cs <= cl                         = Nothing
-    | cs > cl                          = let s' = BitSet $ 2^(cs-1)-1 in Just (BS1 s' (Iter (max 0 $ lsbZ s')))
+    | cs > cl                          = let s' = BitSet $ 2^(cs-1)-1 in Just (BS1 s' (Boundary (max 0 $ lsbZ s')))
     where cl = popCount l
           ch = popCount h
           cs = popCount s
   {-# Inline setPred #-}
 
 instance SetPredSucc (BS2 i j t) where
-  setSucc (BS2 l il jl) (BS2 h ih jh) (BS2 s (Iter is) (Iter js))
+  setSucc (BS2 l il jl) (BS2 h ih jh) (BS2 s (Boundary is) (Boundary js))
     -- early termination
     | cs > ch                         = Nothing
     -- in case nothing was set, set initial set @1@ with both interfaces
@@ -420,27 +420,27 @@ instance SetPredSucc (BS2 i j t) where
     -- and set the single interface
     | cs == 1
     , Just s'  <- popPermutation ch s
-    , let is' = lsbZ s'          = Just (BS2 s' (Iter is') (Iter is'))
+    , let is' = lsbZ s'          = Just (BS2 s' (Boundary is') (Boundary is'))
     -- try advancing only one of the interfaces, doesn't collide with @is@
-    | Just js' <- maybeNextActive js (s `clearBit` is) = Just (BS2 s (Iter is) (Iter js'))
+    | Just js' <- maybeNextActive js (s `clearBit` is) = Just (BS2 s (Boundary is) (Boundary js'))
     -- advance other interface, 
     | Just is' <- maybeNextActive is s
-    , let js' = lsbZ (s `clearBit` is')      = Just (BS2 s (Iter is') (Iter js'))
+    , let js' = lsbZ (s `clearBit` is')      = Just (BS2 s (Boundary is') (Boundary js'))
     -- find another permutation of the population
     | Just s'  <- popPermutation ch s
     , let is' = lsbZ s'
-    , Just js' <- maybeNextActive is' s'   = Just (BS2 s' (Iter is') (Iter js'))
+    , Just js' <- maybeNextActive is' s'   = Just (BS2 s' (Boundary is') (Boundary js'))
     -- increasing the population forbidden by upper limit
     | cs >= ch                        = Nothing
     -- increase population
     | cs < ch
     , let s' = BitSet $ 2^(cs+1)-1
     , let is' = lsbZ s'
-    , Just js' <- maybeNextActive is' s'   = Just (BS2 s' (Iter is') (Iter js'))
+    , Just js' <- maybeNextActive is' s'   = Just (BS2 s' (Boundary is') (Boundary js'))
     where ch = popCount h
           cs = popCount s
   {-# Inline setSucc #-}
-  setPred (BS2 l il jl) (BS2 h ih jh) (BS2 s (Iter is) (Iter js))
+  setPred (BS2 l il jl) (BS2 h ih jh) (BS2 s (Boundary is) (Boundary js))
     -- early termination
     | cs < cl                         = Nothing
     -- in case nothing was set, set initial set @1@ with both interfaces
@@ -450,25 +450,25 @@ instance SetPredSucc (BS2 i j t) where
     -- and set the single interface
     | cs == 1
     , Just s'  <- popPermutation ch s
-    , let is' = lsbZ s'          = Just (BS2 s' (Iter is') (Iter is'))
+    , let is' = lsbZ s'          = Just (BS2 s' (Boundary is') (Boundary is'))
     -- return the single @0@ set
     | cs == 1                         = Just (BS2 0 0 0)
     -- try advancing only one of the interfaces, doesn't collide with @is@
-    | Just js' <- maybeNextActive js (s `clearBit` is) = Just (BS2 s (Iter is) (Iter js'))
+    | Just js' <- maybeNextActive js (s `clearBit` is) = Just (BS2 s (Boundary is) (Boundary js'))
     -- advance other interface, 
     | Just is' <- maybeNextActive is s
-    , let js' = lsbZ (s `clearBit` is')      = Just (BS2 s (Iter is') (Iter js'))
+    , let js' = lsbZ (s `clearBit` is')      = Just (BS2 s (Boundary is') (Boundary js'))
     -- find another permutation of the population
     | Just s'  <- popPermutation ch s
     , let is' = lsbZ s'
-    , Just js' <- maybeNextActive is' s'   = Just (BS2 s' (Iter is') (Iter js'))
+    , Just js' <- maybeNextActive is' s'   = Just (BS2 s' (Boundary is') (Boundary js'))
     -- decreasing the population forbidden by upper limit
     | cs <= cl                        = Nothing
     -- decrease population
     | cs > cl && cs > 2
     , let s' = BitSet $ 2^(cs-1)-1
     , let is' = lsbZ s'
-    , Just js' <- maybeNextActive is' s'   = Just (BS2 s' (Iter is') (Iter js'))
+    , Just js' <- maybeNextActive is' s'   = Just (BS2 s' (Boundary is') (Boundary js'))
     -- decrease population to single-element sets
     | cs > cl && cs == 2              = Just (BS2 1 0 0)
     where cl = popCount l
@@ -535,30 +535,30 @@ instance SetPredSucc (Fixed (BitSet t)) where
 
 instance SetPredSucc (Fixed (BS1 i t)) where
   setPred (Fixed _ (BS1 l li)) (Fixed _ (BS1 h hi)) (Fixed !m (BS1 s i))
-    | s `testBit` getIter i = (Fixed m . (`BS1` i) . ( `setBit` getIter i)) <$> setPred l h (s .&. complement m)
+    | s `testBit` getBoundary i = (Fixed m . (`BS1` i) . ( `setBit` getBoundary i)) <$> setPred l h (s .&. complement m)
     | otherwise             = (Fixed m) <$> setPred (BS1 l li) (BS1 h hi) (BS1 (s .&. complement m) i)
   {-# Inline setPred #-}
   setSucc (Fixed _ (BS1 l li)) (Fixed _ (BS1 h hi)) (Fixed !m (BS1 s i))
-    | s `testBit` getIter i = (Fixed m . (`BS1` i) . ( `setBit` getIter i)) <$> setSucc l h (s .&. complement m)
+    | s `testBit` getBoundary i = (Fixed m . (`BS1` i) . ( `setBit` getBoundary i)) <$> setSucc l h (s .&. complement m)
     | otherwise             = (Fixed m) <$> setSucc (BS1 l li) (BS1 h hi) (BS1 (s .&. complement m) i)
   {-# Inline setSucc #-}
 
 instance SetPredSucc (Fixed (BS2 i j t)) where
   setPred (Fixed _ (BS2 l li lj)) (Fixed _ (BS2 h hi hj)) (Fixed !m (BS2 s i j))
-    | s `testBit` getIter i && s `testBit` getIter j
-    = (Fixed m . (\z       -> BS2 (z `setBit` getIter i `setBit` getIter j) i j)) <$> setPred l h (s .&. complement m)
-    | s `testBit` getIter i
-    = (Fixed m . (\(BS1 z j') -> BS2 (z `setBit` getIter i) i j')) <$> setPred (BS1 l lj) (BS1 h hj) (BS1 (s .&. complement m) j)
-    | s `testBit` getIter j
-    = (Fixed m . (\(BS1 z i') -> BS2 (z `setBit` getIter j) i' j)) <$> setPred (BS1 l li) (BS1 h hi) (BS1 (s .&. complement m) i)
+    | s `testBit` getBoundary i && s `testBit` getBoundary j
+    = (Fixed m . (\z       -> BS2 (z `setBit` getBoundary i `setBit` getBoundary j) i j)) <$> setPred l h (s .&. complement m)
+    | s `testBit` getBoundary i
+    = (Fixed m . (\(BS1 z j') -> BS2 (z `setBit` getBoundary i) i j')) <$> setPred (BS1 l lj) (BS1 h hj) (BS1 (s .&. complement m) j)
+    | s `testBit` getBoundary j
+    = (Fixed m . (\(BS1 z i') -> BS2 (z `setBit` getBoundary j) i' j)) <$> setPred (BS1 l li) (BS1 h hi) (BS1 (s .&. complement m) i)
   {-# Inline setPred #-}
   setSucc (Fixed _ (BS2 l li lj)) (Fixed _ (BS2 h hi hj)) (Fixed !m (BS2 s i j))
-    | s `testBit` getIter i && s `testBit` getIter j
-    = (Fixed m . (\z       -> BS2 (z `setBit` getIter i `setBit` getIter j) i j)) <$> setSucc l h (s .&. complement m)
-    | s `testBit` getIter i
-    = (Fixed m . (\(BS1 z j') -> BS2 (z `setBit` getIter i) i j')) <$> setSucc (BS1 l lj) (BS1 h hj) (BS1 (s .&. complement m) j)
-    | s `testBit` getIter j
-    = (Fixed m . (\(BS1 z i') -> BS2 (z `setBit` getIter j) i' j)) <$> setSucc (BS1 l li) (BS1 h hi) (BS1 (s .&. complement m) i)
+    | s `testBit` getBoundary i && s `testBit` getBoundary j
+    = (Fixed m . (\z       -> BS2 (z `setBit` getBoundary i `setBit` getBoundary j) i j)) <$> setSucc l h (s .&. complement m)
+    | s `testBit` getBoundary i
+    = (Fixed m . (\(BS1 z j') -> BS2 (z `setBit` getBoundary i) i j')) <$> setSucc (BS1 l lj) (BS1 h hj) (BS1 (s .&. complement m) j)
+    | s `testBit` getBoundary j
+    = (Fixed m . (\(BS1 z i') -> BS2 (z `setBit` getBoundary j) i' j)) <$> setSucc (BS1 l li) (BS1 h hi) (BS1 (s .&. complement m) i)
   {-# Inline setSucc #-}
 
 
@@ -570,17 +570,17 @@ instance ApplyMask (BitSet t) where
 instance ApplyMask (BS1 i t) where
   applyMask m (BS1 s i)
     | popCount s == 0 = BS1 0 0
-    | otherwise       = BS1 (popShiftL m s) (Iter . getBitSet . popShiftL m . BitSet $ 2 ^ getIter i)
+    | otherwise       = BS1 (popShiftL m s) (Boundary . getBitSet . popShiftL m . BitSet $ 2 ^ getBoundary i)
   {-# Inline applyMask #-}
 
 instance ApplyMask (BS2 i j t) where
   applyMask m (BS2 s i j)
     | popCount s == 0 = BS2 0 0 0
-    | popCount s == 1 = BS2 s' i' (Iter $ getIter i')
+    | popCount s == 1 = BS2 s' i' (Boundary $ getBoundary i')
     | otherwise       = BS2 s' i' j'
     where s' = popShiftL m s
-          i' = Iter . getBitSet . popShiftL m $ (BitSet $ 2 ^ getIter i :: BitSet t)
-          j' = Iter . getBitSet . popShiftL m $ (BitSet $ 2 ^ getIter j :: BitSet t)
+          i' = Boundary . getBitSet . popShiftL m $ (BitSet $ 2 ^ getBoundary i :: BitSet t)
+          j' = Boundary . getBitSet . popShiftL m $ (BitSet $ 2 ^ getBoundary j :: BitSet t)
   {-# Inline applyMask #-}
 
 
@@ -602,11 +602,11 @@ instance Arbitrary (BS1 i t) where
     if s==0
       then return (BS1 s 0)
       else do i <- elements $ activeBitsL s
-              return (BS1 s $ Iter i)
+              return (BS1 s $ Boundary i)
   shrink (BS1 s i) =
     let s' = [ BS1 (s `clearBit` a) i
              | a <- activeBitsL s
-             , Iter a /= i ]
+             , Boundary a /= i ]
              ++ [ BS1 0 0 | popCount s == 1 ]
     in  s' ++ concatMap shrink s'
 
@@ -616,15 +616,15 @@ instance Arbitrary (BS2 i j t) where
     case (popCount s) of
       0 -> return (BS2 s 0 0)
       1 -> do i <- elements $ activeBitsL s
-              return (BS2 s (Iter i) (Iter i))
+              return (BS2 s (Boundary i) (Boundary i))
       _ -> do i <- elements $ activeBitsL s
               j <- elements $ activeBitsL (s `clearBit` i)
-              return (BS2 s (Iter i) (Iter j))
+              return (BS2 s (Boundary i) (Boundary j))
   shrink (BS2 s i j) =
     let s' = [ BS2 (s `clearBit` a) i j
              | a <- activeBitsL s
-             , Iter a /= i, Iter a /= j ]
-             ++ [ BS2 (0 `setBit` a) (Iter a) (Iter a)
+             , Boundary a /= i, Boundary a /= j ]
+             ++ [ BS2 (0 `setBit` a) (Boundary a) (Boundary a)
                 | popCount s == 2
                 , a <- activeBitsL s ]
              ++ [ BS2 0 0 0

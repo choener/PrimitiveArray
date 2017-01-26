@@ -1,3 +1,8 @@
+0.8.0.0
+-------
+
+- renamed Interface (Iter) to Boundary (Boundary)
+
 0.7.2.0
 -------
 
