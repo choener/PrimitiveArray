@@ -2,6 +2,7 @@
 -------
 
 - renamed Interface (Iter) to Boundary (Boundary)
+- Typeable instances for Dense primitive arrays
 
 0.7.2.0
 -------

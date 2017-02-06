@@ -32,6 +32,7 @@ import qualified Data.Vector as V hiding (forM_, length, zipWithM_)
 import qualified Data.Vector.Generic as G
 import qualified Data.Vector.Unboxed as VU hiding (forM_, length, zipWithM_)
 import           Data.Hashable (Hashable)
+import           Data.Typeable (Typeable)
 
 
 import           Data.PrimitiveArray.Class
@@ -42,7 +43,7 @@ import           Data.PrimitiveArray.Index
 -- * Unboxed, multidimensional arrays.
 
 data Unboxed sh e = Unboxed !sh !sh !(VU.Vector e)
-  deriving (Read,Show,Eq,Generic)
+  deriving (Read,Show,Eq,Generic,Typeable)
 
 instance (Binary    sh, Binary    e, Unbox e) => Binary    (Unboxed sh e)
 instance (Serialize sh, Serialize e, Unbox e) => Serialize (Unboxed sh e)
@@ -55,6 +56,7 @@ instance (NFData sh) => NFData (Unboxed sh e) where
   {-# Inline rnf #-}
 
 data instance MutArr m (Unboxed sh e) = MUnboxed !sh !sh !(VU.MVector (PrimState m) e)
+  deriving (Generic,Typeable)
 
 instance (NFData sh) => NFData (MutArr m (Unboxed sh e)) where
   rnf (MUnboxed l h xs) = rnf l `seq` rnf h `seq` rnf xs
@@ -103,7 +105,7 @@ instance (Index sh, Unbox e, Unbox e') => PrimArrayMap Unboxed sh e e' where
 -- * Boxed, multidimensional arrays.
 
 data Boxed sh e = Boxed !sh !sh !(V.Vector e)
-  deriving (Read,Show,Eq,Generic)
+  deriving (Read,Show,Eq,Generic,Typeable)
 
 instance (Binary    sh, Binary    e)  => Binary    (Boxed sh e)
 instance (Serialize sh, Serialize e)  => Serialize (Boxed sh e)
@@ -116,6 +118,7 @@ instance (NFData sh, NFData e) => NFData (Boxed sh e) where
   {-# Inline rnf #-}
 
 data instance MutArr m (Boxed sh e) = MBoxed !sh !sh !(V.MVector (PrimState m) e)
+  deriving (Generic,Typeable)
 
 instance (NFData sh) => NFData (MutArr m (Boxed sh e)) where
   rnf (MBoxed l h _) = rnf l `seq` rnf h -- no rnf for the data !

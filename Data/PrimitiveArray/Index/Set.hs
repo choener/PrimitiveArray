@@ -570,7 +570,7 @@ instance ApplyMask (BitSet t) where
 instance ApplyMask (BS1 i t) where
   applyMask m (BS1 s i)
     | popCount s == 0 = BS1 0 0
-    | otherwise       = BS1 (popShiftL m s) (Boundary . getBitSet . popShiftL m . BitSet $ 2 ^ getBoundary i)
+    | otherwise       = BS1 (popShiftL m s) (Boundary . lsbZ . popShiftL m . BitSet . bit $ getBoundary i)
   {-# Inline applyMask #-}
 
 instance ApplyMask (BS2 i j t) where
