@@ -37,10 +37,10 @@ import           Data.PrimitiveArray.Vector.Compat
 -- These include a @First@ element and a @Last@ element. We phantom-type
 -- these to reduce programming overhead.
 
-newtype Boundary t = Boundary { getBoundary :: Int }
+newtype Boundary i t = Boundary { getBoundary :: Int }
   deriving (Eq,Ord,Generic,Num)
 
-instance Show (Boundary t) where
+instance Show (Boundary i t) where
   show (Boundary i) = "(I:" ++ show i ++ ")"
 
 -- | Declare the interface to be the start of a path.
@@ -81,7 +81,7 @@ bitSetC = BitSet
 
 -- type BS1 t i = BitSet t :> Boundary i
 
-data BS1 i t = BS1 !(BitSet t) !(Boundary i)
+data BS1 i t = BS1 !(BitSet t) !(Boundary i t)
 
 deriving instance Show (BS1 i t)
 
@@ -89,7 +89,7 @@ deriving instance Show (BS1 i t)
 
 -- type BS2 t i j = BitSet t :> Boundary i :> Boundary j
 
-data BS2 i j t = BS2 !(BitSet t) !(Boundary i) !(Boundary j)
+data BS2 i j t = BS2 !(BitSet t) !(Boundary i t) !(Boundary j t)
 
 deriving instance Show (BS2 i j t)
 
@@ -146,21 +146,21 @@ class ApplyMask s where
 
 
 derivingUnbox "Boundary"
-  [t| forall t . Boundary t -> Int |]
-  [| \(Boundary i) -> i            |]
-  [| Boundary                      |]
+  [t| forall i t . Boundary i t -> Int |]
+  [| \(Boundary i) -> i                |]
+  [| Boundary                          |]
 
-instance Binary    (Boundary t)
-instance Serialize (Boundary t)
-instance ToJSON    (Boundary t)
-instance FromJSON  (Boundary t)
-instance Hashable  (Boundary t)
+instance Binary    (Boundary i t)
+instance Serialize (Boundary i t)
+instance ToJSON    (Boundary i t)
+instance FromJSON  (Boundary i t)
+instance Hashable  (Boundary i t)
 
-instance NFData (Boundary t) where
+instance NFData (Boundary i t) where
   rnf (Boundary i) = rnf i
   {-# Inline rnf #-}
 
-instance Index (Boundary i) where
+instance Index (Boundary i t) where
   linearIndex l _ (Boundary z) = z - smallestLinearIndex l
   {-# INLINE linearIndex #-}
   smallestLinearIndex (Boundary l) = l
@@ -171,6 +171,34 @@ instance Index (Boundary i) where
   {-# INLINE size #-}
   inBounds l h z = l <= z && z <= h
   {-# INLINE inBounds #-}
+
+instance IndexStream z => IndexStream (z:.Boundary k I) where
+  streamUp   (ls:.l) (hs:.h) = flatten (streamUpBndMk   l h) (streamUpBndStep   l h) $ streamUp   ls hs
+  streamDown (ls:.l) (hs:.h) = flatten (streamDownBndMk l h) (streamDownBndStep l h) $ streamDown ls hs
+  {-# Inline streamUp   #-}
+  {-# Inline streamDown #-}
+
+instance IndexStream (Z:.Boundary k I) => IndexStream (Boundary k I)
+
+streamUpBndMk :: (Monad m) => Boundary k i -> Boundary k i -> t -> m (t, Boundary k i)
+streamUpBndMk l h z = return (z, l)
+{-# Inline [0] streamUpBndMk #-}
+
+streamUpBndStep :: (Monad m) => Boundary k i -> Boundary k i -> (t, Boundary k i) -> m (SM.Step (t, Boundary k i) (t :. Boundary k i))
+streamUpBndStep l h (z , k)
+  | k > h     = return $ SM.Done
+  | otherwise = return $ SM.Yield (z:.k) (z, k+1)
+{-# Inline [0] streamUpBndStep #-}
+
+streamDownBndMk :: (Monad m) => Boundary k i -> Boundary k i -> t -> m (t, Boundary k i)
+streamDownBndMk l h z = return (z, h)
+{-# Inline [0] streamDownBndMk #-}
+
+streamDownBndStep :: (Monad m) => Boundary k i -> Boundary k i -> (t, Boundary k i) -> m (SM.Step (t, Boundary k i) (t :. Boundary k i))
+streamDownBndStep l h (z , k)
+  | k < l     = return $ SM.Done
+  | otherwise = return $ SM.Yield (z:.k) (z,k-1)
+{-# Inline [0] streamDownBndStep #-}
 
 
 
