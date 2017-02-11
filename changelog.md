@@ -3,6 +3,8 @@
 
 - renamed Interface (Iter) to Boundary (Boundary)
 - Typeable instances for Dense primitive arrays
+- EdgeBoundary index structure
+- changes and fixes to quickcheck/smallcheck
 
 0.7.2.0
 -------
