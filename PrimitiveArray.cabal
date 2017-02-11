@@ -49,6 +49,7 @@ Library
     Data.PrimitiveArray.FillTables
     Data.PrimitiveArray.Index
     Data.PrimitiveArray.Index.Class
+    Data.PrimitiveArray.Index.EdgeBoundary
     Data.PrimitiveArray.Index.Int
     Data.PrimitiveArray.Index.IOC
     Data.PrimitiveArray.Index.PhantomInt
@@ -109,7 +110,7 @@ test-suite properties
     SmallCheck
     Common
   ghc-options:
-    -threaded -rtsopts -with-rtsopts=-N
+    -O2 -threaded -rtsopts -with-rtsopts=-N
   hs-source-dirs:
     tests
   default-language:
@@ -118,13 +119,15 @@ test-suite properties
                     , ScopedTypeVariables
                     , TemplateHaskell
   build-depends: base
-               , PrimitiveArray
+               , containers
                , QuickCheck
                , smallcheck
                , tasty              >= 0.11
                , tasty-quickcheck   >= 0.8
                , tasty-smallcheck   >= 0.8
                , tasty-th           >= 0.1
+               --
+               , PrimitiveArray
 
 
 

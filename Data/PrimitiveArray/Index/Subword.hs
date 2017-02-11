@@ -37,6 +37,14 @@ import Data.PrimitiveArray.Vector.Compat
 newtype Subword t = Subword {fromSubword :: (Int:.Int)}
   deriving (Eq,Ord,Show,Generic,Read)
 
+fromSubwordFst :: Subword t -> Int
+fromSubwordFst (Subword (i:._)) = i
+{-# Inline fromSubwordFst #-}
+
+fromSubwordSnd :: Subword t -> Int
+fromSubwordSnd (Subword (_:.j)) = j
+{-# Inline fromSubwordSnd #-}
+
 derivingUnbox "Subword"
   [t| forall t . Subword t -> (Int,Int) |]
   [| \ (Subword (i:.j)) -> (i,j) |]

@@ -1,11 +1,14 @@
 
 module QuickCheck where
 
+import Data.List (maximumBy)
+import Data.Ord (comparing)
 import Test.QuickCheck
 import Test.Tasty.QuickCheck
 import Test.Tasty.TH
 
 import Data.PrimitiveArray.Index.Class
+import Data.PrimitiveArray.Index.EdgeBoundary
 import Data.PrimitiveArray.Index.IOC
 import Data.PrimitiveArray.Index.Point
 import Data.PrimitiveArray.Index.Set
@@ -17,9 +20,11 @@ import Common
 
 -- * Uniqueness tests
 
-prop_PointL_I_unique (xs :: [PointL I]) = uniquenessTest (pointLI 0) xs
+prop_PointL_I_unique (xs :: [PointL I]) = uniquenessTest (pointLI 0) (maximum xs) xs
 
-prop_Subword_I_unique (xs :: [Subword I]) = uniquenessTest (subword 0 0) xs
+prop_Subword_I_unique (xs :: [Subword I]) = uniquenessTest (subword 0 0) (maximumBy (comparing fromSubwordSnd) xs) xs
+
+prop_EdgeBoundary_I_unique (xs :: [EdgeBoundary I]) = uniquenessTest (0 :-> 0) (maximumBy (comparing fromEdgeBoundarySnd) xs) xs
 
 
 
