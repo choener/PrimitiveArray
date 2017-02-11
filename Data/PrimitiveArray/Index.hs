@@ -1,7 +1,8 @@
 
 module Data.PrimitiveArray.Index
   ( module Data.PrimitiveArray.Index.Class
-  , module Data.PrimitiveArray.Index.Int
+  , module Data.PrimitiveArray.Index.EdgeBoundary
+  , module Data.PrimitiveArray.Index.IOC
   , module Data.PrimitiveArray.Index.IOC
   , module Data.PrimitiveArray.Index.PhantomInt
   , module Data.PrimitiveArray.Index.Point
