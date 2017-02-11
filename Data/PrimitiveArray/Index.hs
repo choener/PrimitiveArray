@@ -11,6 +11,7 @@ module Data.PrimitiveArray.Index
   ) where
 
 import Data.PrimitiveArray.Index.Class
+import Data.PrimitiveArray.Index.EdgeBoundary hiding (streamUpMk, streamUpStep, streamDownMk, streamDownStep)
 import Data.PrimitiveArray.Index.Int
 import Data.PrimitiveArray.Index.IOC
 import Data.PrimitiveArray.Index.PhantomInt hiding (streamUpMk, streamUpStep, streamDownMk, streamDownStep)
