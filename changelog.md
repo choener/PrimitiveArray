@@ -5,6 +5,8 @@
 - Typeable instances for Dense primitive arrays
 - EdgeBoundary index structure
 - changes and fixes to quickcheck/smallcheck
+- added ScoreMatrix module with simple score and distance matrix structure
+  (requires log-domain)
 
 0.7.2.0
 -------
