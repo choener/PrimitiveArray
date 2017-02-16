@@ -7,7 +7,7 @@ module Data.PrimitiveArray.Index.Set where
 
 import           Control.Applicative ((<$>),(<*>))
 import           Control.DeepSeq (NFData(..))
-import           Data.Aeson (FromJSON,ToJSON)
+import           Data.Aeson (FromJSON,ToJSON,FromJSONKey,ToJSONKey)
 import           Data.Binary (Binary)
 import           Data.Bits
 import           Data.Bits.Extras
@@ -64,6 +64,11 @@ data Any
 
 newtype BitSet t = BitSet { getBitSet :: Int }
   deriving (Eq,Ord,Read,Generic,FiniteBits,Ranked,Num,Bits)
+
+instance FromJSON     (BitSet t)
+instance FromJSONKey  (BitSet t)
+instance ToJSON       (BitSet t)
+instance ToJSONKey    (BitSet t)
 
 bitSetI :: Int -> BitSet I
 bitSetI = BitSet
@@ -212,8 +217,6 @@ instance Show (BitSet t) where
 
 instance Binary    (BitSet t)
 instance Serialize (BitSet t)
-instance ToJSON    (BitSet t)
-instance FromJSON  (BitSet t)
 instance Hashable  (BitSet t)
 
 instance NFData (BitSet t) where
