@@ -320,7 +320,7 @@ streamUpBsIStep l h (z,  Just t ) = return $ SM.Yield (z:.t) (z , setSucc l h t)
 {-# Inline [0] streamUpBsIStep #-}
 
 streamDownBsIMk :: (Monad m) => BS1 a i -> BS1 b i -> z -> m (z, Maybe (BS1 c i))
-streamDownBsIMk (BS1 sl _) (BS1 sh _) z = return (z, if sl <= sh then Just (BS1 sl (Boundary . max 0 $ lsbZ sh)) else Nothing)
+streamDownBsIMk (BS1 sl _) (BS1 sh _) z = return (z, if sl <= sh then Just (BS1 sh (Boundary . max 0 $ lsbZ sh)) else Nothing)
 {-# Inline [0] streamDownBsIMk #-}
 
 streamDownBsIStep :: (Monad m, SetPredSucc s) => s -> s -> (t, Maybe s) -> m (SM.Step (t, Maybe s) (t :. s))
