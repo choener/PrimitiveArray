@@ -278,8 +278,14 @@ streamDownBsStep l h (z , Just t ) = return $ SM.Yield (z:.t) (z , setPred l h t
 
 -- ** @BS1@
 
+-- |
+--
+-- @linearIndex@ explicitly maps @BS1 0 whatever@ to @0@.
+
 instance Index (BS1 i t) where
-  linearIndex (BS1 ls li) (BS1 hs hi) (BS1 s i) = linearIndex (ls:.li) (hs:.hi) (s:.i)
+  linearIndex (BS1 ls li) (BS1 hs hi) (BS1 s i)
+    | s == 0    = 0
+    | otherwise = linearIndex (ls:.li) (hs:.hi) (s:.i)
   {-# INLINE linearIndex #-}
   smallestLinearIndex (BS1 s i) = smallestLinearIndex (s:.i)
   {-# INLINE smallestLinearIndex #-}
