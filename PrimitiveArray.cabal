@@ -89,6 +89,7 @@ Library
                     , GeneralizedNewtypeDeriving
                     , MultiParamTypeClasses
                     , RankNTypes
+                    , RecordWildCards
                     , ScopedTypeVariables
                     , StandaloneDeriving
                     , TemplateHaskell
