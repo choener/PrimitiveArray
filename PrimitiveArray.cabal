@@ -76,7 +76,7 @@ Library
                , vector-binary-instances  >= 0.2
                , vector-th-unbox          >= 0.2
                --
-               , DPutils                  >= 0.0.0    &&  < 0.0.2
+               , DPutils                  == 0.0.1.*
                , OrderedBits              == 0.0.1.*
   default-extensions: BangPatterns
                     , CPP
