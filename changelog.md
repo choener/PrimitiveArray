@@ -1,3 +1,9 @@
+0.8.0.1
+-------
+
+- PointL delays inlining to phase 0 for table filling. This is part of the
+  close-to-C optimization effort for linear languages.
+
 0.8.0.0
 -------
 
