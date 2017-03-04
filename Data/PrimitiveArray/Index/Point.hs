@@ -87,20 +87,20 @@ instance Index (PointL t) where
 instance IndexStream z => IndexStream (z:.PointL I) where
   streamUp   (ls:.PointL lf) (hs:.PointL ht) = flatten (streamUpMk   lf) (streamUpStep   ht) $ streamUp ls hs
   streamDown (ls:.PointL lf) (hs:.PointL ht) = flatten (streamDownMk ht) (streamDownStep lf) $ streamDown ls hs
-  {-# Inline streamUp #-}
-  {-# Inline streamDown #-}
+  {-# Inline [0] streamUp #-}
+  {-# Inline [0] streamDown #-}
 
 instance IndexStream z => IndexStream (z:.PointL O) where
   streamUp   (ls:.PointL lf) (hs:.PointL ht) = flatten (streamDownMk ht) (streamDownStep lf) $ streamUp   ls hs
   streamDown (ls:.PointL lf) (hs:.PointL ht) = flatten (streamUpMk   lf) (streamUpStep   ht) $ streamDown ls hs
-  {-# Inline streamUp #-}
-  {-# Inline streamDown #-}
+  {-# Inline [0] streamUp #-}
+  {-# Inline [0] streamDown #-}
 
 instance IndexStream z => IndexStream (z:.PointL C) where
   streamUp   (ls:.PointL lf) (hs:.PointL ht) = flatten (streamUpMk   lf) (streamUpStep   ht) $ streamUp ls hs
   streamDown (ls:.PointL lf) (hs:.PointL ht) = flatten (streamDownMk ht) (streamDownStep lf) $ streamDown ls hs
-  {-# Inline streamUp #-}
-  {-# Inline streamDown #-}
+  {-# Inline [0] streamUp #-}
+  {-# Inline [0] streamDown #-}
 
 data SP z = SP !z !Int#
 
