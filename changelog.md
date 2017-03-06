@@ -3,6 +3,7 @@
 
 - PointL delays inlining to phase 0 for table filling. This is part of the
   close-to-C optimization effort for linear languages.
+- disabling smallcheck until I fix how things are generated
 
 0.8.0.0
 -------
