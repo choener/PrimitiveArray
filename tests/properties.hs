@@ -44,6 +44,6 @@ main :: IO ()
 main = do
   defaultMain $ testGroup ""
     [ quickcheck_tests
-    , smallcheck_tests
+--    , smallcheck_tests
     ]
 
