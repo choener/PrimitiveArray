@@ -1,5 +1,5 @@
 Name:           PrimitiveArray
-Version:        0.8.0.1
+Version:        0.8.1.0
 License:        BSD3
 License-file:   LICENSE
 Maintainer:     choener@bioinf.uni-leipzig.de
@@ -96,6 +96,7 @@ Library
                     , TypeFamilies
                     , TypeOperators
                     , UndecidableInstances
+                    , UnicodeSyntax
   default-language:
     Haskell2010
   ghc-options:

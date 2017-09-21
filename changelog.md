@@ -1,3 +1,8 @@
+0.8.1.0
+-------
+
+- inclusion of Upperlimit data family to simplify declaration of upper limits
+
 0.8.0.1
 -------
 

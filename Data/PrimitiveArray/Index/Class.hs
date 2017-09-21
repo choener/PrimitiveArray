@@ -7,6 +7,7 @@ import           Control.Monad (liftM2)
 import           Data.Aeson
 import           Data.Binary
 import           Data.Hashable (Hashable)
+import           Data.Proxy
 import           Data.Serialize
 import           Data.Vector.Fusion.Stream.Monadic (Stream)
 import           Data.Vector.Unboxed.Deriving
@@ -117,70 +118,54 @@ instance NFData Z where
 
 class Index i where
 
-  -- | Given a minimal size, a maximal size, and a current index, calculate
+  -- | Data structure encoding the upper limit for each array.
+  type UpperLimit i ∷ *
+
+  -- | Given a maximal size, and a current index, calculate
   -- the linear index.
 
-  linearIndex :: i -> i -> i -> Int
+  linearIndex ∷ UpperLimit i → i → Int
 
-  -- | Given an index element from the smallest subset, calculate the
-  -- highest linear index that is *not* stored.
+  -- | Given the 'UpperLimit', return the number of cells required for storage.
+  --
+  -- TODO should, in principle, only require @UpperLimit i@, not @i@, but then
+  -- we need @data UpperLmit@
 
-  smallestLinearIndex :: i -> Int -- LH i
-
-  -- | Given an index element from the largest subset, calculate the
-  -- highest linear index that *is* stored.
-
-  largestLinearIndex :: i -> Int -- LH i
-
-  -- | Given smallest and largest index, return the number of cells
-  -- required for storage.
-
-  size :: i -> i -> Int
+  size ∷ UpperLimit i → i → Int
 
   -- | Check if an index is within the bounds.
 
-  inBounds :: i -> i -> i -> Bool
+  inBounds ∷ UpperLimit i → i → Bool
 
 
 
 -- | Generate a stream of indices in correct order for dynamic programming.
 -- Since the stream generators require @concatMap@ / @flatten@ we have to
 -- write more specialized code for @(z:.IX)@ stuff.
+--
+-- TODO variants that just take an 'UpperLimit' and stream the whole range.
 
 class IndexStream i where
-
   -- | This generates an index stream suitable for @forward@ structure filling.
   -- The first index is the smallest (or the first indices considered are all
   -- equally small in partially ordered sets). Larger indices follow up until
   -- the largest one.
-
-  streamUp   :: Monad m => i -> i -> Stream m i
-  default streamUp :: (Monad m, IndexStream (Z:.i)) => i -> i -> Stream m i
-  streamUp l h = SM.map (\(Z:.i) -> i) $ streamUp (Z:.l) (Z:.h)
-  {-# INLINE streamUp #-}
-
+  streamUp ∷ Monad m ⇒ i → i → Stream m i
   -- | If 'streamUp' generates indices from smallest to largest, then
   -- 'streamDown' generates indices from largest to smallest. Outside grammars
   -- make implicit use of this. Asking for an axiom in backtracking requests
   -- the first element from this stream.
-
-  streamDown :: Monad m => i -> i -> Stream m i
-  default streamDown :: (Monad m, IndexStream (Z:.i)) => i -> i -> Stream m i
-  streamDown l h = SM.map (\(Z:.i) -> i) $ streamDown (Z:.l) (Z:.h)
-  {-# INLINE streamDown #-}
+  streamDown ∷ Monad m ⇒ i → i → Stream m i
 
 
 
 instance Index Z where
-  linearIndex _ _ _ = 0
+  type UpperLimit Z = Z
+  linearIndex _ _ = 0
   {-# INLINE linearIndex #-}
-  smallestLinearIndex _ = 0
-  {-# INLINE smallestLinearIndex #-}
-  largestLinearIndex _ = 0
-  {-# INLINE largestLinearIndex #-}
   size _ _ = 1
   {-# INLINE size #-}
-  inBounds _ _ _ = True
+  inBounds _ _ = True
   {-# INLINE inBounds #-}
 
 instance IndexStream Z where
@@ -190,26 +175,20 @@ instance IndexStream Z where
   {-# INLINE streamDown #-}
 
 instance (Index zs, Index z) => Index (zs:.z) where
-  linearIndex (ls:.l) (hs:.h) (zs:.z) = linearIndex ls hs zs * (largestLinearIndex h + 1) + linearIndex l h z
+  type UpperLimit (zs:.z) = (UpperLimit zs:.UpperLimit z)
+  linearIndex (hs:.h) (zs:.z) = linearIndex hs zs * (size h z) + linearIndex h z
   {-# INLINE linearIndex #-}
-  smallestLinearIndex (ls:.l) = smallestLinearIndex ls * smallestLinearIndex l
-  {-# INLINE smallestLinearIndex #-}
-  largestLinearIndex (hs:.h) = largestLinearIndex hs * largestLinearIndex h
-  {-# INLINE largestLinearIndex #-}
   size (ls:.l) (hs:.h) = size ls hs * (size l h)
   {-# INLINE size #-}
-  inBounds (ls:.l) (hs:.h) (zs:.z) = inBounds ls hs zs && inBounds l h z
+  inBounds (hs:.h) (zs:.z) = inBounds hs zs && inBounds h z
   {-# INLINE inBounds #-}
 
 instance (Index zs, Index z) => Index (zs:>z) where
-  linearIndex (ls:>l) (hs:>h) (zs:>z) = linearIndex ls hs zs * (largestLinearIndex h + 1) + linearIndex l h z
+  type UpperLimit (zs:>z) = UpperLimit zs:>UpperLimit z
+  linearIndex (hs:>h) (zs:>z) = linearIndex hs zs * (size h z) + linearIndex h z
   {-# INLINE linearIndex #-}
-  smallestLinearIndex (ls:>l) = smallestLinearIndex ls * smallestLinearIndex l
-  {-# INLINE smallestLinearIndex #-}
-  largestLinearIndex (hs:>h) = largestLinearIndex hs * largestLinearIndex h
-  {-# INLINE largestLinearIndex #-}
   size (ls:>l) (hs:>h) = size ls hs * (size l h)
   {-# INLINE size #-}
-  inBounds (ls:>l) (hs:>h) (zs:>z) = inBounds ls hs zs && inBounds l h z
+  inBounds (hs:>h) (zs:>z) = inBounds hs zs && inBounds h z
   {-# INLINE inBounds #-}
 

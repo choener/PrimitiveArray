@@ -83,15 +83,12 @@ subwordC i j = Subword (i:.j)
 
 
 instance Index (Subword t) where
-  linearIndex _ (Subword (_:.n)) (Subword (i:.j)) = toLinear n (i,j)
+  type UpperLimit (Subword t) = Int
+  linearIndex n (Subword (i:.j)) = toLinear n (i,j)
   {-# Inline linearIndex #-}
-  smallestLinearIndex _ = error "still needed?"
-  {-# Inline smallestLinearIndex #-}
-  largestLinearIndex (Subword (i:.j)) = linearizeUppertri (i,j) - 1
-  {-# Inline largestLinearIndex #-}
-  size _ (Subword (i:.j)) = linearizeUppertri (i,j)
+  size n _ = linearizeUppertri (0,n)
   {-# Inline size #-}
-  inBounds _ (Subword (_:.h)) (Subword (i:.j)) = 0<=i && i<=j && j<=h
+  inBounds h (Subword (i:.j)) = 0<=i && i<=j && j<=h
   {-# Inline inBounds #-}
 
 -- | @Subword I@ (inside)
@@ -141,7 +138,11 @@ streamDownStep h (z,i,j)
   | otherwise = return $ Yield (z:.subword i j) (z,i,j-1)
 {-# Inline [0] streamDownStep #-}
 
-instance (IndexStream (Z:.Subword t)) => IndexStream (Subword t)
+instance (IndexStream (Z:.Subword t)) => IndexStream (Subword t) where
+  streamUp l h = map (\(Z:.i) -> i) $ streamUp (Z:.l) (Z:.h)
+  {-# INLINE streamUp #-}
+  streamDown l h = map (\(Z:.i) -> i) $ streamDown (Z:.l) (Z:.h)
+  {-# INLINE streamDown #-}
 
 instance Arbitrary (Subword t) where
   arbitrary = do
