@@ -131,7 +131,7 @@ class Index i where
   -- TODO should, in principle, only require @UpperLimit i@, not @i@, but then
   -- we need @data UpperLmit@
 
-  size ∷ UpperLimit i → i → Int
+  size ∷ Proxy i → UpperLimit i → Int
 
   -- | Check if an index is within the bounds.
 
@@ -176,18 +176,18 @@ instance IndexStream Z where
 
 instance (Index zs, Index z) => Index (zs:.z) where
   type UpperLimit (zs:.z) = (UpperLimit zs:.UpperLimit z)
-  linearIndex (hs:.h) (zs:.z) = linearIndex hs zs * (size h z) + linearIndex h z
+  linearIndex (hs:.h) (zs:.z) = linearIndex hs zs * (size (Proxy ∷ Proxy z) h) + linearIndex h z
   {-# INLINE linearIndex #-}
-  size (ls:.l) (hs:.h) = size ls hs * (size l h)
+  size Proxy (hs:.h) = size (Proxy ∷ Proxy zs) hs * (size (Proxy ∷ Proxy z) h)
   {-# INLINE size #-}
   inBounds (hs:.h) (zs:.z) = inBounds hs zs && inBounds h z
   {-# INLINE inBounds #-}
 
 instance (Index zs, Index z) => Index (zs:>z) where
   type UpperLimit (zs:>z) = UpperLimit zs:>UpperLimit z
-  linearIndex (hs:>h) (zs:>z) = linearIndex hs zs * (size h z) + linearIndex h z
+  linearIndex (hs:>h) (zs:>z) = linearIndex hs zs * (size (Proxy ∷ Proxy z) h) + linearIndex h z
   {-# INLINE linearIndex #-}
-  size (ls:>l) (hs:>h) = size ls hs * (size l h)
+  size Proxy (ss:>s) = size (Proxy ∷ Proxy zs) ss * (size (Proxy ∷ Proxy z) s)
   {-# INLINE size #-}
   inBounds (hs:>h) (zs:>z) = inBounds hs zs && inBounds h z
   {-# INLINE inBounds #-}

@@ -166,15 +166,12 @@ instance NFData (Boundary i t) where
   {-# Inline rnf #-}
 
 instance Index (Boundary i t) where
-  linearIndex l _ (Boundary z) = z - smallestLinearIndex l
+  type UpperLimit (Boundary i t) = Int
+  linearIndex _ (Boundary z) = z
   {-# INLINE linearIndex #-}
-  smallestLinearIndex (Boundary l) = l
-  {-# INLINE smallestLinearIndex #-}
-  largestLinearIndex (Boundary h) = h
-  {-# INLINE largestLinearIndex #-}
-  size (Boundary l) (Boundary h) = h - l + 1
+  size _ h = h + 1
   {-# INLINE size #-}
-  inBounds l h z = l <= z && z <= h
+  inBounds h z = 0 <= z && getBoundary z <= h
   {-# INLINE inBounds #-}
 
 instance IndexStream z => IndexStream (z:.Boundary k I) where
@@ -224,15 +221,12 @@ instance NFData (BitSet t) where
   {-# Inline rnf #-}
 
 instance Index (BitSet t) where
-  linearIndex l _ (BitSet z) = z - smallestLinearIndex l -- (2 ^ popCount l - 1)
+  type UpperLimit (BitSet t) = Int
+  linearIndex _ (BitSet z) = z
   {-# INLINE linearIndex #-}
-  smallestLinearIndex l = 2 ^ popCount l - 1
-  {-# INLINE smallestLinearIndex #-}
-  largestLinearIndex h = 2 ^ popCount h - 1
-  {-# INLINE largestLinearIndex #-}
-  size l h = 2 ^ popCount h - 2 ^ popCount l + 1
+  size _ pc = 2^pc -- 2 ^ popCount h - 2 ^ popCount l + 1
   {-# INLINE size #-}
-  inBounds l h z = popCount l <= popCount z && popCount z <= popCount h
+  inBounds h z = popCount z <= h -- popCount l <= popCount z && popCount z <= popCount h
   {-# INLINE inBounds #-}
 
 instance IndexStream z => IndexStream (z:.BitSet I) where
@@ -278,22 +272,23 @@ streamDownBsStep l h (z , Just t ) = return $ SM.Yield (z:.t) (z , setPred l h t
 
 -- ** @BS1@
 
--- |
+-- | TODO The size calculations are off by a factor of two, exactly. Each
+-- bitset (say) @00110@ has a mirror image @11001@, whose elements do not have
+-- to be indexed. It has to be investigated if a version with exact memory
+-- bounds is slower in indexing.
 --
 -- @linearIndex@ explicitly maps @BS1 0 whatever@ to @0@.
 
 instance Index (BS1 i t) where
-  linearIndex (BS1 ls li) (BS1 hs hi) (BS1 s i)
+  type UpperLimit (BS1 i t) = Int
+  -- TODO shouldn't this be @+1@ for the case where @s/=0@?
+  linearIndex pc (BS1 s i)
     | s == 0    = 0
-    | otherwise = linearIndex (ls:.li) (hs:.hi) (s:.i)
+    | otherwise = 1 + linearIndex (pc:.2^pc) (s:.i)
   {-# INLINE linearIndex #-}
-  smallestLinearIndex (BS1 s i) = smallestLinearIndex (s:.i)
-  {-# INLINE smallestLinearIndex #-}
-  largestLinearIndex (BS1 s i) = largestLinearIndex (s:.i)
-  {-# INLINE largestLinearIndex #-}
-  size (BS1 ls li) (BS1 hs hi) = size (ls:.li) (hs:.hi)
+  size _ pc = 2^pc * pc + 1
   {-# INLINE size #-}
-  inBounds (BS1 ls li) (BS1 hs hi) (BS1 s i) = inBounds (ls:.li) (hs:.hi) (s:.i)
+  inBounds pc (BS1 s i) = popCount s <= pc && 0 <= i && getBoundary i <= pc
   {-# INLINE inBounds #-}
 
 instance IndexStream z => IndexStream (z:.BS1 i I) where
@@ -314,7 +309,12 @@ instance IndexStream z => IndexStream (z:.BS1 i C) where
   {-# Inline streamUp #-}
   {-# Inline streamDown #-}
 
-instance IndexStream (Z:.BS1 i t) => IndexStream (BS1 i t)
+instance IndexStream (Z:.BS1 i t) => IndexStream (BS1 i t) where
+  streamUp l h = SM.map (\(Z:.i) -> i) $ streamUp (Z:.l) (Z:.h)
+  {-# INLINE streamUp #-}
+  streamDown l h = SM.map (\(Z:.i) -> i) $ streamDown (Z:.l) (Z:.h)
+  {-# INLINE streamDown #-}
+
 
 streamUpBsIMk :: (Monad m) => BS1 a i -> BS1 b i -> z -> m (z, Maybe (BS1 c i))
 streamUpBsIMk (BS1 sl _) (BS1 sh _) z = return (z, if sl <= sh then Just (BS1 sl (Boundary . max 0 $ lsbZ sl)) else Nothing)
@@ -339,16 +339,13 @@ streamDownBsIStep l h (z , Just t ) = return $ SM.Yield (z:.t) (z , setPred l h 
 -- ** BS2
 
 instance Index (BS2 i j t) where
-  linearIndex (BS2 ls li lj) (BS2 hs hi hj) (BS2 s i j) = linearIndex (ls:.li:.lj) (hs:.hi:.hj) (s:.i:.j)
-  {-# INLINE linearIndex #-}
-  smallestLinearIndex (BS2 s i j) = smallestLinearIndex (s:.i:.j)
-  {-# INLINE smallestLinearIndex #-}
-  largestLinearIndex (BS2 s i j) = largestLinearIndex (s:.i:.j)
-  {-# INLINE largestLinearIndex #-}
-  size (BS2 ls li lj) (BS2 hs hi hj) = size (ls:.li:.lj) (hs:.hi:.hj)
-  {-# INLINE size #-}
-  inBounds (BS2 ls li lj) (BS2 hs hi hj) (BS2 s i j) = inBounds (ls:.li:.lj) (hs:.hi:.hj) (s:.i:.j)
-  {-# INLINE inBounds #-}
+  type UpperLimit (BS2 i j t) = Int
+--  linearIndex (BS2 ls li lj) (BS2 hs hi hj) (BS2 s i j) = linearIndex (ls:.li:.lj) (hs:.hi:.hj) (s:.i:.j)
+--  {-# INLINE linearIndex #-}
+--  size (BS2 ls li lj) (BS2 hs hi hj) = size (ls:.li:.lj) (hs:.hi:.hj)
+--  {-# INLINE size #-}
+--  inBounds (BS2 ls li lj) (BS2 hs hi hj) (BS2 s i j) = inBounds (ls:.li:.lj) (hs:.hi:.hj) (s:.i:.j)
+--  {-# INLINE inBounds #-}
 
 instance IndexStream z => IndexStream (z:.BS2 i j I) where
   streamUp   (ls:.l) (hs:.h) = flatten (streamUpBsIiMk   l h) (streamUpBsIiStep   l h) $ streamUp   ls hs

@@ -73,15 +73,12 @@ instance NFData (PointL t) where
   {-# Inline rnf #-}
 
 instance Index (PointL t) where
-  linearIndex _ _ (PointL z) = z
+  type UpperLimit (PointL t) = Int
+  linearIndex _ (PointL z) = z
   {-# INLINE linearIndex #-}
-  smallestLinearIndex (PointL l) = error "still needed?"
-  {-# INLINE smallestLinearIndex #-}
-  largestLinearIndex (PointL h) = h
-  {-# INLINE largestLinearIndex #-}
-  size (_) (PointL h) = h + 1
+  size _ h = h + 1
   {-# INLINE size #-}
-  inBounds (_) (PointL h) (PointL x) = 0<=x && x<=h
+  inBounds h (PointL x) = 0<=x && x<=h
   {-# INLINE inBounds #-}
 
 instance IndexStream z => IndexStream (z:.PointL I) where
@@ -120,7 +117,12 @@ streamDownStep (I# lf) (SP z k)
   | otherwise     = return $ SM.Yield (z:.PointL (I# k)) (SP z (k -# 1#))
 {-# Inline [0] streamDownStep #-}
 
-instance IndexStream (Z:.PointL t) => IndexStream (PointL t)
+instance IndexStream (Z:.PointL t) => IndexStream (PointL t) where
+  streamUp l h = SM.map (\(Z:.i) -> i) $ streamUp (Z:.l) (Z:.h)
+  {-# INLINE streamUp #-}
+  streamDown l h = SM.map (\(Z:.i) -> i) $ streamDown (Z:.l) (Z:.h)
+  {-# INLINE streamDown #-}
+
 
 instance Arbitrary (PointL t) where
   arbitrary = do
@@ -155,12 +157,8 @@ instance NFData (PointR t) where
   {-# Inline rnf #-}
 
 instance Index (PointR t) where
-  linearIndex l _ (PointR z) = undefined
+  linearIndex l (PointR z) = undefined
   {-# INLINE linearIndex #-}
-  smallestLinearIndex = undefined
-  {-# INLINE smallestLinearIndex #-}
-  largestLinearIndex = undefined
-  {-# INLINE largestLinearIndex #-}
   size = undefined
   {-# INLINE size #-}
 

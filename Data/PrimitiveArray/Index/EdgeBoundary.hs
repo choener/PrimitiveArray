@@ -60,15 +60,12 @@ instance NFData (EdgeBoundary t) where
 
 
 instance Index (EdgeBoundary t) where
-  linearIndex (f :-> _) (_ :-> t) (i :-> j) = i * (t+1) + j
+  type UpperLimit (EdgeBoundary t) = Int
+  linearIndex t (i :-> j) = i * (t+1) + j
   {-# Inline linearIndex #-}
-  smallestLinearIndex _ = error "still needed?"
-  {-# Inline smallestLinearIndex #-}
-  largestLinearIndex (_ :-> t) = (t+1) * (t+1) - 1
-  {-# Inline largestLinearIndex #-}
-  size _ (_ :-> t) = (t+1) * (t+1)
+  size _ t = (t+1) * (t+1)
   {-# Inline size #-}
-  inBounds _ (_ :-> t) (i :-> j) = 0<=i && i <= t   &&  0 <= j && j<=t
+  inBounds t (i :-> j) = 0<=i && i <= t   &&  0 <= j && j<=t
   {-# Inline inBounds #-}
 
 -- | @EdgeBoundary I@ (inside)

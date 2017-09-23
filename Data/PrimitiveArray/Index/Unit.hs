@@ -41,15 +41,12 @@ instance NFData (Unit t) where
   {-# Inline rnf #-}
 
 instance Index (Unit t) where
-  linearIndex _ _ _ = 0
+  type UpperLimit (Unit t) = ()
+  linearIndex _ _ = 0
   {-# Inline linearIndex #-}
-  smallestLinearIndex _ = 0
-  {-# Inline smallestLinearIndex #-}
-  largestLinearIndex _ = 0
-  {-# Inline largestLinearIndex #-}
   size _ _ = 1
   {-# Inline size #-}
-  inBounds _ _ _ = True
+  inBounds _ _ = True
   {-# Inline inBounds #-}
 
 instance IndexStream z => IndexStream (z:.Unit t) where
@@ -58,8 +55,13 @@ instance IndexStream z => IndexStream (z:.Unit t) where
   streamDown (ls:.Unit) (hs:.Unit) = map (\z -> z:.Unit) $ streamDown ls hs
   {-# Inline streamDown #-}
 
-instance (IndexStream (Z:.Unit t)) => IndexStream (Unit t)
+instance (IndexStream (Z:.Unit t)) => IndexStream (Unit t) where
+  streamUp l h = map (\(Z:.i) -> i) $ streamUp (Z:.l) (Z:.h)
+  {-# INLINE streamUp #-}
+  streamDown l h = map (\(Z:.i) -> i) $ streamDown (Z:.l) (Z:.h)
+  {-# INLINE streamDown #-}
 
 instance Arbitrary (Unit t) where
   arbitrary = pure Unit
   shrink Unit = []
+

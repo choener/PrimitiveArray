@@ -10,15 +10,12 @@ import Data.PrimitiveArray.Vector.Compat
 
 
 instance Index Int where
-  linearIndex _ _ k = k
+  type UpperLimit Int = Int
+  linearIndex _ k = k
   {-# Inline linearIndex #-}
-  smallestLinearIndex _ = error "still needed?"
-  {-# Inline smallestLinearIndex #-}
-  largestLinearIndex h = h
-  {-# Inline largestLinearIndex #-}
   size _ h = h+1
   {-# Inline size #-}
-  inBounds l h k = l <= k && k <= h
+  inBounds h k = 0 <= k && k <= h
   {-# Inline inBounds #-}
 
 instance IndexStream z => IndexStream (z:.Int) where

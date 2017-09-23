@@ -26,7 +26,7 @@ import Data.PrimitiveArray.Vector.Compat
 -- type @p@. In particular, the @Index@ and @IndexStream@ instances are the
 -- same as for raw @Int@s.
 
-newtype PInt t p = PInt { getPInt :: Int }
+newtype PInt (t ∷ k) (p ∷ k) = PInt { getPInt :: Int }
   deriving (Read,Show,Eq,Ord,Enum,Num,Integral,Real,Generic,Data,Typeable,Ix)
 
 pIntI :: Int -> PInt I p
@@ -54,15 +54,12 @@ instance Hashable     (PInt t p)
 instance NFData       (PInt t p)
 
 instance Index (PInt t p) where
-  linearIndex _ _ (PInt k) = k
+  type UpperLimit (PInt t p) = Int
+  linearIndex _ (PInt k) = k
   {-# Inline linearIndex #-}
-  smallestLinearIndex _ = error "still needed?"
-  {-# Inline smallestLinearIndex #-}
-  largestLinearIndex (PInt h) = h
-  {-# Inline largestLinearIndex #-}
-  size _ (PInt h) = h+1
+  size _ h = h+1
   {-# Inline size #-}
-  inBounds l h k = l <= k && k <= h
+  inBounds h (PInt k) = 0 <= k && k <= h
   {-# Inline inBounds #-}
 
 instance IndexStream z => IndexStream (z:.PInt I p) where
@@ -99,11 +96,23 @@ streamDownStep l h (z,k)
   | otherwise = return $ Yield (z:.k) (z,k-1)
 {-# Inline [0] streamDownStep #-}
 
-instance IndexStream (PInt I p)
+instance IndexStream (PInt I p) where
+  streamUp l h = map (\(Z:.i) -> i) $ streamUp (Z:.l) (Z:.h)
+  {-# INLINE streamUp #-}
+  streamDown l h = map (\(Z:.i) -> i) $ streamDown (Z:.l) (Z:.h)
+  {-# INLINE streamDown #-}
 
-instance IndexStream (PInt O p)
+instance IndexStream (PInt O p) where
+  streamUp l h = map (\(Z:.i) -> i) $ streamUp (Z:.l) (Z:.h)
+  {-# INLINE streamUp #-}
+  streamDown l h = map (\(Z:.i) -> i) $ streamDown (Z:.l) (Z:.h)
+  {-# INLINE streamDown #-}
 
-instance IndexStream (PInt C p)
+instance IndexStream (PInt C p) where
+  streamUp l h = map (\(Z:.i) -> i) $ streamUp (Z:.l) (Z:.h)
+  {-# INLINE streamUp #-}
+  streamDown l h = map (\(Z:.i) -> i) $ streamDown (Z:.l) (Z:.h)
+  {-# INLINE streamDown #-}
 
 {-
 instance IndexStream z => IndexStream (z:.(PInt p)) where
