@@ -16,6 +16,7 @@ import           Control.Monad.ST (runST)
 import           Prelude as P
 import qualified Data.Vector.Fusion.Stream.Monadic as SM
 import           Data.Vector.Fusion.Util
+import           Data.Proxy
 
 import Data.PrimitiveArray.Index
 
@@ -33,7 +34,7 @@ class (Index sh) => MPrimArrayOps arr sh elm where
   -- | Return the bounds of the array. All bounds are inclusive, as in
   -- @[lb..ub]@
 
-  boundsM :: MutArr m (arr sh elm) -> (sh,sh)
+  upperBoundM :: MutArr m (arr sh elm) -> LimitType sh
 
   -- | Given lower and upper bounds and a list of /all/ elements, produce a
   -- mutable array.
@@ -65,7 +66,7 @@ class (Index sh) => PrimArrayOps arr sh elm where
 
   -- | Returns the bounds of an immutable array, again inclusive bounds: @ [lb..ub] @.
 
-  bounds :: arr sh elm -> (sh,sh)
+  upperBound :: arr sh elm -> LimitType sh
 
   -- | Freezes a mutable array an returns its immutable version. This operation
   -- is /O(1)/ and both arrays share the same memory. Do not use the mutable
@@ -99,13 +100,13 @@ class (Index sh) => PrimArrayMap arr sh e e' where
 -- non-optimized code.
 
 (!) :: PrimArrayOps arr sh elm => arr sh elm -> sh -> elm
-(!) arr idx = assert (uncurry inBounds (bounds arr) idx) $ unsafeIndex arr idx
+(!) arr idx = assert (inBounds (upperBound arr) idx) $ unsafeIndex arr idx
 {-# INLINE (!) #-}
 
 -- | Returns true if the index is valid for the array.
 
 inBoundsM :: (Monad m, MPrimArrayOps arr sh elm) => MutArr m (arr sh elm) -> sh -> Bool
-inBoundsM marr idx = let (lb,ub) = boundsM marr in inBounds lb ub idx
+inBoundsM marr idx = inBounds (upperBoundM marr) idx
 {-# INLINE inBoundsM #-}
 
 -- -- | Given two arrays with the same dimensionality, their respective starting
@@ -136,9 +137,8 @@ fromAssocsM lb ub def xs = do
 
 -- | Return all associations from an array.
 
-assocs :: (IndexStream sh, PrimArrayOps arr sh elm) => arr sh elm -> [(sh,elm)]
-assocs arr = P.map (\k -> (k,unsafeIndex arr k)) . unId . SM.toList $ streamUp lb ub where
-  (lb,ub) = bounds arr
+assocs :: forall arr sh elm . (IndexStream sh, PrimArrayOps arr sh elm) => arr sh elm -> [(sh,elm)]
+assocs arr = P.map (\k -> (k,unsafeIndex arr k)) . unId . SM.toList $ streamUp' (zeroBound' (Proxy ∷ Proxy sh)) (upperBound arr) where
 {-# INLINE assocs #-}
 
 -- | Creates an immutable array from lower and upper bounds and a complete list
@@ -163,8 +163,8 @@ fromAssocs lb ub def xs = runST $ fromAssocsM lb ub def xs >>= unsafeFreeze
 
 -- | Returns all elements of an immutable array as a list.
 
-toList :: (IndexStream sh, PrimArrayOps arr sh elm) => arr sh elm -> [elm]
-toList arr = let (lb,ub) = bounds arr in P.map ((!) arr) . unId . SM.toList $ streamUp lb ub
+toList :: forall arr sh elm . (IndexStream sh, PrimArrayOps arr sh elm) => arr sh elm -> [elm]
+toList arr = let ub = upperBound arr in P.map ((!) arr) . unId . SM.toList $ streamUp' (zeroBound' (Proxy ∷ Proxy sh)) ub
 {-# INLINE toList #-}
 
 

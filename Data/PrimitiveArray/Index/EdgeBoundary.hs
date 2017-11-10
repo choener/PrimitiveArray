@@ -60,7 +60,7 @@ instance NFData (EdgeBoundary t) where
 
 
 instance Index (EdgeBoundary t) where
-  type UpperLimit (EdgeBoundary t) = Int
+  type LimitType (EdgeBoundary t) = Int
   linearIndex t (i :-> j) = i * (t+1) + j
   {-# Inline linearIndex #-}
   size _ t = (t+1) * (t+1)

@@ -26,18 +26,18 @@ import Data.PrimitiveArray.Index
 -- table. Otherwise we don't really need the distinction between save and
 -- unsafe. This will have to be in @runFillTables@.
 
-unsafeRunFillTables
-  :: ( Index sh, IndexStream sh
-     , WriteCell m (tail :. (MutArr m (arr sh elm), t)) sh
-     , MPrimArrayOps arr sh elm
-     , Monad m
-     , PrimMonad m
-     )
-  => (tail :. (MutArr m (arr sh elm), t)) -> m ()
+--unsafeRunFillTables
+--  :: ( Index sh, IndexStream sh
+--     , WriteCell m (tail :. (MutArr m (arr sh elm), t)) sh
+--     , MPrimArrayOps arr sh elm
+--     , Monad m
+--     , PrimMonad m
+--     )
+--  => (tail :. (MutArr m (arr sh elm), t)) -> m ()
 
-unsafeRunFillTables (ts:.(t,f)) = M.mapM_ (unsafeWriteCell (ts:.(t,f))) $ streamUp from to where -- generateIndices from to where
-  (from,to) = boundsM t -- TODO min/max over all tables [for the safe version, the unsafe version *always* assumes equal-size tables; we still should check this during runtime]
-{-# INLINE unsafeRunFillTables #-}
+--unsafeRunFillTables (ts:.(t,f)) = M.mapM_ (unsafeWriteCell (ts:.(t,f))) $ streamUp from to where -- generateIndices from to where
+--  (from,to) = boundsM t -- TODO min/max over all tables [for the safe version, the unsafe version *always* assumes equal-size tables; we still should check this during runtime]
+--{-# INLINE unsafeRunFillTables #-}
 
 
 

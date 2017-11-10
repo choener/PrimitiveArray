@@ -117,25 +117,23 @@ instance NFData Z where
 -- grammars on one or more tapes, for strings, sets, later on tree structures.
 
 class Index i where
-
   -- | Data structure encoding the upper limit for each array.
-  type UpperLimit i ∷ *
-
+  type LimitType i ∷ *
   -- | Given a maximal size, and a current index, calculate
   -- the linear index.
-
-  linearIndex ∷ UpperLimit i → i → Int
-
-  -- | Given the 'UpperLimit', return the number of cells required for storage.
+  linearIndex ∷ LimitType i → i → Int
+  -- | Given the 'LimitType', return the number of cells required for storage.
   --
-  -- TODO should, in principle, only require @UpperLimit i@, not @i@, but then
+  -- TODO should, in principle, only require @LimitType i@, not @i@, but then
   -- we need @data UpperLmit@
-
-  size ∷ Proxy i → UpperLimit i → Int
-
+  size ∷ Proxy i → LimitType i → Int
   -- | Check if an index is within the bounds.
-
-  inBounds ∷ UpperLimit i → i → Bool
+  inBounds ∷ LimitType i → i → Bool
+  -- | A lower bound of @zero@
+  zeroBound ∷ i
+  zeroBound' ∷ Proxy i → LimitType i
+  -- |
+  unsafeFromLimitType ∷ LimitType i → i
 
 
 
@@ -143,9 +141,9 @@ class Index i where
 -- Since the stream generators require @concatMap@ / @flatten@ we have to
 -- write more specialized code for @(z:.IX)@ stuff.
 --
--- TODO variants that just take an 'UpperLimit' and stream the whole range.
+-- TODO variants that just take an 'LimitType' and stream the whole range.
 
-class IndexStream i where
+class (Index i) ⇒ IndexStream i where
   -- | This generates an index stream suitable for @forward@ structure filling.
   -- The first index is the smallest (or the first indices considered are all
   -- equally small in partially ordered sets). Larger indices follow up until
@@ -156,11 +154,22 @@ class IndexStream i where
   -- make implicit use of this. Asking for an axiom in backtracking requests
   -- the first element from this stream.
   streamDown ∷ Monad m ⇒ i → i → Stream m i
+  -- | Generate an index stream using 'LimitType's. This prevents having to
+  -- figure out how the actual limits for complicated index types (like @Set@)
+  -- would look like, since for @Set@, for example, the @LimitType Set == Int@
+  -- provides just the number of bits.
+  streamUp'   ∷ Monad m ⇒ LimitType i → LimitType i → Stream m i
+  streamUp' l h = streamUp (unsafeFromLimitType l) (unsafeFromLimitType h)
+  {-# Inline streamUp' #-}
+  -- |
+  streamDown' ∷ Monad m ⇒ LimitType i → LimitType i → Stream m i
+  streamDown' l h = streamDown (unsafeFromLimitType l) (unsafeFromLimitType h)
+  {-# Inline streamDown' #-}
 
 
 
 instance Index Z where
-  type UpperLimit Z = Z
+  type LimitType Z = Z
   linearIndex _ _ = 0
   {-# INLINE linearIndex #-}
   size _ _ = 1
@@ -175,7 +184,7 @@ instance IndexStream Z where
   {-# INLINE streamDown #-}
 
 instance (Index zs, Index z) => Index (zs:.z) where
-  type UpperLimit (zs:.z) = (UpperLimit zs:.UpperLimit z)
+  type LimitType (zs:.z) = (LimitType zs:.LimitType z)
   linearIndex (hs:.h) (zs:.z) = linearIndex hs zs * (size (Proxy ∷ Proxy z) h) + linearIndex h z
   {-# INLINE linearIndex #-}
   size Proxy (hs:.h) = size (Proxy ∷ Proxy zs) hs * (size (Proxy ∷ Proxy z) h)
@@ -184,7 +193,7 @@ instance (Index zs, Index z) => Index (zs:.z) where
   {-# INLINE inBounds #-}
 
 instance (Index zs, Index z) => Index (zs:>z) where
-  type UpperLimit (zs:>z) = UpperLimit zs:>UpperLimit z
+  type LimitType (zs:>z) = LimitType zs:>LimitType z
   linearIndex (hs:>h) (zs:>z) = linearIndex hs zs * (size (Proxy ∷ Proxy z) h) + linearIndex h z
   {-# INLINE linearIndex #-}
   size Proxy (ss:>s) = size (Proxy ∷ Proxy zs) ss * (size (Proxy ∷ Proxy z) s)

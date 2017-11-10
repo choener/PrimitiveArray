@@ -54,7 +54,7 @@ instance Hashable     (PInt t p)
 instance NFData       (PInt t p)
 
 instance Index (PInt t p) where
-  type UpperLimit (PInt t p) = Int
+  type LimitType (PInt t p) = Int
   linearIndex _ (PInt k) = k
   {-# Inline linearIndex #-}
   size _ h = h+1

@@ -73,7 +73,7 @@ instance NFData (PointL t) where
   {-# Inline rnf #-}
 
 instance Index (PointL t) where
-  type UpperLimit (PointL t) = Int
+  type LimitType (PointL t) = Int
   linearIndex _ (PointL z) = z
   {-# INLINE linearIndex #-}
   size _ h = h + 1

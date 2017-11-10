@@ -41,7 +41,7 @@ instance NFData (Unit t) where
   {-# Inline rnf #-}
 
 instance Index (Unit t) where
-  type UpperLimit (Unit t) = ()
+  type LimitType (Unit t) = ()
   linearIndex _ _ = 0
   {-# Inline linearIndex #-}
   size _ _ = 1

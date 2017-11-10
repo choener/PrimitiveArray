@@ -1,5 +1,5 @@
 Name:           PrimitiveArray
-Version:        0.8.1.0
+Version:        0.8.1.1
 License:        BSD3
 License-file:   LICENSE
 Maintainer:     choener@bioinf.uni-leipzig.de
@@ -89,7 +89,7 @@ Library
                , vector-binary-instances  >= 0.2
                , vector-th-unbox          >= 0.2
                --
-               , DPutils                  == 0.0.1.*
+               , DPutils                  == 0.0.2.*
                , OrderedBits              == 0.0.1.*
   default-extensions: BangPatterns
                     , CPP

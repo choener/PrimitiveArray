@@ -166,7 +166,7 @@ instance NFData (Boundary i t) where
   {-# Inline rnf #-}
 
 instance Index (Boundary i t) where
-  type UpperLimit (Boundary i t) = Int
+  type LimitType (Boundary i t) = Int
   linearIndex _ (Boundary z) = z
   {-# INLINE linearIndex #-}
   size _ h = h + 1
@@ -221,7 +221,7 @@ instance NFData (BitSet t) where
   {-# Inline rnf #-}
 
 instance Index (BitSet t) where
-  type UpperLimit (BitSet t) = Int
+  type LimitType (BitSet t) = Int
   linearIndex _ (BitSet z) = z
   {-# INLINE linearIndex #-}
   size _ pc = 2^pc -- 2 ^ popCount h - 2 ^ popCount l + 1
@@ -280,7 +280,7 @@ streamDownBsStep l h (z , Just t ) = return $ SM.Yield (z:.t) (z , setPred l h t
 -- @linearIndex@ explicitly maps @BS1 0 whatever@ to @0@.
 
 instance Index (BS1 i t) where
-  type UpperLimit (BS1 i t) = Int
+  type LimitType (BS1 i t) = Int
   -- TODO shouldn't this be @+1@ for the case where @s/=0@?
   linearIndex pc (BS1 s i)
     | s == 0    = 0
@@ -339,7 +339,7 @@ streamDownBsIStep l h (z , Just t ) = return $ SM.Yield (z:.t) (z , setPred l h 
 -- ** BS2
 
 instance Index (BS2 i j t) where
-  type UpperLimit (BS2 i j t) = Int
+  type LimitType (BS2 i j t) = Int
 --  linearIndex (BS2 ls li lj) (BS2 hs hi hj) (BS2 s i j) = linearIndex (ls:.li:.lj) (hs:.hi:.hj) (s:.i:.j)
 --  {-# INLINE linearIndex #-}
 --  size (BS2 ls li lj) (BS2 hs hi hj) = size (ls:.li:.lj) (hs:.hi:.hj)

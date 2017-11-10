@@ -10,7 +10,7 @@ import Data.PrimitiveArray.Vector.Compat
 
 
 instance Index Int where
-  type UpperLimit Int = Int
+  type LimitType Int = Int
   linearIndex _ k = k
   {-# Inline linearIndex #-}
   size _ h = h+1

@@ -83,7 +83,7 @@ subwordC i j = Subword (i:.j)
 
 
 instance Index (Subword t) where
-  type UpperLimit (Subword t) = Int
+  type LimitType (Subword t) = Int
   linearIndex n (Subword (i:.j)) = toLinear n (i,j)
   {-# Inline linearIndex #-}
   size _ n = linearizeUppertri (0,n)
