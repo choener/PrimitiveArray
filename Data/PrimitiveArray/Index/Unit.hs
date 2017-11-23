@@ -41,24 +41,28 @@ instance NFData (Unit t) where
   {-# Inline rnf #-}
 
 instance Index (Unit t) where
-  type LimitType (Unit t) = ()
+  data LimitType (Unit t) = LtUnit
   linearIndex _ _ = 0
   {-# Inline linearIndex #-}
-  size _ _ = 1
+  size _ = 1
   {-# Inline size #-}
   inBounds _ _ = True
   {-# Inline inBounds #-}
+  zeroBound = Unit
+  {-# Inline zeroBound #-}
+  zeroBound' = LtUnit
+  {-# Inline zeroBound' #-}
 
 instance IndexStream z => IndexStream (z:.Unit t) where
-  streamUp (ls:.Unit) (hs:.Unit) = map (\z -> z:.Unit) $ streamUp ls hs
+  streamUp (ls:..LtUnit) (hs:..LtUnit) = map (\z -> z:.Unit) $ streamUp ls hs
   {-# Inline streamUp #-}
-  streamDown (ls:.Unit) (hs:.Unit) = map (\z -> z:.Unit) $ streamDown ls hs
+  streamDown (ls:..LtUnit) (hs:..LtUnit) = map (\z -> z:.Unit) $ streamDown ls hs
   {-# Inline streamDown #-}
 
 instance (IndexStream (Z:.Unit t)) => IndexStream (Unit t) where
-  streamUp l h = map (\(Z:.i) -> i) $ streamUp (Z:.l) (Z:.h)
+  streamUp l h = map (\(Z:.i) -> i) $ streamUp (ZZ:..l) (ZZ:..h)
   {-# INLINE streamUp #-}
-  streamDown l h = map (\(Z:.i) -> i) $ streamDown (Z:.l) (Z:.h)
+  streamDown l h = map (\(Z:.i) -> i) $ streamDown (ZZ:..l) (ZZ:..h)
   {-# INLINE streamDown #-}
 
 instance Arbitrary (Unit t) where

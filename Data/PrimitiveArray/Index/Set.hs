@@ -166,7 +166,7 @@ instance NFData (Boundary i t) where
   {-# Inline rnf #-}
 
 instance Index (Boundary i t) where
-  type LimitType (Boundary i t) = Int
+  newtype LimitType (Boundary i t) = LtBoundary Int
   linearIndex _ (Boundary z) = z
   {-# INLINE linearIndex #-}
   size _ h = h + 1
@@ -204,200 +204,134 @@ streamDownBndStep l h (z , k)
 
 
 
-derivingUnbox "BitSet"
-  [t| forall t . BitSet t -> Int |]
-  [| \(BitSet s) -> s   |]
-  [| BitSet             |]
-
-instance Show (BitSet t) where
-  show (BitSet s) = "<" ++ (show $ activeBitsL s) ++ ">(" ++ show s ++ ")"
-
-instance Binary    (BitSet t)
-instance Serialize (BitSet t)
-instance Hashable  (BitSet t)
-
-instance NFData (BitSet t) where
-  rnf (BitSet s) = rnf s
-  {-# Inline rnf #-}
-
-instance Index (BitSet t) where
-  type LimitType (BitSet t) = Int
-  linearIndex _ (BitSet z) = z
-  {-# INLINE linearIndex #-}
-  size _ pc = 2^pc -- 2 ^ popCount h - 2 ^ popCount l + 1
-  {-# INLINE size #-}
-  inBounds h z = popCount z <= h -- popCount l <= popCount z && popCount z <= popCount h
-  {-# INLINE inBounds #-}
-
-instance IndexStream z => IndexStream (z:.BitSet I) where
-  streamUp   (ls:.l) (hs:.h) = flatten (streamUpBsMk   l h) (streamUpBsStep   l h) $ streamUp   ls hs
-  streamDown (ls:.l) (hs:.h) = flatten (streamDownBsMk l h) (streamDownBsStep l h) $ streamDown ls hs
-  {-# Inline streamUp   #-}
-  {-# Inline streamDown #-}
-
-instance IndexStream z => IndexStream (z:.BitSet O) where
-  streamUp   (ls:.l) (hs:.h) = flatten (streamDownBsMk l h) (streamDownBsStep l h) $ streamUp   ls hs
-  streamDown (ls:.l) (hs:.h) = flatten (streamUpBsMk   l h) (streamUpBsStep   l h) $ streamDown ls hs
-  {-# Inline streamUp   #-}
-  {-# Inline streamDown #-}
-
-instance IndexStream z => IndexStream (z:.BitSet C) where
-  streamUp   (ls:.l) (hs:.h) = flatten (streamUpBsMk   l h) (streamUpBsStep   l h) $ streamUp   ls hs
-  streamDown (ls:.l) (hs:.h) = flatten (streamDownBsMk l h) (streamDownBsStep l h) $ streamDown ls hs
-  {-# Inline streamUp   #-}
-  {-# Inline streamDown #-}
-
-instance IndexStream (Z:.BitSet t) => IndexStream (BitSet t)
-
-
-streamUpBsMk :: (Monad m, Ord a) => a -> a -> t -> m (t, Maybe a)
-streamUpBsMk l h z = return (z, if l <= h then Just l else Nothing)
-{-# Inline [0] streamUpBsMk #-}
-
-streamUpBsStep :: (Monad m, SetPredSucc s) => s -> s -> (t, Maybe s) -> m (SM.Step (t, Maybe s) (t :. s))
-streamUpBsStep l h (z , Nothing) = return $ SM.Done
-streamUpBsStep l h (z , Just t ) = return $ SM.Yield (z:.t) (z , setSucc l h t)
-{-# Inline [0] streamUpBsStep #-}
-
-streamDownBsMk :: (Monad m, Ord a) => a -> a -> t -> m (t, Maybe a)
-streamDownBsMk l h z = return (z, if l <=h then Just h else Nothing)
-{-# Inline [0] streamDownBsMk #-}
-
-streamDownBsStep :: (Monad m, SetPredSucc s) => s -> s -> (t, Maybe s) -> m (SM.Step (t, Maybe s) (t :. s))
-streamDownBsStep l h (z , Nothing) = return $ SM.Done
-streamDownBsStep l h (z , Just t ) = return $ SM.Yield (z:.t) (z , setPred l h t)
-{-# Inline [0] streamDownBsStep #-}
-
-
-
--- ** @BS1@
-
--- | TODO The size calculations are off by a factor of two, exactly. Each
--- bitset (say) @00110@ has a mirror image @11001@, whose elements do not have
--- to be indexed. It has to be investigated if a version with exact memory
--- bounds is slower in indexing.
+--derivingUnbox "BitSet"
+--  [t| forall t . BitSet t -> Int |]
+--  [| \(BitSet s) -> s   |]
+--  [| BitSet             |]
 --
--- @linearIndex@ explicitly maps @BS1 0 whatever@ to @0@.
-
-instance Index (BS1 i t) where
-  type LimitType (BS1 i t) = Int
-  -- TODO shouldn't this be @+1@ for the case where @s/=0@?
-  linearIndex pc (BS1 s i)
-    | s == 0    = 0
-    | otherwise = 1 + linearIndex (pc:.2^pc) (s:.i)
-  {-# INLINE linearIndex #-}
-  size _ pc = 2^pc * pc + 1
-  {-# INLINE size #-}
-  inBounds pc (BS1 s i) = popCount s <= pc && 0 <= i && getBoundary i <= pc
-  {-# INLINE inBounds #-}
-
-instance IndexStream z => IndexStream (z:.BS1 i I) where
-  streamUp   (ls:.l) (hs:.h) = flatten (streamUpBsIMk   l h) (streamUpBsIStep   l h) $ streamUp   ls hs
-  streamDown (ls:.l) (hs:.h) = flatten (streamDownBsIMk l h) (streamDownBsIStep l h) $ streamDown ls hs
-  {-# Inline streamUp #-}
-  {-# Inline streamDown #-}
-
-instance IndexStream z => IndexStream (z:.BS1 i O) where
-  streamUp   (ls:.l) (hs:.h) = flatten (streamDownBsIMk l h) (streamDownBsIStep l h) $ streamUp   ls hs
-  streamDown (ls:.l) (hs:.h) = flatten (streamUpBsIMk   l h) (streamUpBsIStep   l h) $ streamDown ls hs
-  {-# Inline streamUp #-}
-  {-# Inline streamDown #-}
-
-instance IndexStream z => IndexStream (z:.BS1 i C) where
-  streamUp   (ls:.l) (hs:.h) = flatten (streamUpBsIMk   l h) (streamUpBsIStep   l h) $ streamUp   ls hs
-  streamDown (ls:.l) (hs:.h) = flatten (streamDownBsIMk l h) (streamDownBsIStep l h) $ streamDown ls hs
-  {-# Inline streamUp #-}
-  {-# Inline streamDown #-}
-
-instance IndexStream (Z:.BS1 i t) => IndexStream (BS1 i t) where
-  streamUp l h = SM.map (\(Z:.i) -> i) $ streamUp (Z:.l) (Z:.h)
-  {-# INLINE streamUp #-}
-  streamDown l h = SM.map (\(Z:.i) -> i) $ streamDown (Z:.l) (Z:.h)
-  {-# INLINE streamDown #-}
-
-
-streamUpBsIMk :: (Monad m) => BS1 a i -> BS1 b i -> z -> m (z, Maybe (BS1 c i))
-streamUpBsIMk (BS1 sl _) (BS1 sh _) z = return (z, if sl <= sh then Just (BS1 sl (Boundary . max 0 $ lsbZ sl)) else Nothing)
-{-# Inline [0] streamUpBsIMk #-}
-
-streamUpBsIStep :: (Monad m, SetPredSucc s) => s -> s -> (t, Maybe s) -> m (SM.Step (t, Maybe s) (t :. s))
-streamUpBsIStep l h (z , Nothing) = return $ SM.Done
-streamUpBsIStep l h (z,  Just t ) = return $ SM.Yield (z:.t) (z , setSucc l h t)
-{-# Inline [0] streamUpBsIStep #-}
-
-streamDownBsIMk :: (Monad m) => BS1 a i -> BS1 b i -> z -> m (z, Maybe (BS1 c i))
-streamDownBsIMk (BS1 sl _) (BS1 sh _) z = return (z, if sl <= sh then Just (BS1 sh (Boundary . max 0 $ lsbZ sh)) else Nothing)
-{-# Inline [0] streamDownBsIMk #-}
-
-streamDownBsIStep :: (Monad m, SetPredSucc s) => s -> s -> (t, Maybe s) -> m (SM.Step (t, Maybe s) (t :. s))
-streamDownBsIStep l h (z , Nothing) = return $ SM.Done
-streamDownBsIStep l h (z , Just t ) = return $ SM.Yield (z:.t) (z , setPred l h t)
-{-# Inline [0] streamDownBsIStep #-}
-
-
-
--- ** BS2
-
-instance Index (BS2 i j t) where
-  type LimitType (BS2 i j t) = Int
---  linearIndex (BS2 ls li lj) (BS2 hs hi hj) (BS2 s i j) = linearIndex (ls:.li:.lj) (hs:.hi:.hj) (s:.i:.j)
+--instance Show (BitSet t) where
+--  show (BitSet s) = "<" ++ (show $ activeBitsL s) ++ ">(" ++ show s ++ ")"
+--
+--instance Binary    (BitSet t)
+--instance Serialize (BitSet t)
+--instance Hashable  (BitSet t)
+--
+--instance NFData (BitSet t) where
+--  rnf (BitSet s) = rnf s
+--  {-# Inline rnf #-}
+--
+--instance Index (BitSet t) where
+--  newtype LimitType (BitSet t) = LtBitSet Int
+--  linearIndex _ (BitSet z) = z
 --  {-# INLINE linearIndex #-}
---  size (BS2 ls li lj) (BS2 hs hi hj) = size (ls:.li:.lj) (hs:.hi:.hj)
+--  size _ pc = 2^pc -- 2 ^ popCount h - 2 ^ popCount l + 1
 --  {-# INLINE size #-}
---  inBounds (BS2 ls li lj) (BS2 hs hi hj) (BS2 s i j) = inBounds (ls:.li:.lj) (hs:.hi:.hj) (s:.i:.j)
+--  inBounds h z = popCount z <= h -- popCount l <= popCount z && popCount z <= popCount h
 --  {-# INLINE inBounds #-}
+--
+--instance IndexStream z => IndexStream (z:.BitSet I) where
+--  streamUp   (ls:.l) (hs:.h) = flatten (streamUpBsMk   l h) (streamUpBsStep   l h) $ streamUp   ls hs
+--  streamDown (ls:.l) (hs:.h) = flatten (streamDownBsMk l h) (streamDownBsStep l h) $ streamDown ls hs
+--  {-# Inline streamUp   #-}
+--  {-# Inline streamDown #-}
+--
+--instance IndexStream z => IndexStream (z:.BitSet O) where
+--  streamUp   (ls:.l) (hs:.h) = flatten (streamDownBsMk l h) (streamDownBsStep l h) $ streamUp   ls hs
+--  streamDown (ls:.l) (hs:.h) = flatten (streamUpBsMk   l h) (streamUpBsStep   l h) $ streamDown ls hs
+--  {-# Inline streamUp   #-}
+--  {-# Inline streamDown #-}
+--
+--instance IndexStream z => IndexStream (z:.BitSet C) where
+--  streamUp   (ls:.l) (hs:.h) = flatten (streamUpBsMk   l h) (streamUpBsStep   l h) $ streamUp   ls hs
+--  streamDown (ls:.l) (hs:.h) = flatten (streamDownBsMk l h) (streamDownBsStep l h) $ streamDown ls hs
+--  {-# Inline streamUp   #-}
+--  {-# Inline streamDown #-}
+--
+--instance IndexStream (Z:.BitSet t) => IndexStream (BitSet t)
+--
+--
+--streamUpBsMk :: (Monad m, Ord a) => a -> a -> t -> m (t, Maybe a)
+--streamUpBsMk l h z = return (z, if l <= h then Just l else Nothing)
+--{-# Inline [0] streamUpBsMk #-}
+--
+--streamUpBsStep :: (Monad m, SetPredSucc s) => s -> s -> (t, Maybe s) -> m (SM.Step (t, Maybe s) (t :. s))
+--streamUpBsStep l h (z , Nothing) = return $ SM.Done
+--streamUpBsStep l h (z , Just t ) = return $ SM.Yield (z:.t) (z , setSucc l h t)
+--{-# Inline [0] streamUpBsStep #-}
+--
+--streamDownBsMk :: (Monad m, Ord a) => a -> a -> t -> m (t, Maybe a)
+--streamDownBsMk l h z = return (z, if l <=h then Just h else Nothing)
+--{-# Inline [0] streamDownBsMk #-}
+--
+--streamDownBsStep :: (Monad m, SetPredSucc s) => s -> s -> (t, Maybe s) -> m (SM.Step (t, Maybe s) (t :. s))
+--streamDownBsStep l h (z , Nothing) = return $ SM.Done
+--streamDownBsStep l h (z , Just t ) = return $ SM.Yield (z:.t) (z , setPred l h t)
+--{-# Inline [0] streamDownBsStep #-}
 
-instance IndexStream z => IndexStream (z:.BS2 i j I) where
-  streamUp   (ls:.l) (hs:.h) = flatten (streamUpBsIiMk   l h) (streamUpBsIiStep   l h) $ streamUp   ls hs
-  streamDown (ls:.l) (hs:.h) = flatten (streamDownBsIiMk l h) (streamDownBsIiStep l h) $ streamDown ls hs
-  {-# Inline streamUp #-}
-  {-# Inline streamDown #-}
 
-instance IndexStream z => IndexStream (z:.BS2 i j O) where
-  streamUp   (ls:.l) (hs:.h) = flatten (streamDownBsIiMk l h) (streamDownBsIiStep l h) $ streamUp   ls hs
-  streamDown (ls:.l) (hs:.h) = flatten (streamUpBsIiMk   l h) (streamUpBsIiStep   l h) $ streamDown ls hs
-  {-# Inline streamUp #-}
-  {-# Inline streamDown #-}
 
-instance IndexStream z => IndexStream (z:.BS2 i j C) where
-  streamUp   (ls:.l) (hs:.h) = flatten (streamUpBsIiMk   l h) (streamUpBsIiStep   l h) $ streamUp   ls hs
-  streamDown (ls:.l) (hs:.h) = flatten (streamDownBsIiMk l h) (streamDownBsIiStep l h) $ streamDown ls hs
-  {-# Inline streamUp #-}
-  {-# Inline streamDown #-}
-
-instance IndexStream (Z:.BS2 i j t) => IndexStream (BS2 i j t)
-
-streamUpBsIiMk :: (Monad m) => BS2 a b i -> BS2 c d i -> z -> m (z, Maybe (BS2 e f i))
-streamUpBsIiMk (BS2 sl _ _) (BS2 sh _ _) z
-  | sl > sh   = return (z , Nothing)
-  | cl == 0   = return (z , Just (BS2 0 0 0))
-  | cl == 1   = let i = lsbZ sl
-                in  return (z , Just (BS2 sl (Boundary i) (Boundary i)))
-  | otherwise = let i = lsbZ sl; j = lsbZ (sl `clearBit` i)
-                in  return (z , Just (BS2 sl (Boundary i) (Boundary j)))
-  where cl = popCount sl
-{-# Inline [0] streamUpBsIiMk #-}
-
-streamUpBsIiStep :: (Monad m, SetPredSucc s) => s -> s -> (t, Maybe s) -> m (SM.Step (t, Maybe s) (t :. s))
-streamUpBsIiStep l h (z , Nothing) = return $ SM.Done
-streamUpBsIiStep l h (z , Just t ) = return $ SM.Yield (z:.t) (z , setSucc l h t)
-{-# Inline [0] streamUpBsIiStep #-}
-
-streamDownBsIiMk :: (Monad m) => BS2 a b i -> BS2 c d i -> z -> m (z, Maybe (BS2 e f i))
-streamDownBsIiMk (BS2 sl _ _) (BS2 sh _ _) z
-  | sl > sh   = return (z , Nothing)
-  | ch == 0   = return (z , Just (BS2 0 0 0))
-  | ch == 1   = let i = lsbZ sh
-                in  return (z , Just (BS2 sh (Boundary i) (Boundary i)))
-  | otherwise = let i = lsbZ sh; j = lsbZ sh
-                in  return (z , Just (BS2 sh (Boundary i) (Boundary j)))
-  where ch = popCount sh
-{-# Inline [0] streamDownBsIiMk #-}
-
-streamDownBsIiStep :: (Monad m, SetPredSucc s) => s -> s -> (t, Maybe s) -> m (SM.Step (t, Maybe s) (t :. s))
-streamDownBsIiStep l h (z , Nothing) = return $ SM.Done
-streamDownBsIiStep l h (z , Just t ) = return $ SM.Yield (z:.t) (z , setPred l h t)
-{-# Inline [0] streamDownBsIiStep #-}
+---- ** BS2
+--
+--instance Index (BS2 i j t) where
+--  newtype LimitType (BS2 i j t) = LtBS2 Int
+----  linearIndex (BS2 ls li lj) (BS2 hs hi hj) (BS2 s i j) = linearIndex (ls:.li:.lj) (hs:.hi:.hj) (s:.i:.j)
+----  {-# INLINE linearIndex #-}
+----  size (BS2 ls li lj) (BS2 hs hi hj) = size (ls:.li:.lj) (hs:.hi:.hj)
+----  {-# INLINE size #-}
+----  inBounds (BS2 ls li lj) (BS2 hs hi hj) (BS2 s i j) = inBounds (ls:.li:.lj) (hs:.hi:.hj) (s:.i:.j)
+----  {-# INLINE inBounds #-}
+--
+--instance IndexStream z => IndexStream (z:.BS2 i j I) where
+--  streamUp   (ls:.l) (hs:.h) = flatten (streamUpBsIiMk   l h) (streamUpBsIiStep   l h) $ streamUp   ls hs
+--  streamDown (ls:.l) (hs:.h) = flatten (streamDownBsIiMk l h) (streamDownBsIiStep l h) $ streamDown ls hs
+--  {-# Inline streamUp #-}
+--  {-# Inline streamDown #-}
+--
+--instance IndexStream z => IndexStream (z:.BS2 i j O) where
+--  streamUp   (ls:.l) (hs:.h) = flatten (streamDownBsIiMk l h) (streamDownBsIiStep l h) $ streamUp   ls hs
+--  streamDown (ls:.l) (hs:.h) = flatten (streamUpBsIiMk   l h) (streamUpBsIiStep   l h) $ streamDown ls hs
+--  {-# Inline streamUp #-}
+--  {-# Inline streamDown #-}
+--
+--instance IndexStream z => IndexStream (z:.BS2 i j C) where
+--  streamUp   (ls:.l) (hs:.h) = flatten (streamUpBsIiMk   l h) (streamUpBsIiStep   l h) $ streamUp   ls hs
+--  streamDown (ls:.l) (hs:.h) = flatten (streamDownBsIiMk l h) (streamDownBsIiStep l h) $ streamDown ls hs
+--  {-# Inline streamUp #-}
+--  {-# Inline streamDown #-}
+--
+--instance IndexStream (Z:.BS2 i j t) => IndexStream (BS2 i j t)
+--
+--streamUpBsIiMk :: (Monad m) => BS2 a b i -> BS2 c d i -> z -> m (z, Maybe (BS2 e f i))
+--streamUpBsIiMk (BS2 sl _ _) (BS2 sh _ _) z
+--  | sl > sh   = return (z , Nothing)
+--  | cl == 0   = return (z , Just (BS2 0 0 0))
+--  | cl == 1   = let i = lsbZ sl
+--                in  return (z , Just (BS2 sl (Boundary i) (Boundary i)))
+--  | otherwise = let i = lsbZ sl; j = lsbZ (sl `clearBit` i)
+--                in  return (z , Just (BS2 sl (Boundary i) (Boundary j)))
+--  where cl = popCount sl
+--{-# Inline [0] streamUpBsIiMk #-}
+--
+--streamUpBsIiStep :: (Monad m, SetPredSucc s) => s -> s -> (t, Maybe s) -> m (SM.Step (t, Maybe s) (t :. s))
+--streamUpBsIiStep l h (z , Nothing) = return $ SM.Done
+--streamUpBsIiStep l h (z , Just t ) = return $ SM.Yield (z:.t) (z , setSucc l h t)
+--{-# Inline [0] streamUpBsIiStep #-}
+--
+--streamDownBsIiMk :: (Monad m) => BS2 a b i -> BS2 c d i -> z -> m (z, Maybe (BS2 e f i))
+--streamDownBsIiMk (BS2 sl _ _) (BS2 sh _ _) z
+--  | sl > sh   = return (z , Nothing)
+--  | ch == 0   = return (z , Just (BS2 0 0 0))
+--  | ch == 1   = let i = lsbZ sh
+--                in  return (z , Just (BS2 sh (Boundary i) (Boundary i)))
+--  | otherwise = let i = lsbZ sh; j = lsbZ sh
+--                in  return (z , Just (BS2 sh (Boundary i) (Boundary j)))
+--  where ch = popCount sh
+--{-# Inline [0] streamDownBsIiMk #-}
+--
+--streamDownBsIiStep :: (Monad m, SetPredSucc s) => s -> s -> (t, Maybe s) -> m (SM.Step (t, Maybe s) (t :. s))
+--streamDownBsIiStep l h (z , Nothing) = return $ SM.Done
+--streamDownBsIiStep l h (z , Just t ) = return $ SM.Yield (z:.t) (z , setPred l h t)
+--{-# Inline [0] streamDownBsIiStep #-}
 
 
 

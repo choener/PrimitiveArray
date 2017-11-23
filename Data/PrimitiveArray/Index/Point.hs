@@ -73,29 +73,29 @@ instance NFData (PointL t) where
   {-# Inline rnf #-}
 
 instance Index (PointL t) where
-  type LimitType (PointL t) = Int
+  newtype LimitType (PointL t) = LtPointL Int
   linearIndex _ (PointL z) = z
   {-# INLINE linearIndex #-}
-  size _ h = h + 1
+  size (LtPointL h) = h + 1
   {-# INLINE size #-}
-  inBounds h (PointL x) = 0<=x && x<=h
+  inBounds (LtPointL h) (PointL x) = 0<=x && x<=h
   {-# INLINE inBounds #-}
 
 instance IndexStream z => IndexStream (z:.PointL I) where
-  streamUp   (ls:.PointL lf) (hs:.PointL ht) = flatten (streamUpMk   lf) (streamUpStep   ht) $ streamUp ls hs
-  streamDown (ls:.PointL lf) (hs:.PointL ht) = flatten (streamDownMk ht) (streamDownStep lf) $ streamDown ls hs
+  streamUp   (ls:..LtPointL lf) (hs:..LtPointL ht) = flatten (streamUpMk   lf) (streamUpStep   ht) $ streamUp ls hs
+  streamDown (ls:..LtPointL lf) (hs:..LtPointL ht) = flatten (streamDownMk ht) (streamDownStep lf) $ streamDown ls hs
   {-# Inline [0] streamUp #-}
   {-# Inline [0] streamDown #-}
 
 instance IndexStream z => IndexStream (z:.PointL O) where
-  streamUp   (ls:.PointL lf) (hs:.PointL ht) = flatten (streamDownMk ht) (streamDownStep lf) $ streamUp   ls hs
-  streamDown (ls:.PointL lf) (hs:.PointL ht) = flatten (streamUpMk   lf) (streamUpStep   ht) $ streamDown ls hs
+  streamUp   (ls:..LtPointL lf) (hs:..LtPointL ht) = flatten (streamDownMk ht) (streamDownStep lf) $ streamUp   ls hs
+  streamDown (ls:..LtPointL lf) (hs:..LtPointL ht) = flatten (streamUpMk   lf) (streamUpStep   ht) $ streamDown ls hs
   {-# Inline [0] streamUp #-}
   {-# Inline [0] streamDown #-}
 
 instance IndexStream z => IndexStream (z:.PointL C) where
-  streamUp   (ls:.PointL lf) (hs:.PointL ht) = flatten (streamUpMk   lf) (streamUpStep   ht) $ streamUp ls hs
-  streamDown (ls:.PointL lf) (hs:.PointL ht) = flatten (streamDownMk ht) (streamDownStep lf) $ streamDown ls hs
+  streamUp   (ls:..LtPointL lf) (hs:..LtPointL ht) = flatten (streamUpMk   lf) (streamUpStep   ht) $ streamUp ls hs
+  streamDown (ls:..LtPointL lf) (hs:..LtPointL ht) = flatten (streamDownMk ht) (streamDownStep lf) $ streamDown ls hs
   {-# Inline [0] streamUp #-}
   {-# Inline [0] streamDown #-}
 
@@ -118,9 +118,9 @@ streamDownStep (I# lf) (SP z k)
 {-# Inline [0] streamDownStep #-}
 
 instance IndexStream (Z:.PointL t) => IndexStream (PointL t) where
-  streamUp l h = SM.map (\(Z:.i) -> i) $ streamUp (Z:.l) (Z:.h)
+  streamUp l h = SM.map (\(Z:.i) -> i) $ streamUp (ZZ:..l) (ZZ:..h)
   {-# INLINE streamUp #-}
-  streamDown l h = SM.map (\(Z:.i) -> i) $ streamDown (Z:.l) (Z:.h)
+  streamDown l h = SM.map (\(Z:.i) -> i) $ streamDown (ZZ:..l) (ZZ:..h)
   {-# INLINE streamDown #-}
 
 

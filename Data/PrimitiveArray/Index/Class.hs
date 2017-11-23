@@ -118,22 +118,19 @@ instance NFData Z where
 
 class Index i where
   -- | Data structure encoding the upper limit for each array.
-  type LimitType i ∷ *
+  data LimitType i ∷ *
   -- | Given a maximal size, and a current index, calculate
   -- the linear index.
   linearIndex ∷ LimitType i → i → Int
   -- | Given the 'LimitType', return the number of cells required for storage.
-  --
-  -- TODO should, in principle, only require @LimitType i@, not @i@, but then
-  -- we need @data UpperLmit@
-  size ∷ Proxy i → LimitType i → Int
+  size ∷ LimitType i → Int
   -- | Check if an index is within the bounds.
   inBounds ∷ LimitType i → i → Bool
   -- | A lower bound of @zero@
   zeroBound ∷ i
-  zeroBound' ∷ Proxy i → LimitType i
-  -- |
-  unsafeFromLimitType ∷ LimitType i → i
+  zeroBound' ∷ LimitType i
+--  -- |
+--  unsafeFromLimitType ∷ LimitType i → i
 
 
 
@@ -148,56 +145,68 @@ class (Index i) ⇒ IndexStream i where
   -- The first index is the smallest (or the first indices considered are all
   -- equally small in partially ordered sets). Larger indices follow up until
   -- the largest one.
-  streamUp ∷ Monad m ⇒ i → i → Stream m i
+--  streamUp ∷ Monad m ⇒ i → i → Stream m i
   -- | If 'streamUp' generates indices from smallest to largest, then
   -- 'streamDown' generates indices from largest to smallest. Outside grammars
   -- make implicit use of this. Asking for an axiom in backtracking requests
   -- the first element from this stream.
-  streamDown ∷ Monad m ⇒ i → i → Stream m i
+--  streamDown ∷ Monad m ⇒ i → i → Stream m i
   -- | Generate an index stream using 'LimitType's. This prevents having to
   -- figure out how the actual limits for complicated index types (like @Set@)
   -- would look like, since for @Set@, for example, the @LimitType Set == Int@
   -- provides just the number of bits.
-  streamUp'   ∷ Monad m ⇒ LimitType i → LimitType i → Stream m i
-  streamUp' l h = streamUp (unsafeFromLimitType l) (unsafeFromLimitType h)
-  {-# Inline streamUp' #-}
+  streamUp ∷ Monad m ⇒ LimitType i → LimitType i → Stream m i
+--  streamUp' l h = streamUp (unsafeFromLimitType l) (unsafeFromLimitType h)
+--  {-# Inline streamUp' #-}
   -- |
-  streamDown' ∷ Monad m ⇒ LimitType i → LimitType i → Stream m i
-  streamDown' l h = streamDown (unsafeFromLimitType l) (unsafeFromLimitType h)
-  {-# Inline streamDown' #-}
+  streamDown ∷ Monad m ⇒ LimitType i → LimitType i → Stream m i
+--  streamDown' l h = streamDown (unsafeFromLimitType l) (unsafeFromLimitType h)
+--  {-# Inline streamDown' #-}
 
 
 
 instance Index Z where
-  type LimitType Z = Z
+  data LimitType Z = ZZ
   linearIndex _ _ = 0
   {-# INLINE linearIndex #-}
-  size _ _ = 1
+  size _ = 1
   {-# INLINE size #-}
   inBounds _ _ = True
   {-# INLINE inBounds #-}
+  zeroBound = Z
+  {-# Inline zeroBound #-}
+  zeroBound' = ZZ
+  {-# Inline zeroBound' #-}
 
 instance IndexStream Z where
-  streamUp   Z Z = SM.singleton Z
-  {-# INLINE streamUp #-}
-  streamDown Z Z = SM.singleton Z
-  {-# INLINE streamDown #-}
+--  streamUp   Z Z = SM.singleton Z
+--  {-# INLINE streamUp #-}
+--  streamDown Z Z = SM.singleton Z
+--  {-# INLINE streamDown #-}
+  streamUp ZZ ZZ = SM.singleton Z
+  {-# Inline streamUp #-}
+  streamDown ZZ ZZ = SM.singleton Z
+  {-# Inline streamDown #-}
 
 instance (Index zs, Index z) => Index (zs:.z) where
-  type LimitType (zs:.z) = (LimitType zs:.LimitType z)
-  linearIndex (hs:.h) (zs:.z) = linearIndex hs zs * (size (Proxy ∷ Proxy z) h) + linearIndex h z
+  data LimitType (zs:.z) = LimitType zs :.. LimitType z
+  linearIndex (hs:..h) (zs:.z) = linearIndex hs zs * size h + linearIndex h z
   {-# INLINE linearIndex #-}
-  size Proxy (hs:.h) = size (Proxy ∷ Proxy zs) hs * (size (Proxy ∷ Proxy z) h)
+  size (hs:..h) = size hs * size h
   {-# INLINE size #-}
-  inBounds (hs:.h) (zs:.z) = inBounds hs zs && inBounds h z
+  inBounds (hs:..h) (zs:.z) = inBounds hs zs && inBounds h z
   {-# INLINE inBounds #-}
+  zeroBound = zeroBound :. zeroBound
+  {-# Inline zeroBound #-}
+  zeroBound' = zeroBound' :.. zeroBound'
+  {-# Inline zeroBound' #-}
 
-instance (Index zs, Index z) => Index (zs:>z) where
-  type LimitType (zs:>z) = LimitType zs:>LimitType z
-  linearIndex (hs:>h) (zs:>z) = linearIndex hs zs * (size (Proxy ∷ Proxy z) h) + linearIndex h z
-  {-# INLINE linearIndex #-}
-  size Proxy (ss:>s) = size (Proxy ∷ Proxy zs) ss * (size (Proxy ∷ Proxy z) s)
-  {-# INLINE size #-}
-  inBounds (hs:>h) (zs:>z) = inBounds hs zs && inBounds h z
-  {-# INLINE inBounds #-}
+--instance (Index zs, Index z) => Index (zs:>z) where
+--  type LimitType (zs:>z) = LimitType zs:>LimitType z
+--  linearIndex (hs:>h) (zs:>z) = linearIndex hs zs * (size (Proxy ∷ Proxy z) h) + linearIndex h z
+--  {-# INLINE linearIndex #-}
+--  size Proxy (ss:>s) = size (Proxy ∷ Proxy zs) ss * (size (Proxy ∷ Proxy z) s)
+--  {-# INLINE size #-}
+--  inBounds (hs:>h) (zs:>z) = inBounds hs zs && inBounds h z
+--  {-# INLINE inBounds #-}
 
