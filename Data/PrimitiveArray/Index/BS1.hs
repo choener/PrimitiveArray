@@ -1,16 +1,34 @@
 
+-- | A bitset with one interface.
+
 module Data.PrimitiveArray.Index.BS1 where
 
+import Data.PrimitiveArray.Index.Class
 
 
--- ** @BS1@
 
+-- | The bitset with one interface or boundary.
+
+data BS1 i t = BS1 !(BitSet t) !(Boundary i t)
+
+deriving instance Show (BS1 i t)
+
+
+
+-- |
+--
+-- NOTE We linearize a bitset as follows: we need @2^number-of-bits *
+-- number-of-bits@ elements. The first is due to having a binary set structure.
+-- The second is due to pointing to each of those elements as being the
+-- boundary. This overcommits on memory since only those bits can be a boundary
+-- bits that are actually set. Furthermore, in case no bit is set at all, then
+-- there should be no boundary. This is currently rather awkwardly done by
+-- restricting enumeration and mapping the 0-set to boundary 0.
+--
 -- | TODO The size calculations are off by a factor of two, exactly. Each
 -- bitset (say) @00110@ has a mirror image @11001@, whose elements do not have
 -- to be indexed. It has to be investigated if a version with exact memory
 -- bounds is slower in indexing.
---
--- @linearIndex@ explicitly maps @BS1 0 whatever@ to @0@.
 
 instance Index (BS1 i t) where
   newtype LimitType (BS1 i t) = LtBS1 (BitSet t)

@@ -57,39 +57,6 @@ data Last
 
 data Any
 
--- | Newtype for a bitset. We'd use @Word@s but that requires more shape
--- instances.
---
--- TODO can we use @Word@s now?
-
-newtype BitSet t = BitSet { getBitSet :: Int }
-  deriving (Eq,Ord,Read,Generic,FiniteBits,Ranked,Num,Bits)
-
-instance FromJSON     (BitSet t)
-instance FromJSONKey  (BitSet t)
-instance ToJSON       (BitSet t)
-instance ToJSONKey    (BitSet t)
-
-bitSetI :: Int -> BitSet I
-bitSetI = BitSet
-{-# Inline bitSetI #-}
-
-bitSetO :: Int -> BitSet O
-bitSetO = BitSet
-{-# Inline bitSetO #-}
-
-bitSetC :: Int -> BitSet C
-bitSetC = BitSet
-{-# Inline bitSetC #-}
-
--- | A bitset with one interface.
-
--- type BS1 t i = BitSet t :> Boundary i
-
-data BS1 i t = BS1 !(BitSet t) !(Boundary i t)
-
-deriving instance Show (BS1 i t)
-
 -- | A bitset with two interfaces.
 
 -- type BS2 t i j = BitSet t :> Boundary i :> Boundary j

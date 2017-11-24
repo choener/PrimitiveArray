@@ -1,3 +1,9 @@
+0.9.0.0
+-------
+
+- large-scale changes
+- associated data families for bounds
+
 0.8.1.0
 -------
 
