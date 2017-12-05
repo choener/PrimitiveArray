@@ -15,10 +15,10 @@ import           Data.PrimitiveArray.Index.Class
 -- the @linearIndex@. Within each group, there should only be @PointL@s
 -- with the same value.
 
-uniquenessTest :: (Ord a, Index a) => a -> a -> [a] -> Bool
+uniquenessTest ∷ (Ord a, Index a) ⇒ LimitType a → LimitType a → [a] → Bool
 uniquenessTest low hgh xs = all allEq ys && all allEq zs
-  where ys  = M.fromListWith S.union . map (second S.singleton) . map (linearIndex low hgh &&& id) $ xs
-        zs  = M.fromListWith S.union . map (second S.singleton) . map (id &&& linearIndex low hgh) $ xs
+  where ys  = M.fromListWith S.union . map (second S.singleton) . map (linearIndex hgh &&& id) $ xs
+        zs  = M.fromListWith S.union . map (second S.singleton) . map (id &&& linearIndex hgh) $ xs
 {-# Inlineable uniquenessTest #-}
 {-
 uniquenessTest low xs = all allEq ys && all allEq zs

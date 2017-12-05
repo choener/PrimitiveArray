@@ -11,14 +11,16 @@ module Data.PrimitiveArray.Class where
 import           Control.Applicative (Applicative, pure, (<$>), (<*>))
 import           Control.Exception (assert)
 import           Control.Monad (forM_)
-import           Control.Monad.Primitive (PrimMonad)
+import           Control.Monad.Except
+import           Control.Monad.Primitive (PrimMonad, liftPrim)
 import           Control.Monad.ST (runST)
 import           Prelude as P
 import qualified Data.Vector.Fusion.Stream.Monadic as SM
 import           Data.Vector.Fusion.Util
 import           Data.Proxy
+import           GHC.Generics (Generic)
 
-import Data.PrimitiveArray.Index
+import           Data.PrimitiveArray.Index.Class
 
 
 
@@ -39,16 +41,16 @@ class (Index sh) => MPrimArrayOps arr sh elm where
   -- | Given lower and upper bounds and a list of /all/ elements, produce a
   -- mutable array.
 
-  fromListM :: PrimMonad m => sh -> sh -> [elm] -> m (MutArr m (arr sh elm))
+  fromListM :: PrimMonad m => LimitType sh -> [elm] -> m (MutArr m (arr sh elm))
 
   -- | Creates a new array with the given bounds with each element within the
   -- array being in an undefined state.
 
-  newM :: PrimMonad m => sh -> sh -> m (MutArr m (arr sh elm))
+  newM :: PrimMonad m => LimitType sh -> m (MutArr m (arr sh elm))
 
   -- | Creates a new array with all elements being equal to 'elm'.
 
-  newWithM :: PrimMonad m => sh -> sh -> elm -> m (MutArr m (arr sh elm))
+  newWithM :: PrimMonad m => LimitType sh -> elm -> m (MutArr m (arr sh elm))
 
   -- | Reads a single element in the array.
 
@@ -86,13 +88,22 @@ class (Index sh) => PrimArrayOps arr sh elm where
 
   -- | Savely transform the shape space of a table.
 
-  transformShape :: (Index sh') => (sh -> sh') -> arr sh elm -> arr sh' elm
+  transformShape :: (Index sh') => (LimitType sh -> LimitType sh') -> arr sh elm -> arr sh' elm
 
 class (Index sh) => PrimArrayMap arr sh e e' where
 
   -- | Map a function over each element, keeping the shape intact.
 
   map :: (e -> e') -> arr sh e -> arr sh e'
+
+
+
+data PAErrors
+  = PAEUpperBound
+  deriving (Eq,Generic)
+
+instance Show PAErrors where
+  show (PAEUpperBound) = "Upper bound is too large for @Int@ size!"
 
 
 
@@ -128,31 +139,60 @@ inBoundsM marr idx = inBounds (upperBoundM marr) idx
 
 fromAssocsM
   :: (PrimMonad m, MPrimArrayOps arr sh elm)
-  => sh -> sh -> elm -> [(sh,elm)] -> m (MutArr m (arr sh elm))
-fromAssocsM lb ub def xs = do
-  ma <- newWithM lb ub def
+  => LimitType sh -> elm -> [(sh,elm)] -> m (MutArr m (arr sh elm))
+fromAssocsM ub def xs = do
+  ma <- newWithM ub def
   forM_ xs $ \(k,v) -> writeM ma k v
   return ma
 {-# INLINE fromAssocsM #-}
 
+-- | Initialize an immutable array but stay within the primitive monad @m@.
+
+newWithPA
+  ∷ (PrimMonad m, MPrimArrayOps arr sh elm, PrimArrayOps arr sh elm)
+  ⇒ LimitType sh
+  → elm
+  → m (arr sh elm)
+newWithPA ub def = do
+  ma ← newWithM ub def
+  unsafeFreeze ma
+{-# Inlinable newWithPA #-}
+
+-- | Safely prepare a primitive array.
+--
+-- TODO Check if having a 'MonadError' instance degrades performance. (We
+-- should see this once the test with NeedlemanWunsch is under way).
+
+safeNewWithPA
+  ∷ forall m arr sh elm 
+  . (PrimMonad m, MonadError PAErrors m, MPrimArrayOps arr sh elm, PrimArrayOps arr sh elm)
+  ⇒ LimitType sh
+  → elm
+  → m (arr sh elm)
+safeNewWithPA ub def = do
+  unless (sizeIsValid ub) $ throwError PAEUpperBound
+  newWithPA ub def
+{-# Inlinable safeNewWithPA #-}
+
+
 -- | Return all associations from an array.
 
 assocs :: forall arr sh elm . (IndexStream sh, PrimArrayOps arr sh elm) => arr sh elm -> [(sh,elm)]
-assocs arr = P.map (\k -> (k,unsafeIndex arr k)) . unId . SM.toList $ streamUp' (zeroBound' (Proxy ∷ Proxy sh)) (upperBound arr) where
+assocs arr = P.map (\k -> (k,unsafeIndex arr k)) . unId . SM.toList $ streamUp zeroBound' (upperBound arr) where
 {-# INLINE assocs #-}
 
 -- | Creates an immutable array from lower and upper bounds and a complete list
 -- of elements.
 
-fromList :: (PrimArrayOps arr sh elm, MPrimArrayOps arr sh elm) => sh -> sh -> [elm] -> arr sh elm
-fromList lb ub xs = runST $ fromListM lb ub xs >>= unsafeFreeze
+fromList :: (PrimArrayOps arr sh elm, MPrimArrayOps arr sh elm) => LimitType sh -> [elm] -> arr sh elm
+fromList ub xs = runST $ fromListM ub xs >>= unsafeFreeze
 {-# INLINE fromList #-}
 
 -- | Creates an immutable array from lower and upper bounds, a default element,
 -- and a list of associations.
 
-fromAssocs :: (PrimArrayOps arr sh elm, MPrimArrayOps arr sh elm) => sh -> sh -> elm -> [(sh,elm)] -> arr sh elm
-fromAssocs lb ub def xs = runST $ fromAssocsM lb ub def xs >>= unsafeFreeze
+fromAssocs :: (PrimArrayOps arr sh elm, MPrimArrayOps arr sh elm) => LimitType sh -> elm -> [(sh,elm)] -> arr sh elm
+fromAssocs ub def xs = runST $ fromAssocsM ub def xs >>= unsafeFreeze
 {-# INLINE fromAssocs #-}
 
 -- -- | Determines if an index is valid for a given immutable array.
@@ -164,7 +204,7 @@ fromAssocs lb ub def xs = runST $ fromAssocsM lb ub def xs >>= unsafeFreeze
 -- | Returns all elements of an immutable array as a list.
 
 toList :: forall arr sh elm . (IndexStream sh, PrimArrayOps arr sh elm) => arr sh elm -> [elm]
-toList arr = let ub = upperBound arr in P.map ((!) arr) . unId . SM.toList $ streamUp' (zeroBound' (Proxy ∷ Proxy sh)) ub
+toList arr = let ub = upperBound arr in P.map ((!) arr) . unId . SM.toList $ streamUp zeroBound' ub
 {-# INLINE toList #-}
 
 

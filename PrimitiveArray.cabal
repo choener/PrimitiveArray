@@ -58,23 +58,22 @@ Library
     Data.PrimitiveArray.Checked
     Data.PrimitiveArray.Class
     Data.PrimitiveArray.Dense
-    Data.PrimitiveArray.FillTables
+--    Data.PrimitiveArray.FillTables
     Data.PrimitiveArray.Index
-    Data.PrimitiveArray.Index.BS0
-    Data.PrimitiveArray.Index.BS1
-    Data.PrimitiveArray.Index.BS2
+--    Data.PrimitiveArray.Index.BS0
+--    Data.PrimitiveArray.Index.BS1
+--    Data.PrimitiveArray.Index.BS2
     Data.PrimitiveArray.Index.Class
-    Data.PrimitiveArray.Index.EdgeBoundary
-    Data.PrimitiveArray.Index.Int
+--    Data.PrimitiveArray.Index.EdgeBoundary
+--    Data.PrimitiveArray.Index.Int
     Data.PrimitiveArray.Index.IOC
-    Data.PrimitiveArray.Index.PhantomInt
+--    Data.PrimitiveArray.Index.PhantomInt
     Data.PrimitiveArray.Index.Point
-    Data.PrimitiveArray.Index.Set
-    Data.PrimitiveArray.Index.Subword
-    Data.PrimitiveArray.Index.TernarySet
+--    Data.PrimitiveArray.Index.Set
+--    Data.PrimitiveArray.Index.Subword
+--    Data.PrimitiveArray.Index.TernarySet
     Data.PrimitiveArray.Index.Unit
-    Data.PrimitiveArray.ScoreMatrix
-    Data.PrimitiveArray.Vector.Compat
+--    Data.PrimitiveArray.ScoreMatrix
   build-depends: base                     >= 4.7      &&  < 5.0
                , aeson                    >= 0.8
                , binary                   >= 0.7
@@ -85,11 +84,12 @@ Library
                , hashable                 >= 1.2
                , lens                     >= 4.0
                , log-domain               >= 0.10
+               , mtl                      >= 2.0
                , primitive                >= 0.5.4
                , QuickCheck               >= 2.7
                , smallcheck               >= 1.1
                , text                     >= 1.0
-               , vector                   >= 0.10
+               , vector                   >= 0.11
                , vector-binary-instances  >= 0.2
                , vector-th-unbox          >= 0.2
                --
@@ -146,6 +146,7 @@ test-suite properties
   default-extensions: CPP
                     , ScopedTypeVariables
                     , TemplateHaskell
+                    , UnicodeSyntax
   build-depends: base
                , containers
                , QuickCheck

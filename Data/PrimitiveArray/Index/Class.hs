@@ -129,6 +129,9 @@ class Index i where
   -- | A lower bound of @zero@
   zeroBound ∷ i
   zeroBound' ∷ LimitType i
+  -- | This function is true if we can *in principle* fit all indices within
+  -- the @Int@ type.
+  sizeIsValid ∷ LimitType i → Bool
 --  -- |
 --  unsafeFromLimitType ∷ LimitType i → i
 
@@ -177,6 +180,8 @@ instance Index Z where
   {-# Inline zeroBound #-}
   zeroBound' = ZZ
   {-# Inline zeroBound' #-}
+  sizeIsValid ZZ = True
+  {-# Inline [1] sizeIsValid #-}
 
 instance IndexStream Z where
 --  streamUp   Z Z = SM.singleton Z
@@ -200,6 +205,8 @@ instance (Index zs, Index z) => Index (zs:.z) where
   {-# Inline zeroBound #-}
   zeroBound' = zeroBound' :.. zeroBound'
   {-# Inline zeroBound' #-}
+  sizeIsValid (hs:..h) = sizeIsValid hs && (maxBound `div` size hs >= size h)
+  {-# Inline sizeIsValid #-}
 
 --instance (Index zs, Index z) => Index (zs:>z) where
 --  type LimitType (zs:>z) = LimitType zs:>LimitType z

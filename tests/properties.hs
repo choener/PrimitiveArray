@@ -8,10 +8,10 @@ import Data.Word (Word)
 import Test.Tasty
 import Test.Tasty.TH
 
-import Data.PrimitiveArray.Index.IOC
-import Data.PrimitiveArray.Index.Point
-import Data.PrimitiveArray.Index.Set
-import Data.PrimitiveArray.Index.Class
+--import Data.PrimitiveArray.Index.IOC
+--import Data.PrimitiveArray.Index.Point
+--import Data.PrimitiveArray.Index.Set
+--import Data.PrimitiveArray.Index.Class
 
 import QuickCheck
 import SmallCheck
