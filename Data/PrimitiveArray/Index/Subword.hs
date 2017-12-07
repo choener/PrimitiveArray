@@ -11,7 +11,7 @@ import Data.Aeson (FromJSON,FromJSONKey,ToJSON,ToJSONKey)
 import Data.Binary (Binary)
 import Data.Hashable (Hashable)
 import Data.Serialize (Serialize)
-import Data.Vector.Fusion.Stream.Monadic (Step(..), map)
+import Data.Vector.Fusion.Stream.Monadic (Step(..), map,flatten)
 import Data.Vector.Unboxed.Deriving
 import GHC.Generics (Generic)
 import Prelude hiding (map)
@@ -22,7 +22,6 @@ import Math.TriangularNumbers
 
 import Data.PrimitiveArray.Index.Class
 import Data.PrimitiveArray.Index.IOC
-import Data.PrimitiveArray.Vector.Compat
 
 
 
@@ -83,21 +82,27 @@ subwordC i j = Subword (i:.j)
 
 
 instance Index (Subword t) where
-  type LimitType (Subword t) = Int
-  linearIndex n (Subword (i:.j)) = toLinear n (i,j)
+  newtype LimitType (Subword t) = LtSubword Int
+  linearIndex (LtSubword n) (Subword (i:.j)) = toLinear n (i,j)
   {-# Inline linearIndex #-}
-  size _ n = linearizeUppertri (0,n)
+  size (LtSubword n) = linearizeUppertri (0,n)
   {-# Inline size #-}
-  inBounds h (Subword (i:.j)) = 0<=i && i<=j && j<=h
+  inBounds (LtSubword h) (Subword (i:.j)) = 0<=i && i<=j && j<=h
   {-# Inline inBounds #-}
+  zeroBound = subword 0 0
+  {-# Inline zeroBound #-}
+  zeroBound' = LtSubword 0
+  {-# Inline zeroBound' #-}
+  sizeIsValid (LtSubword n) = n <= maxBound
+  {-# Inline sizeIsValid #-}
 
 -- | @Subword I@ (inside)
 
 instance IndexStream z => IndexStream (z:.Subword I) where
-  streamUp   (ls:.Subword (l:._)) (hs:.Subword (_:.h)) = flatten (streamUpMk     h) (streamUpStep   l h) $ streamUp   ls hs
-  streamDown (ls:.Subword (l:._)) (hs:.Subword (_:.h)) = flatten (streamDownMk l h) (streamDownStep   h) $ streamDown ls hs
-  {-# Inline streamUp #-}
-  {-# Inline streamDown #-}
+  streamUp   (ls:..LtSubword l) (hs:..LtSubword h) = flatten (streamUpMk     h) (streamUpStep   l h) $ streamUp   ls hs
+  streamDown (ls:..LtSubword l) (hs:..LtSubword h) = flatten (streamDownMk l h) (streamDownStep   h) $ streamDown ls hs
+--  {-# Inline streamUp #-}
+--  {-# Inline streamDown #-}
 
 -- | @Subword O@ (outside).
 --
@@ -105,16 +110,16 @@ instance IndexStream z => IndexStream (z:.Subword I) where
 -- for the right order of indices!
 
 instance IndexStream z => IndexStream (z:.Subword O) where
-  streamUp   (ls:.Subword (l:._)) (hs:.Subword (_:.h)) = flatten (streamDownMk l h) (streamDownStep   h) $ streamUp   ls hs
-  streamDown (ls:.Subword (l:._)) (hs:.Subword (_:.h)) = flatten (streamUpMk     h) (streamUpStep   l h) $ streamDown ls hs
+  streamUp   (ls:..LtSubword l) (hs:..LtSubword h) = flatten (streamDownMk l h) (streamDownStep   h) $ streamUp   ls hs
+  streamDown (ls:..LtSubword l) (hs:..LtSubword h) = flatten (streamUpMk     h) (streamUpStep   l h) $ streamDown ls hs
   {-# Inline streamUp #-}
   {-# Inline streamDown #-}
 
 -- | @Subword C@ (complement)
 
 instance IndexStream z => IndexStream (z:.Subword C) where
-  streamUp   (ls:.Subword (l:._)) (hs:.Subword (_:.h)) = flatten (streamUpMk     h) (streamUpStep   l h) $ streamUp   ls hs
-  streamDown (ls:.Subword (l:._)) (hs:.Subword (_:.h)) = flatten (streamDownMk l h) (streamDownStep   h) $ streamDown ls hs
+  streamUp   (ls:..LtSubword l) (hs:..LtSubword h) = flatten (streamUpMk     h) (streamUpStep   l h) $ streamUp   ls hs
+  streamDown (ls:..LtSubword l) (hs:..LtSubword h) = flatten (streamDownMk l h) (streamDownStep   h) $ streamDown ls hs
   {-# Inline streamUp #-}
   {-# Inline streamDown #-}
 
@@ -139,9 +144,9 @@ streamDownStep h (z,i,j)
 {-# Inline [0] streamDownStep #-}
 
 instance (IndexStream (Z:.Subword t)) => IndexStream (Subword t) where
-  streamUp l h = map (\(Z:.i) -> i) $ streamUp (Z:.l) (Z:.h)
+  streamUp l h = map (\(Z:.i) -> i) $ streamUp (ZZ:..l) (ZZ:..h)
   {-# INLINE streamUp #-}
-  streamDown l h = map (\(Z:.i) -> i) $ streamDown (Z:.l) (Z:.h)
+  streamDown l h = map (\(Z:.i) -> i) $ streamDown (ZZ:..l) (ZZ:..h)
   {-# INLINE streamDown #-}
 
 instance Arbitrary (Subword t) where
