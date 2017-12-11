@@ -86,6 +86,9 @@ instance Index (PointL t) where
   sizeIsValid (LtPointL h) = h <= maxBound
   {-# Inline [0] sizeIsValid #-}
 
+deriving instance Read (LimitType (PointL t))
+deriving instance Show (LimitType (PointL t))
+
 instance IndexStream z => IndexStream (z:.PointL I) where
   streamUp   (ls:..LtPointL lf) (hs:..LtPointL ht) = SM.flatten (streamUpMk   lf) (streamUpStep   ht) $ streamUp ls hs
   streamDown (ls:..LtPointL lf) (hs:..LtPointL ht) = SM.flatten (streamDownMk ht) (streamDownStep lf) $ streamDown ls hs

@@ -46,6 +46,7 @@ data Unboxed sh e = Unboxed !(LimitType sh) !(VU.Vector e)
 --  deriving (Read,Show,Eq,Generic,Typeable)
 
 deriving instance (Read (LimitType sh), Read e, Unbox e) ⇒ Read (Unboxed sh e)
+deriving instance (Show (LimitType sh), Show e, Unbox e) ⇒ Show (Unboxed sh e)
 deriving instance (Generic (LimitType sh), Generic e) ⇒ Generic (Unboxed sh e)
 
 instance (Binary    (LimitType sh), Binary    e, Unbox e, Generic (LimitType sh), Generic e) => Binary    (Unboxed sh e)

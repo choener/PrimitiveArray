@@ -55,6 +55,9 @@ instance Index (Unit t) where
   sizeIsValid LtUnit = True
   {-# Inline [0] sizeIsValid #-}
 
+deriving instance Read (LimitType (Unit t))
+deriving instance Show (LimitType (Unit t))
+
 instance IndexStream z => IndexStream (z:.Unit t) where
   streamUp (ls:..LtUnit) (hs:..LtUnit) = map (\z -> z:.Unit) $ streamUp ls hs
   {-# Inline streamUp #-}
