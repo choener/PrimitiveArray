@@ -96,8 +96,10 @@ instance Index (Subword t) where
   sizeIsValid (LtSubword n) = n <= maxBound
   {-# Inline sizeIsValid #-}
 
-deriving instance Read (LimitType (Subword t))
-deriving instance Show (LimitType (Subword t))
+deriving instance Eq      (LimitType (Subword t))
+deriving instance Generic (LimitType (Subword t))
+deriving instance Read    (LimitType (Subword t))
+deriving instance Show    (LimitType (Subword t))
 
 -- | @Subword I@ (inside)
 

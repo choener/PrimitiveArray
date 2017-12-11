@@ -208,11 +208,15 @@ instance (Index zs, Index z) => Index (zs:.z) where
   sizeIsValid (hs:..h) = sizeIsValid hs && (maxBound `div` size hs >= size h)
   {-# Inline sizeIsValid #-}
 
-deriving instance Read (LimitType Z)
-deriving instance Show (LimitType Z)
+deriving instance Eq      (LimitType Z)
+deriving instance Generic (LimitType Z)
+deriving instance Read    (LimitType Z)
+deriving instance Show    (LimitType Z)
 
-deriving instance (Read (LimitType zs), Read (LimitType z)) ⇒ Read (LimitType (zs:.z))
-deriving instance (Show (LimitType zs), Show (LimitType z)) ⇒ Show (LimitType (zs:.z))
+deriving instance (Eq (LimitType zs)     , Eq (LimitType z)     ) ⇒ Eq      (LimitType (zs:.z))
+deriving instance (Generic (LimitType zs), Generic (LimitType z)) ⇒ Generic (LimitType (zs:.z))
+deriving instance (Read (LimitType zs)   , Read (LimitType z)   ) ⇒ Read    (LimitType (zs:.z))
+deriving instance (Show (LimitType zs)   , Show (LimitType z)   ) ⇒ Show    (LimitType (zs:.z))
 
 --instance (Index zs, Index z) => Index (zs:>z) where
 --  type LimitType (zs:>z) = LimitType zs:>LimitType z
