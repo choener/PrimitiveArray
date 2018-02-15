@@ -22,7 +22,6 @@ import Test.SmallCheck.Series as TS
 
 import Data.PrimitiveArray.Index.Class
 import Data.PrimitiveArray.Index.IOC
-import Data.PrimitiveArray.Vector.Compat
 
 
 
@@ -60,8 +59,8 @@ instance NFData (EdgeBoundary t) where
 
 
 instance Index (EdgeBoundary t) where
-  type LimitType (EdgeBoundary t) = Int
-  linearIndex t (i :-> j) = i * (t+1) + j
+  newtype LimitType (EdgeBoundary t) = LtEdgeBoundary Int
+  linearIndex (LtEdgeBoundary t) (i :-> j) = i * (t+1) + j
   {-# Inline linearIndex #-}
   size _ t = (t+1) * (t+1)
   {-# Inline size #-}

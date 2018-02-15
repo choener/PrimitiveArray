@@ -1,20 +1,21 @@
 
 -- | A bitset with one interface.
 
-module Data.PrimitiveArray.Index.BS1 where
+module Data.PrimitiveArray.Index.BitSet1 where
 
 import Data.PrimitiveArray.Index.Class
+import Data.PrimitiveArray.Index.BitSetClasses
 
 
 
 -- | The bitset with one interface or boundary.
 
-data BS1 i t = BS1 !(BitSet t) !(Boundary i t)
+--data BitSet1 i t = BitSet1 !(BitSet t) !(Boundary i t)
+--
+--deriving instance Show (BitSet1 i t)
 
-deriving instance Show (BS1 i t)
 
-
-
+{-
 -- |
 --
 -- NOTE We linearize a bitset as follows: we need @2^number-of-bits *
@@ -85,6 +86,5 @@ streamUpBsIStep = undefined
 --streamDownBsIStep l h (z , Nothing) = return $ SM.Done
 --streamDownBsIStep l h (z , Just t ) = return $ SM.Yield (z:.t) (z , setPred l h t)
 --{-# Inline [0] streamDownBsIStep #-}
-
-
+-}
 

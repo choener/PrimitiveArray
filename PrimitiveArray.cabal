@@ -60,8 +60,9 @@ Library
     Data.PrimitiveArray.Dense
 --    Data.PrimitiveArray.FillTables
     Data.PrimitiveArray.Index
+    Data.PrimitiveArray.Index.BitSet1
+    Data.PrimitiveArray.Index.BitSetClasses
 --    Data.PrimitiveArray.Index.BS0
---    Data.PrimitiveArray.Index.BS1
 --    Data.PrimitiveArray.Index.BS2
     Data.PrimitiveArray.Index.Class
 --    Data.PrimitiveArray.Index.EdgeBoundary
