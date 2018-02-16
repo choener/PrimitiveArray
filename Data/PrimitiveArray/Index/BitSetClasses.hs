@@ -159,5 +159,6 @@ class ApplyMask s where
 
 -- | for 'Test.QuickCheck.Arbitrary'
 
+arbitraryBitSetMax ∷ Int
 arbitraryBitSetMax = 6
 
