@@ -123,10 +123,10 @@ data Any
 class SetPredSucc s where
   -- | Set successor. The first argument is the lower set limit, the second
   -- the upper set limit, the third the current set.
-  setSucc ∷ s → s → s → Maybe s
+  setSucc ∷ Int → Int → s → Maybe s
   -- | Set predecessor. The first argument is the lower set limit, the
   -- second the upper set limit, the third the current set.
-  setPred ∷ s → s → s → Maybe s
+  setPred ∷ Int → Int → s → Maybe s
 
 -- | Masks are used quite often for different types of bitsets. We liberate
 -- them as a type family.

@@ -117,27 +117,6 @@ deriving instance Show (BS2 i j t)
 
 -- ** Set predecessor and successor
 
-instance SetPredSucc (BS1 i t) where
-  setSucc (BS1 l il) (BS1 h ih) (BS1 s (Boundary is))
-    | cs > ch                          = Nothing
-    | Just is' <- maybeNextActive is s = Just $ BS1 s  (Boundary is')
-    | Just s'  <- popPermutation ch s  = Just $ BS1 s' (Boundary $ lsbZ s')
-    | cs >= ch                         = Nothing
-    | cs < ch                          = let s' = BitSet $ 2^(cs+1)-1 in Just (BS1 s' (Boundary (lsbZ s')))
-    where ch = popCount h
-          cs = popCount s
-  {-# Inline setSucc #-}
-  setPred (BS1 l il) (BS1 h ih) (BS1 s (Boundary is))
-    | cs < cl                          = Nothing
-    | Just is' <- maybeNextActive is s = Just $ BS1 s  (Boundary is')
-    | Just s'  <- popPermutation ch s  = Just $ BS1 s' (Boundary  $ lsbZ s')
-    | cs <= cl                         = Nothing
-    | cs > cl                          = let s' = BitSet $ 2^(cs-1)-1 in Just (BS1 s' (Boundary (max 0 $ lsbZ s')))
-    where cl = popCount l
-          ch = popCount h
-          cs = popCount s
-  {-# Inline setPred #-}
-
 instance SetPredSucc (BS2 i j t) where
   setSucc (BS2 l il jl) (BS2 h ih jh) (BS2 s (Boundary is) (Boundary js))
     -- early termination
