@@ -68,7 +68,7 @@ Library
 --    Data.PrimitiveArray.Index.EdgeBoundary
 --    Data.PrimitiveArray.Index.Int
     Data.PrimitiveArray.Index.IOC
---    Data.PrimitiveArray.Index.PhantomInt
+    Data.PrimitiveArray.Index.PhantomInt
     Data.PrimitiveArray.Index.Point
 --    Data.PrimitiveArray.Index.Set
     Data.PrimitiveArray.Index.Subword
