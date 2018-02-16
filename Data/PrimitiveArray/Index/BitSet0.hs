@@ -18,6 +18,7 @@ import           Data.Vector.Unboxed (Unbox(..))
 import           Debug.Trace
 import           GHC.Generics (Generic)
 import qualified Data.Vector.Fusion.Stream.Monadic as SM
+import           Test.QuickCheck
 
 import           Data.Bits.Ordered
 import           Data.PrimitiveArray.Index.Class
@@ -130,4 +131,9 @@ streamDownStep ∷ Monad m ⇒ Int → Int → (t, Maybe (BitSet ioc)) → m (SM
 streamDownStep l h (z , Nothing) = return $ SM.Done
 streamDownStep l h (z , Just t ) = return $ SM.Yield (z:.t) (z , setPred (2^l-1) (2^h-1) t)
 {-# Inline [0] streamDownStep #-}
+
+instance Arbitrary (BitSet t) where
+  arbitrary = BitSet <$> choose (0,2^arbitraryBitSetMax-1)
+  shrink s = let s' = [ s `clearBit` a | a <- activeBitsL s ]
+             in  s' ++ concatMap shrink s'
 

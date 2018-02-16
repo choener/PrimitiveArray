@@ -293,30 +293,9 @@ instance ApplyMask (BS2 i j t) where
 
 
 
-arbitraryBitSetMax = 6
-
 instance (Arbitrary t, Arbitrary (Mask t)) => Arbitrary (Fixed t) where
   arbitrary = Fixed <$> arbitrary <*> arbitrary
   shrink (Fixed m s) = [ Fixed m' s' | m' <- shrink m, s' <- shrink s ]
-
-instance Arbitrary (BitSet t) where
-  arbitrary = BitSet <$> choose (0,2^arbitraryBitSetMax-1)
-  shrink s = let s' = [ s `clearBit` a | a <- activeBitsL s ]
-             in  s' ++ concatMap shrink s'
-
-instance Arbitrary (BS1 i t) where
-  arbitrary = do
-    s <- arbitrary
-    if s==0
-      then return (BS1 s 0)
-      else do i <- elements $ activeBitsL s
-              return (BS1 s $ Boundary i)
-  shrink (BS1 s i) =
-    let s' = [ BS1 (s `clearBit` a) i
-             | a <- activeBitsL s
-             , Boundary a /= i ]
-             ++ [ BS1 0 0 | popCount s == 1 ]
-    in  s' ++ concatMap shrink s'
 
 instance Arbitrary (BS2 i j t) where
   arbitrary = do

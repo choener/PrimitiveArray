@@ -155,3 +155,9 @@ data Fixed t = Fixed { getFixedMask :: (Mask t) , getFixed :: !t }
 class ApplyMask s where
   applyMask :: Mask s -> s -> s
 
+
+
+-- | for 'Test.QuickCheck.Arbitrary'
+
+arbitraryBitSetMax = 6
+

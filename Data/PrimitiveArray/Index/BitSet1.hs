@@ -20,6 +20,7 @@ import           Data.Vector.Unboxed (Unbox(..))
 import           Debug.Trace
 import           GHC.Generics (Generic)
 import qualified Data.Vector.Fusion.Stream.Monadic as SM
+import           Test.QuickCheck
 
 import           Data.Bits.Ordered
 import           Data.PrimitiveArray.Index.BitSet0 (BitSet(..),LimitType(..))
@@ -138,4 +139,18 @@ instance SetPredSucc (BitSet1 t ioc) where
                                           in  Just (BitSet1 s' (Boundary (max 0 $ lsbZ s')))
     where cs = popCount s
   {-# Inline setPred #-}
+
+instance Arbitrary (BitSet1 t ioc) where
+  arbitrary = do
+    s <- arbitrary
+    if s==0
+      then return (BitSet1 s 0)
+      else do i <- elements $ activeBitsL s
+              return (BitSet1 s $ Boundary i)
+  shrink (BitSet1 s i) =
+    let s' = [ BitSet1 (s `clearBit` a) i
+             | a <- activeBitsL s
+             , Boundary a /= i ]
+             ++ [ BitSet1 0 0 | popCount s == 1 ]
+    in  s' ++ concatMap shrink s'
 
