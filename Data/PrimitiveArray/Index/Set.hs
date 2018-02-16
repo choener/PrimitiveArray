@@ -48,70 +48,6 @@ deriving instance Show (BS2 i j t)
 
 
 
---derivingUnbox "BitSet"
---  [t| forall t . BitSet t -> Int |]
---  [| \(BitSet s) -> s   |]
---  [| BitSet             |]
---
---instance Show (BitSet t) where
---  show (BitSet s) = "<" ++ (show $ activeBitsL s) ++ ">(" ++ show s ++ ")"
---
---instance Binary    (BitSet t)
---instance Serialize (BitSet t)
---instance Hashable  (BitSet t)
---
---instance NFData (BitSet t) where
---  rnf (BitSet s) = rnf s
---  {-# Inline rnf #-}
---
---instance Index (BitSet t) where
---  newtype LimitType (BitSet t) = LtBitSet Int
---  linearIndex _ (BitSet z) = z
---  {-# INLINE linearIndex #-}
---  size _ pc = 2^pc -- 2 ^ popCount h - 2 ^ popCount l + 1
---  {-# INLINE size #-}
---  inBounds h z = popCount z <= h -- popCount l <= popCount z && popCount z <= popCount h
---  {-# INLINE inBounds #-}
---
---instance IndexStream z => IndexStream (z:.BitSet I) where
---  streamUp   (ls:.l) (hs:.h) = flatten (streamUpBsMk   l h) (streamUpBsStep   l h) $ streamUp   ls hs
---  streamDown (ls:.l) (hs:.h) = flatten (streamDownBsMk l h) (streamDownBsStep l h) $ streamDown ls hs
---  {-# Inline streamUp   #-}
---  {-# Inline streamDown #-}
---
---instance IndexStream z => IndexStream (z:.BitSet O) where
---  streamUp   (ls:.l) (hs:.h) = flatten (streamDownBsMk l h) (streamDownBsStep l h) $ streamUp   ls hs
---  streamDown (ls:.l) (hs:.h) = flatten (streamUpBsMk   l h) (streamUpBsStep   l h) $ streamDown ls hs
---  {-# Inline streamUp   #-}
---  {-# Inline streamDown #-}
---
---instance IndexStream z => IndexStream (z:.BitSet C) where
---  streamUp   (ls:.l) (hs:.h) = flatten (streamUpBsMk   l h) (streamUpBsStep   l h) $ streamUp   ls hs
---  streamDown (ls:.l) (hs:.h) = flatten (streamDownBsMk l h) (streamDownBsStep l h) $ streamDown ls hs
---  {-# Inline streamUp   #-}
---  {-# Inline streamDown #-}
---
---instance IndexStream (Z:.BitSet t) => IndexStream (BitSet t)
---
---
---streamUpBsMk :: (Monad m, Ord a) => a -> a -> t -> m (t, Maybe a)
---streamUpBsMk l h z = return (z, if l <= h then Just l else Nothing)
---{-# Inline [0] streamUpBsMk #-}
---
---streamUpBsStep :: (Monad m, SetPredSucc s) => s -> s -> (t, Maybe s) -> m (SM.Step (t, Maybe s) (t :. s))
---streamUpBsStep l h (z , Nothing) = return $ SM.Done
---streamUpBsStep l h (z , Just t ) = return $ SM.Yield (z:.t) (z , setSucc l h t)
---{-# Inline [0] streamUpBsStep #-}
---
---streamDownBsMk :: (Monad m, Ord a) => a -> a -> t -> m (t, Maybe a)
---streamDownBsMk l h z = return (z, if l <=h then Just h else Nothing)
---{-# Inline [0] streamDownBsMk #-}
---
---streamDownBsStep :: (Monad m, SetPredSucc s) => s -> s -> (t, Maybe s) -> m (SM.Step (t, Maybe s) (t :. s))
---streamDownBsStep l h (z , Nothing) = return $ SM.Done
---streamDownBsStep l h (z , Just t ) = return $ SM.Yield (z:.t) (z , setPred l h t)
---{-# Inline [0] streamDownBsStep #-}
-
 
 
 ---- ** BS2
@@ -180,25 +116,6 @@ deriving instance Show (BS2 i j t)
 
 
 -- ** Set predecessor and successor
-
-instance SetPredSucc (BitSet t) where
-  setSucc l h s
-    | cs > ch                        = Nothing
-    | Just s' <- popPermutation ch s = Just s'
-    | cs >= ch                       = Nothing
-    | cs < ch                        = Just . BitSet $ 2^(cs+1) -1
-    where ch = popCount h
-          cs = popCount s
-  {-# Inline setSucc #-}
-  setPred l h s
-    | cs < cl                        = Nothing
-    | Just s' <- popPermutation ch s = Just s'
-    | cs <= cl                       = Nothing
-    | cs > cl                        = Just . BitSet $ 2^(cs-1) -1
-    where cl = popCount l
-          ch = popCount h
-          cs = popCount s
-  {-# Inline setPred #-}
 
 instance SetPredSucc (BS1 i t) where
   setSucc (BS1 l il) (BS1 h ih) (BS1 s (Boundary is))

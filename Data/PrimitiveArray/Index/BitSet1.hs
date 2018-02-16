@@ -1,21 +1,40 @@
 
--- | A bitset with one interface.
+-- | A bitset with one interface. This includes the often-encountered case
+-- where @{u,v},{v}@, or sets with a single edge between the old set and a new
+-- singleton set are required. Uses are Hamiltonian path problems, and TSP,
+-- among others.
 
 module Data.PrimitiveArray.Index.BitSet1 where
 
-import Data.PrimitiveArray.Index.Class
-import Data.PrimitiveArray.Index.BitSetClasses
+import           Control.DeepSeq (NFData(..))
+import           Control.Lens (makeLenses)
+import           Control.Monad.Except
+import           Data.Aeson (FromJSON,ToJSON,FromJSONKey,ToJSONKey)
+import           Data.Binary (Binary)
+import           Data.Bits
+import           Data.Bits.Extras
+import           Data.Hashable (Hashable)
+import           Data.Serialize (Serialize)
+import           Data.Vector.Unboxed.Deriving
+import           Data.Vector.Unboxed (Unbox(..))
+import           Debug.Trace
+import           GHC.Generics (Generic)
+import qualified Data.Vector.Fusion.Stream.Monadic as SM
+
+import           Data.Bits.Ordered
+import           Data.PrimitiveArray.Index.BitSet0
+import           Data.PrimitiveArray.Index.BitSetClasses
+import           Data.PrimitiveArray.Index.Class
+import           Data.PrimitiveArray.Index.IOC
 
 
 
 -- | The bitset with one interface or boundary.
 
---data BitSet1 i t = BitSet1 !(BitSet t) !(Boundary i t)
---
---deriving instance Show (BitSet1 i t)
+data BitSet1 i ioc = BitSet1 { _bitset ∷ !(BitSet ioc), _boundary ∷ !(Boundary i ioc) }
+  deriving (Eq,Ord,Generic,Show)
+makeLenses ''BitSet1
 
-
-{-
 -- |
 --
 -- NOTE We linearize a bitset as follows: we need @2^number-of-bits *
@@ -31,18 +50,27 @@ import Data.PrimitiveArray.Index.BitSetClasses
 -- to be indexed. It has to be investigated if a version with exact memory
 -- bounds is slower in indexing.
 
-instance Index (BS1 i t) where
-  newtype LimitType (BS1 i t) = LtBS1 (BitSet t)
---  -- TODO shouldn't this be @+1@ for the case where @s/=0@?
---  linearIndex (LtBS1 pc) (BS1 s i)
---    | s == 0    = 0
---    | otherwise = error "rewrite BS1 linearIndex" -- 1 + linearIndex (pc:.2^pc) (s:.i)
---  {-# INLINE linearIndex #-}
---  size (LtBS1 pc) = 2^pc * pc + 1
---  {-# INLINE size #-}
---  inBounds (LtBS1 pc) (BS1 s i) = popCount s <= pc && 0 <= i && getBoundary i <= pc
---  {-# INLINE inBounds #-}
+instance Index (BitSet1 bnd ioc) where
+  newtype LimitType (BitSet1 bnd ioc) = LtBitSet1 Int
+  -- Calculate the linear index for a set. Spread out by the possible number of
+  -- bits to fit the actual boundary results. Add the boundary index.
+  linearIndex (LtBitSet1 pc) (BitSet1 set (Boundary bnd))
+    = linearIndex (LtBitSet pc) set * pc + bnd
+  {-# Inline linearIndex #-}
+  size (LtBitSet1 pc) = 2^pc * pc + 1
+  {-# Inline size #-}
+  inBounds (LtBitSet1 pc) (BitSet1 set bnd) = popCount set <= pc && 0 <= bnd && getBoundary bnd <= pc
+  {-# Inline inBounds #-}
+  zeroBound = BitSet1 zeroBound zeroBound
+  {-# Inline zeroBound #-}
+  zeroBound' = LtBitSet1 0
+  {-# Inline zeroBound' #-}
+  totalSize (LtBitSet1 pc) =
+    if pc < (last $ 0 : activeBitsL (maxBound `div` pc))
+    then return . CellSize . fromIntegral $ size (LtBitSet1 pc)
+    else throwError $ SizeError "BitSet1 too large!"
 
+{-
 instance IndexStream z => IndexStream (z:.BS1 i I) where
   streamUp   (ls:..l) (hs:..h) = flatten (streamUpBsIMk   l h) (streamUpBsIStep   l h) $ streamUp   ls hs
 --  streamDown (ls:.l) (hs:.h) = flatten (streamDownBsIMk l h) (streamDownBsIStep l h) $ streamDown ls hs
