@@ -56,6 +56,12 @@ instance Index (Boundary i t) where
   {-# INLINE size #-}
   inBounds (LtBoundary h) z = 0 <= z && getBoundary z <= h
   {-# INLINE inBounds #-}
+  zeroBound = Boundary 0
+  {-# Inline zeroBound #-}
+  zeroBound' = LtBoundary 0
+  {-# Inline zeroBound' #-}
+  totalSize (LtBoundary n) = return . CellSize $ fromIntegral n
+  {-# Inline totalSize #-}
 
 instance IndexStream z ⇒ IndexStream (z:.Boundary k I) where
   streamUp   (ls:..LtBoundary l) (hs:..LtBoundary h) = SM.flatten (streamUpBndMk   l h) (streamUpBndStep   l h) $ streamUp   ls hs
@@ -63,7 +69,11 @@ instance IndexStream z ⇒ IndexStream (z:.Boundary k I) where
   {-# Inline streamUp   #-}
   {-# Inline streamDown #-}
 
-instance IndexStream (Z:.Boundary k I) ⇒ IndexStream (Boundary k I)
+instance IndexStream (Z:.Boundary k I) ⇒ IndexStream (Boundary k I) where
+  streamUp l h = SM.map (\(Z:.i) -> i) $ streamUp (ZZ:..l) (ZZ:..h)
+  {-# Inline streamUp #-}
+  streamDown l h = SM.map (\(Z:.i) -> i) $ streamDown (ZZ:..l) (ZZ:..h)
+  {-# Inline streamDown #-}
 
 streamUpBndMk l h z = return (z, l)
 {-# Inline [0] streamUpBndMk #-}

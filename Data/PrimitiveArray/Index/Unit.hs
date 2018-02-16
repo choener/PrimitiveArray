@@ -52,8 +52,8 @@ instance Index (Unit t) where
   {-# Inline zeroBound #-}
   zeroBound' = LtUnit
   {-# Inline zeroBound' #-}
-  sizeIsValid LtUnit = True
-  {-# Inline [0] sizeIsValid #-}
+  totalSize LtUnit = return 1
+  {-# Inline [0] totalSize #-}
 
 deriving instance Eq      (LimitType (Unit t))
 deriving instance Generic (LimitType (Unit t))

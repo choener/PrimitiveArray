@@ -93,8 +93,8 @@ instance Index (Subword t) where
   {-# Inline zeroBound #-}
   zeroBound' = LtSubword 0
   {-# Inline zeroBound' #-}
-  sizeIsValid (LtSubword n) = n <= maxBound
-  {-# Inline sizeIsValid #-}
+  totalSize (LtSubword n) = return . CellSize $ fromIntegral n
+  {-# Inline totalSize #-}
 
 deriving instance Eq      (LimitType (Subword t))
 deriving instance Generic (LimitType (Subword t))

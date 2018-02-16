@@ -170,8 +170,9 @@ safeNewWithPA
   → elm
   → m (arr sh elm)
 safeNewWithPA ub def = do
-  unless (sizeIsValid ub) $ throwError PAEUpperBound
-  newWithPA ub def
+  case runExcept $ totalSize ub of
+    Left  (SizeError _) → throwError PAEUpperBound
+    Right (CellSize  _) → newWithPA ub def
 {-# Inlinable safeNewWithPA #-}
 
 

@@ -4,6 +4,7 @@ module Data.PrimitiveArray.Index.Class where
 import           Control.Applicative
 import           Control.DeepSeq (NFData(..))
 import           Control.Monad (liftM2)
+import           Control.Monad.Except
 import           Data.Aeson
 import           Data.Binary
 import           Data.Hashable (Hashable)
@@ -128,43 +129,45 @@ class Index i where
   inBounds ∷ LimitType i → i → Bool
   -- | A lower bound of @zero@
   zeroBound ∷ i
+  -- | A lower bound of @zero@ but for a @LimitType i@.
   zeroBound' ∷ LimitType i
-  -- | This function is true if we can *in principle* fit all indices within
-  -- the @Int@ type.
-  sizeIsValid ∷ LimitType i → Bool
---  -- |
---  unsafeFromLimitType ∷ LimitType i → i
+  -- | Calculate the total "cell size" of elements given a @LimitType i@. This
+  -- will return @Left
+  totalSize ∷ Monad m ⇒ LimitType i → ExceptT SizeError m CellSize
+
+-- | In case @totalSize@ or variants thereof produce a size that is too big to
+-- handle.
+
+newtype SizeError = SizeError String
+  deriving (Eq,Ord,Show)
+
+  -- | The total number of cells that are allocated.
+
+newtype CellSize = CellSize Word
+  deriving (Eq,Ord,Show,Num,Bounded,Integral,Real,Enum)
 
 
 
 -- | Generate a stream of indices in correct order for dynamic programming.
 -- Since the stream generators require @concatMap@ / @flatten@ we have to
 -- write more specialized code for @(z:.IX)@ stuff.
---
--- TODO variants that just take an 'LimitType' and stream the whole range.
 
 class (Index i) ⇒ IndexStream i where
-  -- | This generates an index stream suitable for @forward@ structure filling.
-  -- The first index is the smallest (or the first indices considered are all
-  -- equally small in partially ordered sets). Larger indices follow up until
-  -- the largest one.
---  streamUp ∷ Monad m ⇒ i → i → Stream m i
-  -- | If 'streamUp' generates indices from smallest to largest, then
-  -- 'streamDown' generates indices from largest to smallest. Outside grammars
-  -- make implicit use of this. Asking for an axiom in backtracking requests
-  -- the first element from this stream.
---  streamDown ∷ Monad m ⇒ i → i → Stream m i
   -- | Generate an index stream using 'LimitType's. This prevents having to
   -- figure out how the actual limits for complicated index types (like @Set@)
   -- would look like, since for @Set@, for example, the @LimitType Set == Int@
   -- provides just the number of bits.
+  --
+  -- This generates an index stream suitable for @forward@ structure filling.
+  -- The first index is the smallest (or the first indices considered are all
+  -- equally small in partially ordered sets). Larger indices follow up until
+  -- the largest one.
   streamUp ∷ Monad m ⇒ LimitType i → LimitType i → Stream m i
---  streamUp' l h = streamUp (unsafeFromLimitType l) (unsafeFromLimitType h)
---  {-# Inline streamUp' #-}
-  -- |
+  -- | If 'streamUp' generates indices from smallest to largest, then
+  -- 'streamDown' generates indices from largest to smallest. Outside grammars
+  -- make implicit use of this. Asking for an axiom in backtracking requests
+  -- the first element from this stream.
   streamDown ∷ Monad m ⇒ LimitType i → LimitType i → Stream m i
---  streamDown' l h = streamDown (unsafeFromLimitType l) (unsafeFromLimitType h)
---  {-# Inline streamDown' #-}
 
 
 
@@ -180,14 +183,10 @@ instance Index Z where
   {-# Inline zeroBound #-}
   zeroBound' = ZZ
   {-# Inline zeroBound' #-}
-  sizeIsValid ZZ = True
-  {-# Inline [1] sizeIsValid #-}
+  totalSize ZZ = return $ CellSize 1
+  {-# Inline [1] totalSize #-}
 
 instance IndexStream Z where
---  streamUp   Z Z = SM.singleton Z
---  {-# INLINE streamUp #-}
---  streamDown Z Z = SM.singleton Z
---  {-# INLINE streamDown #-}
   streamUp ZZ ZZ = SM.singleton Z
   {-# Inline streamUp #-}
   streamDown ZZ ZZ = SM.singleton Z
@@ -205,8 +204,13 @@ instance (Index zs, Index z) => Index (zs:.z) where
   {-# Inline zeroBound #-}
   zeroBound' = zeroBound' :.. zeroBound'
   {-# Inline zeroBound' #-}
-  sizeIsValid (hs:..h) = sizeIsValid hs && (maxBound `div` size hs >= size h)
-  {-# Inline sizeIsValid #-}
+  totalSize (hs:..h) = do
+    tshs ← totalSize hs
+    tsh  ← totalSize h
+    -- we can't multiply here since we might actually go over maxBound
+    when (tsh > tshs `div` maxBound) $ throwError $ SizeError "totalSize"
+    return $ tshs * tsh
+  {-# Inline totalSize #-}
 
 deriving instance Eq      (LimitType Z)
 deriving instance Generic (LimitType Z)
