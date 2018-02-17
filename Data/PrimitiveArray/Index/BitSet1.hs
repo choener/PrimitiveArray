@@ -71,6 +71,8 @@ instance Index (BitSet1 bnd ioc) where
     then return . CellSize . fromIntegral $ size (LtBitSet1 pc)
     else throwError $ SizeError "BitSet1 too large!"
 
+deriving instance Show (LimitType (BitSet1 bnd ioc))
+
 instance IndexStream z ⇒ IndexStream (z:.BitSet1 i I) where
   streamUp   (ls:..LtBitSet1 l) (hs:..LtBitSet1 h) = SM.flatten (streamUpMk   l h) (streamUpStep   l h) $ streamUp   ls hs
   streamDown (ls:..LtBitSet1 l) (hs:..LtBitSet1 h) = SM.flatten (streamDownMk l h) (streamDownStep l h) $ streamDown ls hs
