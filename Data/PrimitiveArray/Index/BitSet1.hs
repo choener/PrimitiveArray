@@ -67,9 +67,8 @@ instance Index (BitSet1 bnd ioc) where
   zeroBound' = LtBitSet1 0
   {-# Inline zeroBound' #-}
   totalSize (LtBitSet1 pc) =
-    if pc < (last $ 0 : activeBitsL (maxBound `div` pc))
-    then return . CellSize . fromIntegral $ size (LtBitSet1 pc)
-    else throwError $ SizeError "BitSet1 too large!"
+    let z = fromIntegral pc
+    in  [z * 2 ^ z]
 
 deriving instance Show (LimitType (BitSet1 bnd ioc))
 

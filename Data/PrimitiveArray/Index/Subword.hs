@@ -93,7 +93,7 @@ instance Index (Subword t) where
   {-# Inline zeroBound #-}
   zeroBound' = LtSubword 0
   {-# Inline zeroBound' #-}
-  totalSize (LtSubword n) = return . CellSize $ fromIntegral n
+  totalSize (LtSubword n) = [fromIntegral (n+1) ^ 2 `div` 2]
   {-# Inline totalSize #-}
 
 deriving instance Eq      (LimitType (Subword t))

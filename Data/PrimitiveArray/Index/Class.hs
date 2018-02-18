@@ -16,6 +16,7 @@ import           Data.Vector.Unboxed (Unbox(..))
 import           GHC.Generics
 import qualified Data.Vector.Fusion.Stream.Monadic as SM
 import           Test.QuickCheck
+import           Text.Printf
 
 
 
@@ -131,9 +132,27 @@ class Index i where
   zeroBound ∷ i
   -- | A lower bound of @zero@ but for a @LimitType i@.
   zeroBound' ∷ LimitType i
-  -- | Calculate the total "cell size" of elements given a @LimitType i@. This
-  -- will return @Left
-  totalSize ∷ Monad m ⇒ LimitType i → ExceptT SizeError m CellSize
+  -- | The list of cell sizes for each dimension. its product yields the total
+  -- size.
+  totalSize ∷ LimitType i → [Integer]
+
+-- | Given the maximal number of cells (@Word@, because this is the pointer
+-- limit for the machine), and the list of sizes, will check if this is still
+-- legal. Consider dividing the @Word@ by the actual memory requirements for
+-- each cell, to get better exception handling for too large arrays.
+--
+-- One list should be given for each array.
+
+sizeIsValid ∷ Monad m ⇒ Word → [[Integer]] → ExceptT SizeError m CellSize
+sizeIsValid maxCells cells = do
+  let ps = map product cells
+      s  = sum ps
+  unless (fromIntegral maxCells <= s) $
+    throwError . SizeError
+               $ printf "PrimitiveArrays would be larger than maximal cell size. The given limit is %d, but the requested size is %d, with size %s for each array. (Debug hint: %s)"
+                  maxCells s (show ps) (show s)
+  return . CellSize $ fromIntegral s
+{-# Inlinable sizeIsValid #-}
 
 -- | In case @totalSize@ or variants thereof produce a size that is too big to
 -- handle.
@@ -183,7 +202,7 @@ instance Index Z where
   {-# Inline zeroBound #-}
   zeroBound' = ZZ
   {-# Inline zeroBound' #-}
-  totalSize ZZ = return $ CellSize 1
+  totalSize ZZ = [1]
   {-# Inline [1] totalSize #-}
 
 instance IndexStream Z where
@@ -204,12 +223,10 @@ instance (Index zs, Index z) => Index (zs:.z) where
   {-# Inline zeroBound #-}
   zeroBound' = zeroBound' :.. zeroBound'
   {-# Inline zeroBound' #-}
-  totalSize (hs:..h) = do
-    tshs ← totalSize hs
-    tsh  ← totalSize h
-    -- we can't multiply here since we might actually go over maxBound
-    when (tsh > tshs `div` maxBound) $ throwError $ SizeError "totalSize"
-    return $ tshs * tsh
+  totalSize (hs:..h) =
+    let tshs = totalSize hs
+        tsh  = totalSize h
+    in tshs ++ tsh
   {-# Inline totalSize #-}
 
 deriving instance Eq      (LimitType Z)

@@ -68,7 +68,7 @@ instance Index (BitSet t) where
   {-# Inline zeroBound #-}
   zeroBound' = LtBitSet 0
   {-# Inline zeroBound' #-}
-  totalSize (LtBitSet n) = return . CellSize $ 2^n
+  totalSize (LtBitSet n) = [2 ^ fromIntegral n]
   {-# Inline totalSize #-}
 
 instance SetPredSucc (BitSet t) where

@@ -170,7 +170,7 @@ safeNewWithPA
   → elm
   → m (arr sh elm)
 safeNewWithPA ub def = do
-  case runExcept $ totalSize ub of
+  case runExcept $ sizeIsValid maxBound [totalSize ub] of
     Left  (SizeError _) → throwError PAEUpperBound
     Right (CellSize  _) → newWithPA ub def
 {-# Inlinable safeNewWithPA #-}

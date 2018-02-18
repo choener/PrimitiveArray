@@ -60,7 +60,7 @@ instance Index (Boundary i t) where
   {-# Inline zeroBound #-}
   zeroBound' = LtBoundary 0
   {-# Inline zeroBound' #-}
-  totalSize (LtBoundary n) = return . CellSize $ fromIntegral n
+  totalSize (LtBoundary n) = [fromIntegral n]
   {-# Inline totalSize #-}
 
 instance IndexStream z ⇒ IndexStream (z:.Boundary k I) where

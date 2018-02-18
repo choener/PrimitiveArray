@@ -83,7 +83,7 @@ instance Index (PointL t) where
   {-# Inline [0] zeroBound #-}
   zeroBound' = LtPointL 0
   {-# Inline [0] zeroBound' #-}
-  totalSize (LtPointL h) = return . CellSize $ fromIntegral h
+  totalSize (LtPointL h) = [fromIntegral $ h + 1]
   {-# Inline [0] totalSize #-}
 
 deriving instance Eq      (LimitType (PointL t))
