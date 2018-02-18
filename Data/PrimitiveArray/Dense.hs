@@ -111,7 +111,9 @@ instance (Index sh, Unbox e, Unbox e') => PrimArrayMap Unboxed sh e e' where
 
 data Boxed sh e = Boxed !(LimitType sh) !(V.Vector e)
 
-deriving instance (Read (LimitType sh), Read e, Unbox e) ⇒ Read (Boxed sh e)
+deriving instance (Read    (LimitType sh), Read e) ⇒ Read (Boxed sh e)
+deriving instance (Show    (LimitType sh), Show e) ⇒ Show (Boxed sh e)
+deriving instance (Eq      (LimitType sh), Eq   e) ⇒ Eq   (Boxed sh e)
 deriving instance (Generic (LimitType sh), Generic e) ⇒ Generic (Boxed sh e)
 
 instance (Binary    (LimitType sh), Binary    e, Unbox e, Generic (LimitType sh), Generic e) => Binary    (Boxed sh e)

@@ -61,6 +61,11 @@ instance Index (PInt t p) where
   inBounds (LtPInt h) (PInt k) = 0 <= k && k <= h
   {-# Inline inBounds #-}
 
+deriving instance Show    (LimitType (PInt t p))
+deriving instance Read    (LimitType (PInt t p))
+deriving instance Eq      (LimitType (PInt t p))
+deriving instance Generic (LimitType (PInt t p))
+
 instance IndexStream z => IndexStream (z:.PInt I p) where
   streamUp   (ls:..LtPInt l) (hs:..LtPInt h) = flatten (streamUpMk   l h) (streamUpStep   l h) $ streamUp ls hs
   streamDown (ls:..LtPInt l) (hs:..LtPInt h) = flatten (streamDownMk l h) (streamDownStep l h) $ streamDown ls hs
