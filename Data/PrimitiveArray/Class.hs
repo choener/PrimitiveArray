@@ -10,15 +10,16 @@ module Data.PrimitiveArray.Class where
 
 import           Control.Applicative (Applicative, pure, (<$>), (<*>))
 import           Control.Exception (assert)
-import           Control.Monad (forM_)
 import           Control.Monad.Except
+import           Control.Monad (forM_)
 import           Control.Monad.Primitive (PrimMonad, liftPrim)
 import           Control.Monad.ST (runST)
+import           Data.Proxy
+import           Data.Vector.Fusion.Util
+import           Debug.Trace
+import           GHC.Generics (Generic)
 import           Prelude as P
 import qualified Data.Vector.Fusion.Stream.Monadic as SM
-import           Data.Vector.Fusion.Util
-import           Data.Proxy
-import           GHC.Generics (Generic)
 
 import           Data.PrimitiveArray.Index.Class
 
@@ -142,6 +143,8 @@ fromAssocsM
   => LimitType sh -> elm -> [(sh,elm)] -> m (MutArr m (arr sh elm))
 fromAssocsM ub def xs = do
   ma <- newWithM ub def
+--  let s = size ub
+--  traceShow (s,length xs) $ when (s < length xs) $ error "bang"
   forM_ xs $ \(k,v) -> writeM ma k v
   return ma
 {-# INLINE fromAssocsM #-}
