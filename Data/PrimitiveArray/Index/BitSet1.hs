@@ -36,6 +36,12 @@ data BitSet1 i ioc = BitSet1 { _bitset ∷ !(BitSet ioc), _boundary ∷ !(Bounda
   deriving (Eq,Ord,Generic,Show)
 makeLenses ''BitSet1
 
+derivingUnbox "BitSet1"
+  [t| forall i ioc . BitSet1 i ioc → (Int,Int)           |]
+  [| \ (BitSet1 (BitSet set) (Boundary bnd)) → (set,bnd) |]
+  [| \ (set,bnd) → BitSet1 (BitSet set) (Boundary bnd)   |]
+
+
 -- |
 --
 -- NOTE We linearize a bitset as follows: we need @2^number-of-bits *
