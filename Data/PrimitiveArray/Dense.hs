@@ -22,17 +22,18 @@ import           Control.Monad (liftM, forM_, zipWithM_)
 import           Control.Monad.Primitive (PrimState)
 import           Data.Aeson (ToJSON,FromJSON)
 import           Data.Binary (Binary)
+import           Data.Hashable (Hashable)
 import           Data.Serialize (Serialize)
+import           Data.Typeable (Typeable)
 import           Data.Vector.Binary
-import           Data.Vector.Serialize
 import           Data.Vector.Generic.Mutable as GM hiding (length)
+import           Data.Vector.Serialize
 import           Data.Vector.Unboxed.Mutable (Unbox)
+import           Debug.Trace
 import           GHC.Generics (Generic)
 import qualified Data.Vector as V hiding (forM_, length, zipWithM_)
 import qualified Data.Vector.Generic as G
 import qualified Data.Vector.Unboxed as VU hiding (forM_, length, zipWithM_)
-import           Data.Hashable (Hashable)
-import           Data.Typeable (Typeable)
 
 
 import           Data.PrimitiveArray.Class
@@ -67,7 +68,13 @@ instance (NFData (LimitType sh)) => NFData (MutArr m (Unboxed sh e)) where
   rnf (MUnboxed h xs) = rnf h `seq` rnf xs
   {-# Inline rnf #-}
 
-instance (Index sh, Unbox elm) => MPrimArrayOps Unboxed sh elm where
+instance
+  ( Index sh
+  , Unbox elm
+#if ADPFUSION_DEBUGOUTPUT
+  , Show sh, Show (LimitType sh), Show elm
+#endif
+  ) ⇒ MPrimArrayOps Unboxed sh elm where
   upperBoundM (MUnboxed h _) = h
   fromListM h xs = do
     ma <- newM h
@@ -81,7 +88,11 @@ instance (Index sh, Unbox elm) => MPrimArrayOps Unboxed sh elm where
     forM_ [0 .. size h -1] $ \k -> unsafeWrite mba k def
     return ma
   readM  (MUnboxed h mba) idx     = assert (inBounds h idx) $ unsafeRead  mba (linearIndex h idx)
-  writeM (MUnboxed h mba) idx elm = assert (inBounds h idx) $ unsafeWrite mba (linearIndex h idx) elm
+  writeM (MUnboxed h mba) idx elm =
+#if ADPFUSION_DEBUGOUTPUT
+    (if inBounds h idx then id else traceShow ("writeM", h, idx, elm, size h, linearIndex h idx, inBounds h idx))
+#endif
+    assert (inBounds h idx) $ unsafeWrite mba (linearIndex h idx) elm
   {-# INLINE upperBoundM #-}
   {-# INLINE fromListM #-}
   {-# NoInline newM #-}
