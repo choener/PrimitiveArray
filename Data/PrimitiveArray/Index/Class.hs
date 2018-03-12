@@ -147,7 +147,7 @@ sizeIsValid ∷ Monad m ⇒ Word → [[Integer]] → ExceptT SizeError m CellSiz
 sizeIsValid maxCells cells = do
   let ps = map product cells
       s  = sum ps
-  unless (fromIntegral maxCells <= s) $
+  when (fromIntegral maxCells <= s) $
     throwError . SizeError
                $ printf "PrimitiveArrays would be larger than maximal cell size. The given limit is %d, but the requested size is %d, with size %s for each array. (Debug hint: %s)"
                   maxCells s (show ps) (show s)
