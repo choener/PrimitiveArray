@@ -1,7 +1,4 @@
-# shell.nix
-
 (import ./.).shellFor {
-  packages = p: [ p.bimaps p.DPutils p.PrimitiveArray ];
+  packages = p: [ p.DPutils p.OrderedBits p.PrimitiveArray ];
   withHoogle = true;
 }
-
