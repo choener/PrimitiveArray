@@ -160,7 +160,7 @@ sizeIsValid maxCells cells = do
 newtype SizeError = SizeError String
   deriving (Eq,Ord,Show)
 
-  -- | The total number of cells that are allocated.
+-- | The total number of cells that are allocated.
 
 newtype CellSize = CellSize Word
   deriving (Eq,Ord,Show,Num,Bounded,Integral,Real,Enum)
