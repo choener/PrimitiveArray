@@ -7,9 +7,12 @@ rec {
     OrderedBits = ../Lib-OrderedBits;
     PrimitiveArray = ../Lib-PrimitiveArray;
   });
-  hsShell = hsPkgs.shellFor {
-    packages = p: [ p.DPutils p.OrderedBits p.PrimitiveArray ];
+  hsShell = with hsPkgs; shellFor {
+    packages = p: [ p.PrimitiveArray ];
     withHoogle = true;
-    buildInputs = [ cabal-install ghc ];
+    buildInputs = [
+      cabal-install ghc
+      DPutils OrderedBits
+    ];
   };
 }
