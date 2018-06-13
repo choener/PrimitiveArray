@@ -26,7 +26,7 @@ data ScoreMatrix t = ScoreMatrix
   , scoreNodes  :: !(Unboxed Int t)
   , rowNames    :: !(V.Vector Text)
   , colNames    :: !(V.Vector Text)
-  } deriving (Eq,Show)
+  } deriving (Show)
 
 -- | Get the distance between edges @(From,To)@.
 
@@ -54,13 +54,13 @@ colNameOf ScoreMatrix{..} k = colNames V.! k
 -- | Number of rows in a score matrix.
 
 numRows :: Unbox t => ScoreMatrix t -> Int
-numRows ScoreMatrix{..} = let ((Z:.0:.0),(Z:.n':._)) = bounds scoreMatrix in n' + 1
+numRows ScoreMatrix{..} = let (_:..LtInt n':.._) = upperBound scoreMatrix in n' + 1
 {-# Inline numRows #-}
 
 -- | Number of columns in a score matrix.
 
 numCols :: Unbox t => ScoreMatrix t -> Int
-numCols ScoreMatrix{..} = let ((Z:.0:.0),(Z:._:.n')) = bounds scoreMatrix in n' + 1
+numCols ScoreMatrix{..} = let (_:.._:..LtInt n') = upperBound scoreMatrix in n' + 1
 {-# Inline numCols #-}
 
 listOfRowNames :: ScoreMatrix t -> [Text]
@@ -113,10 +113,10 @@ fromFile fp = do
     putStrLn $ fp ++ " is not a NxN matrix"
     print mat'
     exitFailure
-  let scoreMatrix = PA.fromAssocs (Z:.0:.0) (Z:.n-1:.n-1) 0
+  let scoreMatrix = PA.fromAssocs (ZZ:..LtInt (n-1):..LtInt (n-1)) 0
           $ concatMap (\(r,es) -> [ ((Z:.r:.c),e) | (c,e) <- zip [0..] es ])
           $ zip [0..] mat' -- rows
-  let scoreNodes = PA.fromAssocs 0 (n-1) 0 []
+  let scoreNodes = PA.fromAssocs (LtInt $ n-1) 0 []
   let rowNames = V.fromList . map T.pack . drop 1 . words $ head ls
   let colNames = V.fromList . map (T.pack . head . words) $ tail ls
   return $ ScoreMatrix{..} -- mat rowNames colNames (V.fromList $ replicate n 0)
