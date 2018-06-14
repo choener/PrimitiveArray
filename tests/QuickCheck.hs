@@ -26,7 +26,11 @@ prop_PointL_I_unique (xs :: [PointL I]) = uniquenessTest (LtPointL 0) (LtPointL 
 
 -- prop_EdgeBoundary_I_unique (xs :: [EdgeBoundary I]) = uniquenessTest (0 :-> 0) (maximumBy (comparing fromEdgeBoundarySnd) xs) xs
 
+-- | TODO check that bitsets produce the correct number of bits when counting
 
+--prop_BitSet1_First_I_set (numberOfBits ∷ ()) = strm == lst
+--  where strm = sort . unId $ streamUp (LtBitSet1 0) (LtBitSet1 0) :: IO [BitSet1 First I]
+--        lst  = sort []
 
 quickcheck_tests = $(testGroupGenerator)
 

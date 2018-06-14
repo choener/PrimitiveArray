@@ -58,6 +58,8 @@ derivingUnbox "BitSet1"
 -- bounds is slower in indexing.
 
 instance Index (BitSet1 bnd ioc) where
+  -- This is the number of bits. Meaning that @LtBitSet1 3@ yields @[0,1,2]@.
+  -- TODO Should we rename this to @NumberOfBits1@? Or have a newtype @NumBits@?
   newtype LimitType (BitSet1 bnd ioc) = LtBitSet1 Int
   -- Calculate the linear index for a set. Spread out by the possible number of
   -- bits to fit the actual boundary results. Add the boundary index.
@@ -111,8 +113,8 @@ streamUpMk l h z =
 {-# Inline [0] streamUpMk #-}
 
 streamUpStep ∷ Monad m ⇒ Int → Int → (t, Maybe (BitSet1 c ioc)) → m (SM.Step (t, Maybe (BitSet1 c ioc)) (t:.BitSet1 c ioc))
-streamUpStep l h (z , Nothing) = return $ SM.Done
-streamUpStep l h (z,  Just t ) = return $ SM.Yield (z:.t) (z , setSucc (2^l-1) (2^h-1) t)
+streamUpStep l h (z, Nothing) = return $ SM.Done
+streamUpStep l h (z, Just t ) = return $ SM.Yield (z:.t) (z , setSucc l h t)
 {-# Inline [0] streamUpStep #-}
 
 streamDownMk ∷ Monad m ⇒ Int → Int → z → m (z, Maybe (BitSet1 c ioc))
@@ -123,8 +125,8 @@ streamDownMk l h z =
 {-# Inline [0] streamDownMk #-}
 
 streamDownStep ∷ Monad m ⇒ Int → Int → (t, Maybe (BitSet1 c ioc)) → m (SM.Step (t, Maybe (BitSet1 c ioc)) (t:.BitSet1 c ioc))
-streamDownStep l h (z , Nothing) = return $ SM.Done
-streamDownStep l h (z , Just t ) = return $ SM.Yield (z:.t) (z , setPred l h t)
+streamDownStep l h (z, Nothing) = return $ SM.Done
+streamDownStep l h (z, Just t ) = return $ SM.Yield (z:.t) (z , setPred l h t)
 {-# Inline [0] streamDownStep #-}
 
 instance SetPredSucc (BitSet1 t ioc) where
