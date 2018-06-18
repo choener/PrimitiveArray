@@ -1,5 +1,0 @@
-resolver: lts-5.2
-packages:
-- '.'
-extra-deps:
-- OrderedBits-0.0.1.0
