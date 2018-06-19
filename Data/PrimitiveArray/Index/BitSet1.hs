@@ -58,37 +58,37 @@ derivingUnbox "BitSet1"
 -- bounds is slower in indexing.
 
 instance Index (BitSet1 bnd ioc) where
-  -- This is the number of bits. Meaning that @LtBitSet1 3@ yields @[0,1,2]@.
+  -- This is the number of bits. Meaning that @LtNumBits1 3@ yields @[0,1,2]@.
   -- TODO Should we rename this to @NumberOfBits1@? Or have a newtype @NumBits@?
-  newtype LimitType (BitSet1 bnd ioc) = LtBitSet1 Int
+  newtype LimitType (BitSet1 bnd ioc) = LtNumBits1 Int
   -- Calculate the linear index for a set. Spread out by the possible number of
   -- bits to fit the actual boundary results. Add the boundary index.
-  linearIndex (LtBitSet1 pc) (BitSet1 set (Boundary bnd))
+  linearIndex (LtNumBits1 pc) (BitSet1 set (Boundary bnd))
     = linearIndex (LtBitSet pc) set * pc + bnd
   {-# Inline linearIndex #-}
-  size (LtBitSet1 pc) = 2^pc * pc + 1
+  size (LtNumBits1 pc) = 2^pc * pc + 1
   {-# Inline size #-}
-  inBounds (LtBitSet1 pc) (BitSet1 set bnd) = popCount set <= pc && 0 <= bnd && getBoundary bnd <= pc
+  inBounds (LtNumBits1 pc) (BitSet1 set bnd) = popCount set <= pc && 0 <= bnd && getBoundary bnd <= pc
   {-# Inline inBounds #-}
   zeroBound = BitSet1 zeroBound zeroBound
   {-# Inline zeroBound #-}
-  zeroBound' = LtBitSet1 0
+  zeroBound' = LtNumBits1 0
   {-# Inline zeroBound' #-}
-  totalSize (LtBitSet1 pc) =
+  totalSize (LtNumBits1 pc) =
     let z = fromIntegral pc
     in  [z * 2 ^ z]
 
 deriving instance Show (LimitType (BitSet1 bnd ioc))
 
 instance IndexStream z ⇒ IndexStream (z:.BitSet1 i I) where
-  streamUp   (ls:..LtBitSet1 l) (hs:..LtBitSet1 h) = SM.flatten (streamUpMk   l h) (streamUpStep   l h) $ streamUp   ls hs
-  streamDown (ls:..LtBitSet1 l) (hs:..LtBitSet1 h) = SM.flatten (streamDownMk l h) (streamDownStep l h) $ streamDown ls hs
+  streamUp   (ls:..LtNumBits1 l) (hs:..LtNumBits1 h) = SM.flatten (streamUpMk   l h) (streamUpStep   l h) $ streamUp   ls hs
+  streamDown (ls:..LtNumBits1 l) (hs:..LtNumBits1 h) = SM.flatten (streamDownMk l h) (streamDownStep l h) $ streamDown ls hs
   {-# Inline streamUp #-}
   {-# Inline streamDown #-}
 
 instance IndexStream z ⇒ IndexStream (z:.BitSet1 i O) where
-  streamUp   (ls:..LtBitSet1 l) (hs:..LtBitSet1 h) = SM.flatten (streamDownMk l h) (streamDownStep l h) $ streamUp   ls hs
-  streamDown (ls:..LtBitSet1 l) (hs:..LtBitSet1 h) = SM.flatten (streamUpMk   l h) (streamUpStep   l h) $ streamDown ls hs
+  streamUp   (ls:..LtNumBits1 l) (hs:..LtNumBits1 h) = SM.flatten (streamDownMk l h) (streamDownStep l h) $ streamUp   ls hs
+  streamDown (ls:..LtNumBits1 l) (hs:..LtNumBits1 h) = SM.flatten (streamUpMk   l h) (streamUpStep   l h) $ streamDown ls hs
   {-# Inline streamUp #-}
   {-# Inline streamDown #-}
 
