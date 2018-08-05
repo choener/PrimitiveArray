@@ -106,8 +106,8 @@ deriving instance Show    (LimitType (Subword t))
 instance IndexStream z => IndexStream (z:.Subword I) where
   streamUp   (ls:..LtSubword l) (hs:..LtSubword h) = flatten (streamUpMk     h) (streamUpStep   l h) $ streamUp   ls hs
   streamDown (ls:..LtSubword l) (hs:..LtSubword h) = flatten (streamDownMk l h) (streamDownStep   h) $ streamDown ls hs
---  {-# Inline streamUp #-}
---  {-# Inline streamDown #-}
+  {-# Inline streamUp #-}
+  {-# Inline streamDown #-}
 
 -- | @Subword O@ (outside).
 --
