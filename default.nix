@@ -1,26 +1,28 @@
-{ pkgs ? <nixpkgs> }:
-with (import pkgs {});
+{ overrideParDir ? null }:
+
+# @overrideParDir@ is either null, to use jus the default packages, or should
+# point to our @devel@ or @master@ directory which contains directories of
+# in-development packages.
+
+with (import <nixpkgs> {});
 with haskell.lib;
 with builtins;
 
 let
-  # check directories below this one
-  parentContent = readDir ./..;
+  # check child directories below this one
+  parentContent = readDir overrideParDir;
   # extract sibling folders that contain a default.nix file
-  parentDirs = filter (d: pathExists (./.. + ("/" + d + "/default.nix"))) (attrNames parentContent);
+  parentDirs = filter (d: pathExists (overrideParDir + ("/" + d + "/default.nix"))) (attrNames parentContent);
   # construct set of names / source directories for override
-  hsSrcSet = listToAttrs (map (d: {name = "${d}"; value = ./.. + ("/" + d);}) parentDirs);
+  hsSrcSet = listToAttrs (map (d: {name = "${d}"; value = overrideParDir + ("/" + d);}) parentDirs);
   # extend the set of packages with source overrides
-  hsPkgs = haskellPackages.extend (packageSourceOverrides hsSrcSet);
+  hsPkgs = if (isNull overrideParDir) then haskellPackages else haskellPackages.extend (packageSourceOverrides hsSrcSet);
   # name of this module
   this = baseNameOf ./.;
-  traceds = x: y: builtins.trace (builtins.deepSeq x x) y;
 in
-
 {
   hsShell = with hsPkgs; shellFor {
-    packages = p: let v = p.vector;
-                  in  [ p."${this}" ]; # traceds (p."${this}".buildInputs) [ ];
+    packages = p: [ p."${this}" ];
     withHoogle = true;
     buildInputs = [
       cabal-install
