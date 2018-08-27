@@ -18,10 +18,10 @@ let
   # extend the set of packages with source overrides
   hsPkgs = if (isNull overrideParDir) then haskellPackages else haskellPackages.extend (packageSourceOverrides hsSrcSet);
   # name of this module
-  this = baseNameOf ./.;
+  this = trace (cabal-install.patches) (baseNameOf ./.);
 in
 {
-  hsShell = with hsPkgs; shellFor {
+  hsShell = hsPkgs.shellFor {
     packages = p: [ p."${this}" ];
     withHoogle = true;
     buildInputs = [
@@ -31,5 +31,5 @@ in
   # nix-build -A hsBuild
   # this shall build and put into ./result
   # the result is a typical ./bin/; ./lib/ etc.
-  hsBuild = with hsPkgs; callCabal2nix "${this}" ./. {};
+  hsBuild = hsPkgs.callCabal2nix "${this}" ./. {};
 }
