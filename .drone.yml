@@ -1,13 +1,15 @@
 kind: pipeline
 name: default
 
-setup:
-  image: docker:git
-  commands:
-    - git clone https://bia-christian.de/gitea/choener/Lib-DPutils.git
-    - git clone https://bia-christian.de/gitea/choener/Lib-OrderedBits.git
-
 steps:
+
+-name: setup
+  setup:
+    image: docker:git
+    commands:
+      - git clone https://bia-christian.de/gitea/choener/Lib-DPutils.git
+      - git clone https://bia-christian.de/gitea/choener/Lib-OrderedBits.git
+
 - name: build
   image: haskell
   volumes:
