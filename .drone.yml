@@ -3,12 +3,12 @@ name: default
 
 steps:
 
--name: setup
-  setup:
-    image: docker:git
-    commands:
-      - git clone https://bia-christian.de/gitea/choener/Lib-DPutils.git
-      - git clone https://bia-christian.de/gitea/choener/Lib-OrderedBits.git
+  #-name: setup
+  #  setup:
+  #    image: docker:git
+  #    commands:
+  #      - git clone https://bia-christian.de/gitea/choener/Lib-DPutils.git
+  #      - git clone https://bia-christian.de/gitea/choener/Lib-OrderedBits.git
 
 - name: build
   image: haskell
@@ -20,6 +20,8 @@ steps:
   - ln -s /tmp/cache/.cabal /root/.cabal
   - ls
   - ls ../
+  - git clone https://bia-christian.de/gitea/choener/Lib-DPutils.git
+  - git clone https://bia-christian.de/gitea/choener/Lib-OrderedBits.git
   - cabal update
   - cabal new-build
 
