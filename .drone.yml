@@ -1,15 +1,13 @@
 kind: pipeline
 name: default
 
+deps:
+  image: docker:git
+  commands:
+    - git clone https://bia-christian.de/gitea/choener/Lib-DPutils.git
+    - git clone https://bia-christian.de/gitea/choener/Lib-OrderedBits.git
+
 steps:
-
-  #-name: setup
-  #  setup:
-  #    image: docker:git
-  #    commands:
-  #      - git clone https://bia-christian.de/gitea/choener/Lib-DPutils.git
-  #      - git clone https://bia-christian.de/gitea/choener/Lib-OrderedBits.git
-
 - name: build
   image: haskell
   volumes:
@@ -20,8 +18,6 @@ steps:
   - ln -s /tmp/cache/.cabal /root/.cabal
   - ls
   - ls ../
-  - git clone https://bia-christian.de/gitea/choener/Lib-DPutils.git
-  - git clone https://bia-christian.de/gitea/choener/Lib-OrderedBits.git
   - cabal update
   - cabal new-build
 
