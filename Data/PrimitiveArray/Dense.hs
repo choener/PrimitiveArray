@@ -34,6 +34,7 @@ import           GHC.Generics (Generic)
 import qualified Data.Vector as V hiding (forM_, length, zipWithM_)
 import qualified Data.Vector.Generic as G
 import qualified Data.Vector.Unboxed as VU hiding (forM_, length, zipWithM_)
+import           Data.Data
 
 
 import           Data.PrimitiveArray.Class
@@ -44,12 +45,15 @@ import           Data.PrimitiveArray.Index.Class
 -- * Unboxed, multidimensional arrays.
 
 data Unboxed sh e = Unboxed !(LimitType sh) !(VU.Vector e)
---  deriving (Read,Show,Eq,Generic,Typeable)
 
 deriving instance (Eq      (LimitType sh), Eq e     , Unbox e) ⇒ Eq      (Unboxed sh e)
 deriving instance (Generic (LimitType sh), Generic e, Unbox e) ⇒ Generic (Unboxed sh e)
 deriving instance (Read    (LimitType sh), Read e   , Unbox e) ⇒ Read    (Unboxed sh e)
 deriving instance (Show    (LimitType sh), Show e   , Unbox e) ⇒ Show    (Unboxed sh e)
+deriving instance
+  ( Data sh, Data (LimitType sh)
+  , Data e, Unbox e
+  ) ⇒ Data    (Unboxed sh e)
 
 instance (Binary    (LimitType sh), Binary    e, Unbox e, Generic (LimitType sh), Generic e) => Binary    (Unboxed sh e)
 instance (Serialize (LimitType sh), Serialize e, Unbox e, Generic (LimitType sh), Generic e) => Serialize (Unboxed sh e)
@@ -126,6 +130,11 @@ deriving instance (Read    (LimitType sh), Read e) ⇒ Read (Boxed sh e)
 deriving instance (Show    (LimitType sh), Show e) ⇒ Show (Boxed sh e)
 deriving instance (Eq      (LimitType sh), Eq   e) ⇒ Eq   (Boxed sh e)
 deriving instance (Generic (LimitType sh), Generic e) ⇒ Generic (Boxed sh e)
+deriving instance
+  ( Data sh, Data (LimitType sh)
+  , Data e
+  ) ⇒ Data    (Boxed sh e)
+
 
 instance (Binary    (LimitType sh), Binary    e, Unbox e, Generic (LimitType sh), Generic e) => Binary    (Boxed sh e)
 instance (Serialize (LimitType sh), Serialize e, Unbox e, Generic (LimitType sh), Generic e) => Serialize (Boxed sh e)

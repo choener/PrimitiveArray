@@ -3,13 +3,15 @@ module Data.PrimitiveArray.Index.Class where
 
 import           Control.Applicative
 import           Control.DeepSeq (NFData(..))
-import           Control.Monad (liftM2)
 import           Control.Monad.Except
+import           Control.Monad (liftM2)
 import           Data.Aeson
 import           Data.Binary
+import           Data.Data
 import           Data.Hashable (Hashable)
 import           Data.Proxy
 import           Data.Serialize
+import           Data.Typeable
 import           Data.Vector.Fusion.Stream.Monadic (Stream)
 import           Data.Vector.Unboxed.Deriving
 import           Data.Vector.Unboxed (Unbox(..))
@@ -25,7 +27,7 @@ infixl 3 :.
 -- | Strict pairs -- as in @repa@.
 
 data a :. b = !a :. !b
-  deriving (Eq,Ord,Show,Generic)
+  deriving (Eq,Ord,Show,Generic,Data,Typeable)
 
 derivingUnbox "StrictPair"
   [t| forall a b . (Unbox a, Unbox b) => (a:.b) -> (a,b) |]
@@ -64,7 +66,7 @@ infixr 3 :>
 -- with @ts@ maybe a chain of @:>@.
 
 data a :> b = !a :> !b
-  deriving (Eq,Ord,Show,Generic)
+  deriving (Eq,Ord,Show,Generic,Data,Typeable)
 
 derivingUnbox "StrictIxPair"
   [t| forall a b . (Unbox a, Unbox b) => (a:>b) -> (a,b) |]
@@ -92,7 +94,7 @@ instance (NFData a, NFData b) => NFData (a:>b) where
 -- | Base data constructor for multi-dimensional indices.
 
 data Z = Z
-  deriving (Eq,Ord,Read,Show,Generic)
+  deriving (Eq,Ord,Read,Show,Generic,Data,Typeable)
 
 derivingUnbox "Z"
   [t| Z -> () |]
@@ -229,15 +231,21 @@ instance (Index zs, Index z) => Index (zs:.z) where
     in tshs ++ tsh
   {-# Inline totalSize #-}
 
-deriving instance Eq      (LimitType Z)
-deriving instance Generic (LimitType Z)
-deriving instance Read    (LimitType Z)
-deriving instance Show    (LimitType Z)
+deriving instance Eq       (LimitType Z)
+deriving instance Generic  (LimitType Z)
+deriving instance Read     (LimitType Z)
+deriving instance Show     (LimitType Z)
+deriving instance Data     (LimitType Z)
+deriving instance Typeable (LimitType Z)
 
 deriving instance (Eq (LimitType zs)     , Eq (LimitType z)     ) ⇒ Eq      (LimitType (zs:.z))
 deriving instance (Generic (LimitType zs), Generic (LimitType z)) ⇒ Generic (LimitType (zs:.z))
 deriving instance (Read (LimitType zs)   , Read (LimitType z)   ) ⇒ Read    (LimitType (zs:.z))
 deriving instance (Show (LimitType zs)   , Show (LimitType z)   ) ⇒ Show    (LimitType (zs:.z))
+deriving instance
+  ( Data zs, Data (LimitType zs), Typeable zs
+  , Data z , Data (LimitType z) , Typeable z
+  ) ⇒ Data    (LimitType (zs:.z))
 
 --instance (Index zs, Index z) => Index (zs:>z) where
 --  type LimitType (zs:>z) = LimitType zs:>LimitType z
