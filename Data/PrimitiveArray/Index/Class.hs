@@ -214,7 +214,7 @@ instance IndexStream Z where
   {-# Inline streamDown #-}
 
 instance (Index zs, Index z) => Index (zs:.z) where
-  data LimitType (zs:.z) = LimitType zs :.. LimitType z
+  data LimitType (zs:.z) = !(LimitType zs) :.. !(LimitType z)
   linearIndex (hs:..h) (zs:.z) = linearIndex hs zs * size h + linearIndex h z
   {-# INLINE linearIndex #-}
   size (hs:..h) = size hs * size h
