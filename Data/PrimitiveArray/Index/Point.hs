@@ -212,15 +212,18 @@ instance IndexStream (Z:.PointR t) => IndexStream (PointR t) where
   streamDown l h = SM.map (\(Z:.i) -> i) $ streamDown (ZZ:..l) (ZZ:..h)
   {-# INLINE streamDown #-}
 
+-- arbitrarily set maximum here to
 
---instance Arbitrary (PointR t) where
---  arbitrary = do
---    b <- choose (0,100)
---    return $ PointR b
---  shrink (PointR j)
---    | 0<j = [PointR $ j-1]
---    | otherwise = []
---
+arbMaxPointR = 100
+
+instance Arbitrary (PointR t) where
+  arbitrary = do
+    b <- choose (0,arbMaxPointR)
+    return $ PointR b
+  shrink (PointR j)
+    | j<arbMaxPointR = [PointR $ j+1]
+    | otherwise = []
+
 --instance Monad m => Serial m (PointR t) where
 --  series = PointR . TS.getNonNegative <$> series
 
