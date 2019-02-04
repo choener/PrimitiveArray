@@ -47,11 +47,6 @@ pointLC :: Int -> PointL C
 pointLC = PointL
 {-# Inline pointLC #-}
 
--- | A point in a right-linear grammars.
-
-newtype PointR t = PointR {fromPointR :: Int}
-  deriving (Eq,Ord,Read,Show,Generic)
-
 
 
 derivingUnbox "PointL"
@@ -92,20 +87,20 @@ deriving instance Read    (LimitType (PointL t))
 deriving instance Show    (LimitType (PointL t))
 
 instance IndexStream z => IndexStream (z:.PointL I) where
-  streamUp   (ls:..LtPointL lf) (hs:..LtPointL ht) = SM.flatten (streamUpMk   lf) (streamUpStep   ht) $ streamUp ls hs
-  streamDown (ls:..LtPointL lf) (hs:..LtPointL ht) = SM.flatten (streamDownMk ht) (streamDownStep lf) $ streamDown ls hs
+  streamUp   (ls:..LtPointL lf) (hs:..LtPointL ht) = SM.flatten (streamUpMk   lf) (streamUpStep   PointL ht) $ streamUp ls hs
+  streamDown (ls:..LtPointL lf) (hs:..LtPointL ht) = SM.flatten (streamDownMk ht) (streamDownStep PointL lf) $ streamDown ls hs
   {-# Inline [0] streamUp #-}
   {-# Inline [0] streamDown #-}
 
 instance IndexStream z => IndexStream (z:.PointL O) where
-  streamUp   (ls:..LtPointL lf) (hs:..LtPointL ht) = SM.flatten (streamDownMk ht) (streamDownStep lf) $ streamUp   ls hs
-  streamDown (ls:..LtPointL lf) (hs:..LtPointL ht) = SM.flatten (streamUpMk   lf) (streamUpStep   ht) $ streamDown ls hs
+  streamUp   (ls:..LtPointL lf) (hs:..LtPointL ht) = SM.flatten (streamDownMk ht) (streamDownStep PointL lf) $ streamUp   ls hs
+  streamDown (ls:..LtPointL lf) (hs:..LtPointL ht) = SM.flatten (streamUpMk   lf) (streamUpStep   PointL ht) $ streamDown ls hs
   {-# Inline [0] streamUp #-}
   {-# Inline [0] streamDown #-}
 
 instance IndexStream z => IndexStream (z:.PointL C) where
-  streamUp   (ls:..LtPointL lf) (hs:..LtPointL ht) = SM.flatten (streamUpMk   lf) (streamUpStep   ht) $ streamUp ls hs
-  streamDown (ls:..LtPointL lf) (hs:..LtPointL ht) = SM.flatten (streamDownMk ht) (streamDownStep lf) $ streamDown ls hs
+  streamUp   (ls:..LtPointL lf) (hs:..LtPointL ht) = SM.flatten (streamUpMk   lf) (streamUpStep   PointL ht) $ streamUp ls hs
+  streamDown (ls:..LtPointL lf) (hs:..LtPointL ht) = SM.flatten (streamDownMk ht) (streamDownStep PointL lf) $ streamDown ls hs
   {-# Inline [0] streamUp #-}
   {-# Inline [0] streamDown #-}
 
@@ -114,17 +109,17 @@ data SP z = SP !z !Int#
 streamUpMk (I# lf) z = return $ SP z lf
 {-# Inline [0] streamUpMk #-}
 
-streamUpStep (I# ht) (SP z k)
+streamUpStep wrapper (I# ht) (SP z k)
   | 1# <- k ># ht = return $ SM.Done
-  | otherwise     = return $ SM.Yield (z:.PointL (I# k)) (SP z (k +# 1#))
+  | otherwise     = return $ SM.Yield (z:.wrapper (I# k)) (SP z (k +# 1#))
 {-# Inline [0] streamUpStep #-}
 
 streamDownMk (I# ht) z = return $ SP z ht
 {-# Inline [0] streamDownMk #-}
 
-streamDownStep (I# lf) (SP z k)
+streamDownStep wrapper (I# lf) (SP z k)
   | 1# <- k <# lf = return $ SM.Done
-  | otherwise     = return $ SM.Yield (z:.PointL (I# k)) (SP z (k -# 1#))
+  | otherwise     = return $ SM.Yield (z:.wrapper (I# k)) (SP z (k -# 1#))
 {-# Inline [0] streamDownStep #-}
 
 instance IndexStream (Z:.PointL t) => IndexStream (PointL t) where
@@ -147,28 +142,85 @@ instance Monad m => Serial m (PointL t) where
 
 
 
--- -- * @PointR@
--- --
--- -- TODO complete instances
--- 
--- derivingUnbox "PointR"
---   [t| forall t . PointR t -> Int    |]
---   [| \ (PointR i) -> i |]
---   [| \ i -> PointR i   |]
--- 
--- instance Binary    (PointR t)
--- instance Serialize (PointR t)
--- instance FromJSON  (PointR t)
--- instance ToJSON    (PointR t)
--- instance Hashable  (PointR t)
--- 
--- instance NFData (PointR t) where
---   rnf (PointR l) = rnf l
---   {-# Inline rnf #-}
--- 
--- instance Index (PointR t) where
---   linearIndex l (PointR z) = undefined
---   {-# INLINE linearIndex #-}
---   size = undefined
---   {-# INLINE size #-}
+-- * @PointR@
+
+-- | A point in a right-linear grammars.
+
+newtype PointR t = PointR {fromPointR :: Int}
+  deriving (Eq,Ord,Read,Show,Generic)
+
+
+
+derivingUnbox "PointR"
+  [t| forall t . PointR t -> Int    |]
+  [| \ (PointR i) -> i |]
+  [| \ i -> PointR i   |]
+
+instance Binary       (PointR t)
+instance Serialize    (PointR t)
+instance FromJSON     (PointR t)
+instance FromJSONKey  (PointR t)
+instance ToJSON       (PointR t)
+instance ToJSONKey    (PointR t)
+instance Hashable     (PointR t)
+
+instance NFData (PointR t) where
+  rnf (PointR l) = rnf l
+  {-# Inline rnf #-}
+
+instance Index (PointR t) where
+  newtype LimitType (PointR t) = LtPointR Int
+  linearIndex _ (PointR z) = z
+  {-# INLINE linearIndex #-}
+  size (LtPointR h) = h + 1
+  {-# INLINE size #-}
+  inBounds (LtPointR h) (PointR x) = 0<=x && x<=h
+  {-# INLINE inBounds #-}
+  zeroBound = PointR 0
+  {-# Inline [0] zeroBound #-}
+  zeroBound' = LtPointR 0
+  {-# Inline [0] zeroBound' #-}
+  totalSize (LtPointR h) = [fromIntegral $ h + 1]
+  {-# Inline [0] totalSize #-}
+
+deriving instance Eq      (LimitType (PointR t))
+deriving instance Generic (LimitType (PointR t))
+deriving instance Read    (LimitType (PointR t))
+deriving instance Show    (LimitType (PointR t))
+
+instance IndexStream z => IndexStream (z:.PointR I) where
+  streamUp   (ls:..LtPointR lf) (hs:..LtPointR ht) = SM.flatten (streamDownMk ht) (streamDownStep PointR lf) $ streamUp ls hs
+  streamDown (ls:..LtPointR lf) (hs:..LtPointR ht) = SM.flatten (streamUpMk   lf) (streamUpStep   PointR ht) $ streamDown ls hs
+  {-# Inline [0] streamUp #-}
+  {-# Inline [0] streamDown #-}
+
+instance IndexStream z => IndexStream (z:.PointR O) where
+  streamUp   (ls:..LtPointR lf) (hs:..LtPointR ht) = SM.flatten (streamUpMk   lf) (streamUpStep   PointR ht) $ streamUp   ls hs
+  streamDown (ls:..LtPointR lf) (hs:..LtPointR ht) = SM.flatten (streamDownMk ht) (streamDownStep PointR lf) $ streamDown ls hs
+  {-# Inline [0] streamUp #-}
+  {-# Inline [0] streamDown #-}
+
+--instance IndexStream z => IndexStream (z:.PointR C) where
+--  streamUp   (ls:..LtPointR lf) (hs:..LtPointR ht) = SM.flatten (streamUpMkR   lf) (streamUpStepR   ht) $ streamUp ls hs
+--  streamDown (ls:..LtPointR lf) (hs:..LtPointR ht) = SM.flatten (streamDownMkR ht) (streamDownStepR lf) $ streamDown ls hs
+--  {-# Inline [0] streamUp #-}
+--  {-# Inline [0] streamDown #-}
+
+instance IndexStream (Z:.PointR t) => IndexStream (PointR t) where
+  streamUp l h = SM.map (\(Z:.i) -> i) $ streamUp (ZZ:..l) (ZZ:..h)
+  {-# INLINE streamUp #-}
+  streamDown l h = SM.map (\(Z:.i) -> i) $ streamDown (ZZ:..l) (ZZ:..h)
+  {-# INLINE streamDown #-}
+
+
+--instance Arbitrary (PointR t) where
+--  arbitrary = do
+--    b <- choose (0,100)
+--    return $ PointR b
+--  shrink (PointR j)
+--    | 0<j = [PointR $ j-1]
+--    | otherwise = []
+--
+--instance Monad m => Serial m (PointR t) where
+--  series = PointR . TS.getNonNegative <$> series
 
