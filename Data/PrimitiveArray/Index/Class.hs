@@ -3,6 +3,7 @@ module Data.PrimitiveArray.Index.Class where
 
 import           Control.Applicative
 import           Control.DeepSeq (NFData(..))
+import           Control.Lens hiding (Index, (:>))
 import           Control.Monad.Except
 import           Control.Monad (liftM2)
 import           Data.Aeson
@@ -52,8 +53,6 @@ instance (NFData a, NFData b) => NFData (a:.b) where
 instance (Arbitrary a, Arbitrary b) => Arbitrary (a :. b) where
   arbitrary     = liftM2 (:.) arbitrary arbitrary
   shrink (a:.b) = [ (a':.b) | a' <- shrink a ] ++ [ (a:.b') | b' <- shrink b ]
-
-
 
 infixr 3 :>
 
@@ -255,4 +254,30 @@ deriving instance
 --  {-# INLINE size #-}
 --  inBounds (hs:>h) (zs:>z) = inBounds hs zs && inBounds h z
 --  {-# INLINE inBounds #-}
+
+
+
+-- * Somewhat experimental lens support.
+--
+-- The problem here is that tuples are n-ary, while inductive tuples are
+-- binary, recursive.
+--
+-- The solution is to count from the right. This is slightly annoying because
+-- @Z@ denose dimension "Zero", while now @_1@ is the rightmost field.
+
+instance Field1 (zs:.a) (zs:.a') a a' where
+  {-# Inline _1 #-}
+  _1 = lens (\(_:.a) → a) (\(zs:._) a → (zs:.a))
+
+instance Field2 (zs:.a:.b) (zs:.a':.b) a a' where
+  {-# Inline _2 #-}
+  _2 = lens (\(_:.a:._) → a) (\(zs:._:.b) a → (zs:.a:.b))
+
+instance Field3 (zs:.a:.b:.c) (zs:.a':.b:.c) a a' where
+  {-# Inline _3 #-}
+  _3 = lens (\(_:.a:._:._) → a) (\(zs:._:.b:.c) a → (zs:.a:.b:.c))
+
+instance Field4 (zs:.a:.b:.c:.d) (zs:.a':.b:.c:.d) a a' where
+  {-# Inline _4 #-}
+  _4 = lens (\(_:.a:._:._:._) → a) (\(zs:._:.b:.c:.d) a → (zs:.a:.b:.c:.d))
 
