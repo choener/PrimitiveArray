@@ -17,9 +17,11 @@ import           Data.Vector.Fusion.Stream.Monadic (Stream)
 import           Data.Vector.Unboxed.Deriving
 import           Data.Vector.Unboxed (Unbox(..))
 import           GHC.Generics
+import           GHC.TypeNats
 import qualified Data.Vector.Fusion.Stream.Monadic as SM
 import           Test.QuickCheck
 import           Text.Printf
+import           Data.Type.Equality
 
 
 
@@ -261,23 +263,30 @@ deriving instance
 --
 -- The problem here is that tuples are n-ary, while inductive tuples are
 -- binary, recursive.
---
--- The solution is to count from the right. This is slightly annoying because
--- @Z@ denose dimension "Zero", while now @_1@ is the rightmost field.
 
-instance Field1 (zs:.a) (zs:.a') a a' where
+instance Field1 (Z:.a) (Z:.a') a a' where
   {-# Inline _1 #-}
-  _1 = lens (\(_:.a) → a) (\(zs:._) a → (zs:.a))
+  _1 = lens (\(Z:.a) → a) (\(Z:._) a → (Z:.a))
 
-instance Field2 (zs:.a:.b) (zs:.a':.b) a a' where
+instance Field1 (Z:.a:.b) (Z:.a':.b) a a' where
+  {-# Inline _1 #-}
+  _1 = lens (\(Z:.a:.b) → a) (\(Z:._:.b) a → (Z:.a:.b))
+
+instance Field1 (Z:.a:.b:.c) (Z:.a':.b:.c) a a' where
+  {-# Inline _1 #-}
+  _1 = lens (\(Z:.a:.b:.c) → a) (\(Z:._:.b:.c) a → (Z:.a:.b:.c))
+
+
+instance Field2 (Z:.a:.b) (Z:.a:.b') b b' where
   {-# Inline _2 #-}
-  _2 = lens (\(_:.a:._) → a) (\(zs:._:.b) a → (zs:.a:.b))
+  _2 = lens (\(Z:.a:.b) → b) (\(Z:.a:._) b → (Z:.a:.b))
 
-instance Field3 (zs:.a:.b:.c) (zs:.a':.b:.c) a a' where
+instance Field2 (Z:.a:.b:.c) (Z:.a:.b':.c) b b' where
+  {-# Inline _2 #-}
+  _2 = lens (\(Z:.a:.b:.c) → b) (\(Z:.a:._:.c) b → (Z:.a:.b:.c))
+
+
+instance Field3 (Z:.a:.b:.c) (Z:.a:.b:.c') c c' where
   {-# Inline _3 #-}
-  _3 = lens (\(_:.a:._:._) → a) (\(zs:._:.b:.c) a → (zs:.a:.b:.c))
-
-instance Field4 (zs:.a:.b:.c:.d) (zs:.a':.b:.c:.d) a a' where
-  {-# Inline _4 #-}
-  _4 = lens (\(_:.a:._:._:._) → a) (\(zs:._:.b:.c:.d) a → (zs:.a:.b:.c:.d))
+  _3 = lens (\(Z:.a:.b:.c) → c) (\(Z:.a:.b:._) c → (Z:.a:.b:.c))
 

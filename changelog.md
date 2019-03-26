@@ -1,3 +1,8 @@
+0.9.1.0
+-------
+
+- Arbitrary instance(s), field lenses that are probably not a good idea (don't use them!)
+
 0.9.0.0
 -------
 

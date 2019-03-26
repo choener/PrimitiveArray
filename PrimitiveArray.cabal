@@ -1,16 +1,16 @@
+Cabal-version:  2.2
 Name:           PrimitiveArray
-Version:        0.9.0.0
-License:        BSD3
+Version:        0.9.1.0
+License:        BSD-3-Clause
 License-file:   LICENSE
 Maintainer:     choener@bioinf.uni-leipzig.de
-author:         Christian Hoener zu Siederdissen, 2011-2018
-copyright:      Christian Hoener zu Siederdissen, 2011-2018
+author:         Christian Hoener zu Siederdissen, 2011-2019
+copyright:      Christian Hoener zu Siederdissen, 2011-2019
 homepage:       https://github.com/choener/PrimitiveArray
 bug-reports:    https://github.com/choener/PrimitiveArray/issues
 Stability:      Experimental
 Category:       Data
 Build-type:     Simple
-Cabal-version:  >=1.10.0
 tested-with:    GHC == 8.4.4
 Synopsis:       Efficient multidimensional arrays
 Description:
@@ -54,7 +54,72 @@ flag debugoutput
 
 
 
+common deps
+  build-depends: base                     >= 4.7      &&  < 5.0
+               , aeson                    >= 0.8
+               , binary                   >= 0.7
+               , bits                     >= 0.4
+               , cereal                   >= 0.4
+               , cereal-vector            >= 0.2
+               , containers
+               , deepseq                  >= 1.3
+               , hashable                 >= 1.2
+               , lens                     >= 4.0
+               , log-domain               >= 0.10
+               , mtl                      >= 2.0
+               , primitive                >= 0.5.4
+               , QuickCheck               >= 2.7
+               , smallcheck               >= 1.1
+               , tasty                    >= 0.11
+               , tasty-quickcheck         >= 0.8
+               , tasty-smallcheck         >= 0.8
+               , tasty-th                 >= 0.1
+               , text                     >= 1.0
+               , vector                   >= 0.11
+               , vector-binary-instances  >= 0.2
+               , vector-th-unbox          >= 0.2
+               --
+               , DPutils                  == 0.1.0.*
+               , OrderedBits              == 0.0.1.*
+  default-extensions: BangPatterns
+                    , CPP
+                    , DataKinds
+                    , DefaultSignatures
+                    , DeriveDataTypeable
+                    , DeriveGeneric
+                    , FlexibleContexts
+                    , FlexibleInstances
+                    , FunctionalDependencies
+                    , GADTs
+                    , GeneralizedNewtypeDeriving
+                    , MultiParamTypeClasses
+                    , PolyKinds
+                    , RankNTypes
+                    , RecordWildCards
+                    , ScopedTypeVariables
+                    , StandaloneDeriving
+                    , TemplateHaskell
+                    , TypeApplications
+                    , TypeFamilies
+                    , TypeOperators
+                    , UndecidableInstances
+                    , UnicodeSyntax
+  default-language:
+    Haskell2010
+  ghc-options:
+    -O2
+    -funbox-strict-fields
+  if flag(debug)
+    cpp-options: -DADPFUSION_CHECKS
+    ghc-options: -fno-ignore-asserts -O0
+  if flag(debugoutput)
+    cpp-options: -DADPFUSION_DEBUGOUTPUT
+
+
+
 Library
+  import:
+    deps
   Exposed-modules:
     Data.PrimitiveArray
     Data.PrimitiveArray.Checked
@@ -78,61 +143,12 @@ Library
 --    Data.PrimitiveArray.Index.TernarySet
     Data.PrimitiveArray.Index.Unit
     Data.PrimitiveArray.ScoreMatrix
-  build-depends: base                     >= 4.7      &&  < 5.0
-               , aeson                    >= 0.8
-               , binary                   >= 0.7
-               , bits                     >= 0.4
-               , cereal                   >= 0.4
-               , cereal-vector            >= 0.2
-               , deepseq                  >= 1.3
-               , hashable                 >= 1.2
-               , lens                     >= 4.0
-               , log-domain               >= 0.10
-               , mtl                      >= 2.0
-               , primitive                >= 0.5.4
-               , QuickCheck               >= 2.7
-               , smallcheck               >= 1.1
-               , text                     >= 1.0
-               , vector                   >= 0.11
-               , vector-binary-instances  >= 0.2
-               , vector-th-unbox          >= 0.2
-               --
-               , DPutils                  == 0.0.2.*
-               , OrderedBits              == 0.0.1.*
-  default-extensions: BangPatterns
-                    , CPP
-                    , DefaultSignatures
-                    , DeriveDataTypeable
-                    , DeriveGeneric
-                    , FlexibleContexts
-                    , FlexibleInstances
-                    , GADTs
-                    , GeneralizedNewtypeDeriving
-                    , MultiParamTypeClasses
-                    , PolyKinds
-                    , RankNTypes
-                    , RecordWildCards
-                    , ScopedTypeVariables
-                    , StandaloneDeriving
-                    , TemplateHaskell
-                    , TypeFamilies
-                    , TypeOperators
-                    , UndecidableInstances
-                    , UnicodeSyntax
-  default-language:
-    Haskell2010
-  ghc-options:
-    -O2
-    -funbox-strict-fields
-  if flag(debug)
-    cpp-options: -DADPFUSION_CHECKS
-    ghc-options: -fno-ignore-asserts -O0
-  if flag(debugoutput)
-    cpp-options: -DADPFUSION_DEBUGOUTPUT
 
 
 
 test-suite properties
+  import:
+    deps
   type:
     exitcode-stdio-1.0
   main-is:
@@ -142,25 +158,10 @@ test-suite properties
     SmallCheck
     Common
   ghc-options:
-    -O2 -threaded -rtsopts -with-rtsopts=-N
+    -threaded -rtsopts -with-rtsopts=-N
   hs-source-dirs:
     tests
-  default-language:
-    Haskell2010
-  default-extensions: CPP
-                    , ScopedTypeVariables
-                    , TemplateHaskell
-                    , UnicodeSyntax
-  build-depends: base
-               , containers
-               , QuickCheck
-               , smallcheck
-               , tasty              >= 0.11
-               , tasty-quickcheck   >= 0.8
-               , tasty-smallcheck   >= 0.8
-               , tasty-th           >= 0.1
-               --
-               , PrimitiveArray
+  build-depends: PrimitiveArray
 
 
 
