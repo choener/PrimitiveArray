@@ -111,7 +111,7 @@ common deps
     -funbox-strict-fields
   if flag(debug)
     cpp-options: -DADPFUSION_CHECKS
-    ghc-options: -fno-ignore-asserts -O0
+    ghc-options: -fno-ignore-asserts --disable-optimizations
   if flag(debugoutput)
     cpp-options: -DADPFUSION_DEBUGOUTPUT
 
