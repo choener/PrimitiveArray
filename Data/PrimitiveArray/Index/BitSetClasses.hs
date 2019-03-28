@@ -30,6 +30,14 @@ import           Data.PrimitiveArray.Index.IOC
 newtype Boundary boundaryType ioc = Boundary { getBoundary ∷ Int }
   deriving (Eq,Ord,Generic,Num)
 
+-- | Whenever we can not set the boundary we should have for a set, we use this
+-- pattern. All legal boundaries are @>=0@. We also need to set the undefined
+-- boundary to @0@, since the @linearIndex@ will use this value to add, which
+-- for empty sets would reduce to @0 - UndefBoundary === 0@.
+
+pattern UndefBoundary ∷ Boundary boundaryType ioc
+pattern UndefBoundary = Boundary 0
+
 instance Show (Boundary i t) where
   show (Boundary i) = "(I:" ++ show i ++ ")"
 
@@ -136,8 +144,6 @@ type family Mask s ∷ *
 -- | @Fixed@ allows us to fix some or all bits of a bitset, thereby
 -- providing @succ/pred@ operations which are only partially free.
 --
--- The mask is lazy, this allows us to have @undefined@ for @l@ and @h@.
---
 -- @f = getFixedMask .&. getFixed@ are the fixed bits.
 -- @n = getFixed .&. complement getFixedMask@ are the free bits.
 -- @to = complement getFixed@ is the to move mask
@@ -146,14 +152,14 @@ type family Mask s ∷ *
 -- @p' = popShiftL to p@ yields the population moved back
 -- @final = p' .|. f@
 
-data Fixed t = Fixed { getFixedMask :: (Mask t) , getFixed :: !t }
+data FixedMask t = FixedMask { getMask ∷ (Mask t) , getFixed ∷ !t }
 
 -- | Assuming a bitset on bits @[0 .. highbit]@, we can apply a mask that
 -- stretches out those bits over @[0 .. higherBit]@ with @highbit <=
 -- higherBit@. Any active interfaces are correctly set as well.
 
 class ApplyMask s where
-  applyMask :: Mask s -> s -> s
+  applyMask :: Mask s → s → s
 
 
 

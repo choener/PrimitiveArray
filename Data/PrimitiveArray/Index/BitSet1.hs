@@ -108,7 +108,7 @@ streamUpMk ∷ Monad m ⇒ Int → Int → z → m (z, Maybe (BitSet1 c ioc))
 streamUpMk l h z =
   let set = BitSet $ 2^l-1
       -- lsbZ set == 0, or no active bits in which case we use 0
-      bnd = Boundary 0
+      bnd = UndefBoundary
   in  return (z, if l <= h then Just (BitSet1 set bnd) else Nothing)
 {-# Inline [0] streamUpMk #-}
 
@@ -120,7 +120,7 @@ streamUpStep l h (z, Just t ) = return $ SM.Yield (z:.t) (z , setSucc l h t)
 streamDownMk ∷ Monad m ⇒ Int → Int → z → m (z, Maybe (BitSet1 c ioc))
 streamDownMk l h z =
   let set = BitSet $ 2^h-1
-      bnd = Boundary 0
+      bnd = Boundary 0 -- this is the actual boundary at zero
   in  return (z, if l <= h then Just (BitSet1 set bnd) else Nothing)
 {-# Inline [0] streamDownMk #-}
 
@@ -148,6 +148,9 @@ instance SetPredSucc (BitSet1 t ioc) where
                                           in  Just (BitSet1 s' (Boundary (max 0 $ lsbZ s')))
     where cs = popCount s
   {-# Inline setPred #-}
+
+instance SetPredSucc (FixedMask (BitSet1 t ioc)) where
+  setSucc pcl pch (FixedMask mask bs1) = undefined
 
 instance Arbitrary (BitSet1 t ioc) where
   arbitrary = do

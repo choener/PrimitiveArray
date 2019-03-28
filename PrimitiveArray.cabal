@@ -80,7 +80,7 @@ common deps
                , vector-th-unbox          >= 0.2
                --
                , DPutils                  == 0.1.0.*
-               , OrderedBits              == 0.0.1.*
+               , OrderedBits              == 0.0.2.*
   default-extensions: BangPatterns
                     , CPP
                     , DataKinds
@@ -93,6 +93,7 @@ common deps
                     , GADTs
                     , GeneralizedNewtypeDeriving
                     , MultiParamTypeClasses
+                    , PatternSynonyms
                     , PolyKinds
                     , RankNTypes
                     , RecordWildCards
