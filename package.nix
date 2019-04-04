@@ -1,6 +1,6 @@
 let
-  DPutils = (import ../DPutils/package.nix) {};
-  OrderedBits = (import ../OrderedBits/package.nix) {};
+  DPutils = (import ../DPutils/package.nix);
+  OrderedBits = (import ../OrderedBits/package.nix);
   lib =
     { src = ./lib;
       dependencies = [
@@ -9,17 +9,19 @@ let
         "bits"
         "cereal"
         "cereal-vector"
-        "DPutils"
         "lens"
         "log-domain"
         "mtl"
-        "OrderedBits"
         "QuickCheck"
         "smallcheck"
         "vector"
         "vector-binary-instances"
         "vector-th-unbox"
-        ];
+        # note: these are taken from hackage, the two imports below the let are not even seen
+        # we need to use a snack.nix file to modify ghcWithPackages
+#        "DPutils"
+#        "OrderedBits"
+        ] ++ DPutils.dependencies ++ OrderedBits.dependencies;
       extensions = [
         "BangPatterns"
         "CPP"
@@ -36,6 +38,7 @@ let
         "GADTs"
         "GeneralizedNewtypeDeriving"
         "MultiParamTypeClasses"
+        "PatternGuards"
         "PatternSynonyms"
         "PolyKinds"
         "RankNTypes"
@@ -48,8 +51,13 @@ let
         "TypeOperators"
         "UndecidableInstances"
         "UnicodeSyntax"
-        ];
-      packages = [];
+        ] ++ DPutils.extensions ++ OrderedBits.extensions;
+      # these are my (local) packages
+      packages = [
+        DPutils
+        OrderedBits
+        ] ++ DPutils.packages ++ OrderedBits.packages;
     };
 in
   lib
+
