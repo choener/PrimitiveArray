@@ -144,6 +144,8 @@ Library
 --    Data.PrimitiveArray.Index.TernarySet
     Data.PrimitiveArray.Index.Unit
     Data.PrimitiveArray.ScoreMatrix
+  hs-source-dirs:
+    lib
 
 
 
