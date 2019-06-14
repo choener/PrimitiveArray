@@ -1,6 +1,6 @@
 Cabal-version:  2.2
 Name:           PrimitiveArray
-Version:        0.9.1.0
+Version:        0.9.1.1
 License:        BSD-3-Clause
 License-file:   LICENSE
 Maintainer:     choener@bioinf.uni-leipzig.de

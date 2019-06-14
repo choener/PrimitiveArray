@@ -1,3 +1,8 @@
+0.9.1.1
+-------
+
+- OrderedBits version bump
+
 0.9.1.0
 -------
 
