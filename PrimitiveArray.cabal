@@ -161,6 +161,19 @@ test-suite properties
   build-depends: PrimitiveArray
 
 
+benchmark Lookup
+  import:
+    deps
+  type:
+    exitcode-stdio-1.0
+  main-is:
+    Lookup.hs
+  hs-source-dirs:
+    bench
+  build-depends: PrimitiveArray
+               , criterion        ^>= 1.5
+
+
 
 source-repository head
   type: git
