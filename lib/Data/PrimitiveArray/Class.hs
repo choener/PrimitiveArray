@@ -182,8 +182,14 @@ safeNewWithPA ub def = do
 -- | Return all associations from an array.
 
 assocs :: forall arr sh elm . (IndexStream sh, PrimArrayOps arr sh elm) => arr sh elm -> [(sh,elm)]
-assocs arr = P.map (\k -> (k,unsafeIndex arr k)) . unId . SM.toList $ streamUp zeroBound' (upperBound arr) where
+assocs arr = unId . SM.toList $ assocsS arr
 {-# INLINE assocs #-}
+
+-- | Return all associations from an array.
+
+assocsS ∷ forall m arr sh elm . (Monad m, IndexStream sh, PrimArrayOps arr sh elm) ⇒ arr sh elm → SM.Stream m (sh,elm)
+assocsS arr = SM.map (\k -> (k,unsafeIndex arr k)) $ streamUp zeroBound' (upperBound arr)
+{-# INLINE assocsS #-}
 
 -- | Creates an immutable array from lower and upper bounds and a complete list
 -- of elements.
