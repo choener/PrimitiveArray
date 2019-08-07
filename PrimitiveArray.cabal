@@ -85,10 +85,6 @@ common deps
                , primitive                >= 0.5.4
                , QuickCheck               >= 2.7
                , smallcheck               >= 1.1
-               , tasty                    >= 0.11
-               , tasty-quickcheck         >= 0.8
-               , tasty-smallcheck         >= 0.8
-               , tasty-th                 >= 0.1
                , text                     >= 1.0
                , vector                   >= 0.11
                , vector-binary-instances  >= 0.2
@@ -161,6 +157,13 @@ Library
 test-suite properties
   import:
     deps
+  build-depends: base
+               , tasty                    >= 0.11
+               , tasty-quickcheck         >= 0.8
+               , tasty-smallcheck         >= 0.8
+               , tasty-th                 >= 0.1
+               --
+               , PrimitiveArray
   type:
     exitcode-stdio-1.0
   main-is:
