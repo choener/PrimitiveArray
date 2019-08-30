@@ -19,7 +19,7 @@ import           Data.PrimitiveArray hiding ((!))
 -- outside of the allocated area.
 
 --(!) :: PrimArrayOps arr sh elm => arr sh elm -> sh -> elm
-(!) arr@(Unboxed h v) idx
+(!) arr@(Dense h v) idx
   | not (inBounds (upperBound arr) idx) = error $ "(!) / inBounds: out of bounds! " ++ show (h,idx)
   | li < 0 || li >= len = error $ "(!) / linearIndex: out of bounds! " ++ show (h,li,len,idx)
   | otherwise = unsafeIndex arr idx

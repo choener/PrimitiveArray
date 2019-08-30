@@ -13,6 +13,9 @@
 --
 -- TODO while @Unboxed@ is, in princile, @Hashable@, we'd need the
 -- corresponding @VU.Vector@ instances ...
+--
+-- TODO rename to Dense.Vector, since there are other possibilities to store,
+-- without basing on vector.
 
 module Data.PrimitiveArray.Dense where
 
@@ -22,175 +25,114 @@ import           Control.Monad (liftM, forM_, zipWithM_)
 import           Control.Monad.Primitive (PrimState)
 import           Data.Aeson (ToJSON,FromJSON)
 import           Data.Binary (Binary)
+import           Data.Data
 import           Data.Hashable (Hashable)
 import           Data.Serialize (Serialize)
 import           Data.Typeable (Typeable)
 import           Data.Vector.Binary
 import           Data.Vector.Generic.Mutable as GM hiding (length)
 import           Data.Vector.Serialize
-import           Data.Vector.Unboxed.Mutable (Unbox)
 import           Debug.Trace
 import           GHC.Generics (Generic)
-import qualified Data.Vector as V hiding (forM_, length, zipWithM_)
-import qualified Data.Vector.Generic as G
-import qualified Data.Vector.Unboxed as VU hiding (forM_, length, zipWithM_)
-import           Data.Data
-
+import qualified Data.Vector as V
+import qualified Data.Vector.Fusion.Stream.Monadic as SM
+import qualified Data.Vector.Generic as VG
+import qualified Data.Vector.Storable as VS
+import qualified Data.Vector.Unboxed as VU
 
 import           Data.PrimitiveArray.Class
 import           Data.PrimitiveArray.Index.Class
 
 
 
--- * Unboxed, multidimensional arrays.
+data Dense v sh e = Dense !(LimitType sh) !(v e)
 
-data Unboxed sh e = Unboxed !(LimitType sh) !(VU.Vector e)
+type Unboxed sh e = Dense VU.Vector sh e
 
-deriving instance (Eq      (LimitType sh), Eq e     , Unbox e) ⇒ Eq      (Unboxed sh e)
-deriving instance (Generic (LimitType sh), Generic e, Unbox e) ⇒ Generic (Unboxed sh e)
-deriving instance (Read    (LimitType sh), Read e   , Unbox e) ⇒ Read    (Unboxed sh e)
-deriving instance (Show    (LimitType sh), Show e   , Unbox e) ⇒ Show    (Unboxed sh e)
-deriving instance
-  ( Data sh, Data (LimitType sh)
-  , Data e, Unbox e
-  ) ⇒ Data    (Unboxed sh e)
+type Storable sh e = Dense VS.Vector sh e
 
-instance (Binary    (LimitType sh), Binary    e, Unbox e, Generic (LimitType sh), Generic e) => Binary    (Unboxed sh e)
-instance (Serialize (LimitType sh), Serialize e, Unbox e, Generic (LimitType sh), Generic e) => Serialize (Unboxed sh e)
-instance (ToJSON    (LimitType sh), ToJSON    e, Unbox e, Generic (LimitType sh), Generic e) => ToJSON    (Unboxed sh e)
-instance (FromJSON  (LimitType sh), FromJSON  e, Unbox e, Generic (LimitType sh), Generic e) => FromJSON  (Unboxed sh e)
-instance (Hashable  (LimitType sh), Hashable  e, Hashable (VU.Vector e), Unbox e, Generic (LimitType sh), Generic e) => Hashable  (Unboxed sh e)
+type Boxed sh e = Dense V.Vector sh e
 
-instance (NFData (LimitType sh)) => NFData (Unboxed sh e) where
-  rnf (Unboxed h xs) = rnf h `seq` rnf xs
+
+
+deriving instance (Eq      (LimitType sh), Eq (v e)     ) ⇒ Eq      (Dense v sh e)
+deriving instance (Generic (LimitType sh), Generic (v e)) ⇒ Generic (Dense v sh e)
+deriving instance (Read    (LimitType sh), Read (v e)   ) ⇒ Read    (Dense v sh e)
+deriving instance (Show    (LimitType sh), Show (v e)   ) ⇒ Show    (Dense v sh e)
+
+deriving instance Typeable (Dense v sh e)
+
+deriving instance (Data (v e), Data (LimitType sh), Data e, Data sh, Typeable sh, Typeable e, Typeable v) ⇒ Data (Dense v sh e)
+
+instance (Binary    (LimitType sh), Binary    (v e), Generic (LimitType sh), Generic (v e)) => Binary    (Dense v sh e)
+instance (Serialize (LimitType sh), Serialize (v e), Generic (LimitType sh), Generic (v e)) => Serialize (Dense v sh e)
+instance (ToJSON    (LimitType sh), ToJSON    (v e), Generic (LimitType sh), Generic (v e)) => ToJSON    (Dense v sh e)
+instance (FromJSON  (LimitType sh), FromJSON  (v e), Generic (LimitType sh), Generic (v e)) => FromJSON  (Dense v sh e)
+instance (Hashable  (LimitType sh), Hashable  (v e), Generic (LimitType sh), Generic (v e)) => Hashable  (Dense v sh e)
+
+instance (NFData (LimitType sh), NFData (v e)) ⇒ NFData (Dense v sh e) where
+  rnf (Dense h xs) = rnf h `seq` rnf xs
   {-# Inline rnf #-}
 
-data instance MutArr m (Unboxed sh e) = MUnboxed !(LimitType sh) !(VU.MVector (PrimState m) e)
+
+
+data instance MutArr m (Dense v sh e) = MDense !(LimitType sh) !(VG.Mutable v (PrimState m) e)
   deriving (Generic,Typeable)
 
-instance (NFData (LimitType sh)) => NFData (MutArr m (Unboxed sh e)) where
-  rnf (MUnboxed h xs) = rnf h `seq` rnf xs
+instance (Show (LimitType sh), Show (VG.Mutable v (PrimState m) e), VG.Mutable v (PrimState m) e ~ mv) ⇒ Show (MutArr m (Dense v sh e)) where
+  show (MDense sh mv) = show (sh,mv)
+
+instance (NFData (LimitType sh), NFData (VG.Mutable v (PrimState m) e), VG.Mutable v (PrimState m) e ~ mv) ⇒ NFData (MutArr m (Dense v sh e)) where
+  rnf (MDense h xs) = rnf h `seq` rnf xs
   {-# Inline rnf #-}
 
 instance
-  ( Index sh
-  , Unbox elm
+  ( Index sh, MutArr m (Dense v sh e) ~ mv
+  , GM.MVector (VG.Mutable v) e
 #if ADPFUSION_DEBUGOUTPUT
-  , Show sh, Show (LimitType sh), Show elm
+  , Show sh, Show (LimitType sh), Show e
 #endif
-  ) ⇒ MPrimArrayOps Unboxed sh elm where
-  upperBoundM (MUnboxed h _) = h
+  ) ⇒ MPrimArrayOps (Dense v) sh e where
+  {-# Inline upperBoundM #-}
+  upperBoundM (MDense h _) = h
+  {-# Inline fromListM #-}
   fromListM h xs = do
-    ma <- newM h
-    let (MUnboxed _ mba) = ma
-    zipWithM_ (\k x -> assert (length xs == size h) $ unsafeWrite mba k x) [0.. size h -1] xs
+    ma ← newM h
+    let (MDense _ mba) = ma
+    SM.zipWithM_ (\k x → assert (length xs == size h) $ unsafeWrite mba k x) (SM.enumFromTo 0 (size h -1)) (SM.fromList xs)
     return ma
-  newM h = MUnboxed h `liftM` new (size h)
+  {-# Inline newM #-}     -- TODO was NoInline, check if anything breaks!
+  newM h = MDense h `liftM` new (size h)
+  {-# Inline newWithM #-}
   newWithM h def = do
-    ma <- newM h
-    let (MUnboxed _ mba) = ma
-    forM_ [0 .. size h -1] $ \k -> unsafeWrite mba k def
+    ma ← newM h
+    let (MDense _ mba) = ma
+    SM.mapM_ (\k → unsafeWrite mba k def) $ SM.enumFromTo 0 (size h -1)
     return ma
-  readM  (MUnboxed h mba) idx     = assert (inBounds h idx) $ unsafeRead  mba (linearIndex h idx)
-  writeM (MUnboxed h mba) idx elm =
+  {-# Inline readM #-}
+  readM  (MDense h mba) idx     = assert (inBounds h idx) $ unsafeRead  mba (linearIndex h idx)
+  {-# Inline writeM #-}
+  writeM (MDense h mba) idx elm =
 #if ADPFUSION_DEBUGOUTPUT
     (if inBounds h idx then id else traceShow ("writeM", h, idx, elm, size h, linearIndex h idx, inBounds h idx))
 #endif
     assert (inBounds h idx) $ unsafeWrite mba (linearIndex h idx) elm
-  {-# INLINE upperBoundM #-}
-  {-# INLINE fromListM #-}
-  {-# NoInline newM #-}
-  {-# INLINE newWithM #-}
-  {-# INLINE readM #-}
-  {-# INLINE writeM #-}
 
-instance (Index sh, Unbox elm) => PrimArrayOps Unboxed sh elm where
-  upperBound (Unboxed h _) = h
-  unsafeFreeze (MUnboxed h mba) = Unboxed h `liftM` G.unsafeFreeze mba
-  unsafeThaw   (Unboxed  h ba) = MUnboxed h `liftM` G.unsafeThaw ba
-  unsafeIndex  (Unboxed  h ba) idx = G.unsafeIndex ba (linearIndex h idx)
-  transformShape tr (Unboxed h ba) = Unboxed (tr h) ba
-  {-# INLINE upperBound #-}
-  {-# INLINE unsafeFreeze #-}
-  {-# INLINE unsafeThaw #-}
-  {-# INLINE unsafeIndex #-}
-  {-# INLINE transformShape #-}
+instance (Index sh, VG.Vector v e) ⇒ PrimArrayOps (Dense v) sh e where
+  {-# Inline upperBound #-}
+  upperBound (Dense h _) = h
+  {-# Inline unsafeFreeze #-}
+  unsafeFreeze (MDense h mba) = Dense h `liftM` VG.unsafeFreeze mba
+  {-# Inline unsafeThaw #-}
+  unsafeThaw   (Dense h ba) = MDense h `liftM` VG.unsafeThaw ba
+  {-# Inline unsafeIndex #-}
+  unsafeIndex  (Dense h ba) idx = VG.unsafeIndex ba (linearIndex h idx)
+  {-# Inline transformShape #-}
+  transformShape tr (Dense h ba) = Dense (tr h) ba
 
-instance (Index sh, Unbox e, Unbox e') => PrimArrayMap Unboxed sh e e' where
-  map f (Unboxed h xs) = Unboxed h (VU.map f xs)
-  {-# INLINE map #-}
-
-
-
--- * Boxed, multidimensional arrays.
-
-data Boxed sh e = Boxed !(LimitType sh) !(V.Vector e)
-
-deriving instance (Read    (LimitType sh), Read e) ⇒ Read (Boxed sh e)
-deriving instance (Show    (LimitType sh), Show e) ⇒ Show (Boxed sh e)
-deriving instance (Eq      (LimitType sh), Eq   e) ⇒ Eq   (Boxed sh e)
-deriving instance (Generic (LimitType sh), Generic e) ⇒ Generic (Boxed sh e)
-deriving instance
-  ( Data sh, Data (LimitType sh)
-  , Data e
-  ) ⇒ Data    (Boxed sh e)
-
-
-instance (Binary    (LimitType sh), Binary    e, Unbox e, Generic (LimitType sh), Generic e) => Binary    (Boxed sh e)
-instance (Serialize (LimitType sh), Serialize e, Unbox e, Generic (LimitType sh), Generic e) => Serialize (Boxed sh e)
-instance (ToJSON    (LimitType sh), ToJSON    e, Unbox e, Generic (LimitType sh), Generic e) => ToJSON    (Boxed sh e)
-instance (FromJSON  (LimitType sh), FromJSON  e, Unbox e, Generic (LimitType sh), Generic e) => FromJSON  (Boxed sh e)
-instance (Hashable  (LimitType sh), Hashable  e, Hashable (V.Vector e), Unbox e, Generic (LimitType sh), Generic e) => Hashable  (Boxed sh e)
-
-instance (NFData (LimitType sh), NFData e) => NFData (Boxed sh e) where
-  rnf (Boxed h xs) = rnf h `seq` rnf xs
-  {-# Inline rnf #-}
-
-data instance MutArr m (Boxed sh e) = MBoxed !(LimitType sh) !(V.MVector (PrimState m) e)
-  deriving (Generic,Typeable)
-
-instance (NFData (LimitType sh)) => NFData (MutArr m (Boxed sh e)) where
-  rnf (MBoxed h xs) = rnf h -- no rnf for the data !
-  {-# Inline rnf #-}
-
-instance (Index sh) => MPrimArrayOps Boxed sh elm where
-  upperBoundM (MBoxed h _) = h
-  fromListM h xs = do
-    ma <- newM h
-    let (MBoxed _ mba) = ma
-    zipWithM_ (\k x -> assert (length xs == size h) $ unsafeWrite mba k x) [0 .. size h - 1] xs
-    return ma
-  newM h =
-    MBoxed h `liftM` new (size h)
-  newWithM h def = do
-    ma <- newM h
-    let (MBoxed _ mba) = ma
-    forM_ [0 .. size h -1] $ \k -> unsafeWrite mba k def
-    return ma
-  readM  (MBoxed h mba) idx     = assert (inBounds h idx) $ GM.unsafeRead  mba (linearIndex h idx)
-  writeM (MBoxed h mba) idx elm = assert (inBounds h idx) $ GM.unsafeWrite mba (linearIndex h idx) elm
-  {-# INLINE upperBoundM #-}
-  {-# INLINE fromListM #-}
-  {-# NoInline newM #-}
-  {-# INLINE newWithM #-}
-  {-# INLINE readM #-}
-  {-# INLINE writeM #-}
-
-instance (Index sh) => PrimArrayOps Boxed sh elm where
-  upperBound (Boxed h _) = h
-  unsafeFreeze (MBoxed h mba) = Boxed h `liftM` G.unsafeFreeze mba
-  unsafeThaw   (Boxed h ba) = MBoxed h `liftM` G.unsafeThaw ba
-  unsafeIndex (Boxed h ba) idx = assert (inBounds h idx) $ G.unsafeIndex ba (linearIndex h idx)
-  transformShape tr (Boxed h ba) = Boxed (tr h) ba
-  {-# INLINE upperBound #-}
-  {-# INLINE unsafeFreeze #-}
-  {-# INLINE unsafeThaw #-}
-  {-# INLINE unsafeIndex #-}
-  {-# INLINE transformShape #-}
-
-instance (Index sh) => PrimArrayMap Boxed sh e e' where
-  map f (Boxed h xs) = Boxed h (V.map f xs)
-  {-# INLINE map #-}
+instance (Index sh, VG.Vector v e, VG.Vector v e') ⇒ PrimArrayMap (Dense v) sh e e' where
+  map f (Dense h xs) = Dense h (VG.map f xs)
+  {-# Inline map #-}
 
 
 

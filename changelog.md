@@ -1,3 +1,12 @@
+0.10.0.0
+--------
+
+- Rewrote Data.PrimitiveArray.Dense to accept all vector types using one
+  interface. This is a breaking change, since @Unboxed@ becomes @Dense
+  Data.Vector.Unboxed.Vector@, but now @Dense v@ accepts any @v@ as underlying
+  storage vector. Breaking occurs only at user sites where the actual vector
+  type needs to be specified. This tends to be very localized.
+
 0.9.1.1
 -------
 
