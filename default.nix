@@ -6,7 +6,7 @@
 }:
 mkDerivation {
   pname = "PrimitiveArray";
-  version = "0.9.1.1";
+  version = "0.10.0.0";
   src = ./.;
   libraryHaskellDepends = [
     aeson base binary bits cereal cereal-vector containers deepseq
