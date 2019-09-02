@@ -99,7 +99,6 @@ common deps
                     , DeriveDataTypeable
                     , DeriveGeneric
                     , DerivingStrategies
-                    , DerivingVia
                     , FlexibleContexts
                     , FlexibleInstances
                     , FunctionalDependencies
