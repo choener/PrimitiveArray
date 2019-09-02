@@ -26,7 +26,8 @@ import Data.PrimitiveArray.Index.IOC
 -- same as for raw @Int@s.
 
 newtype PInt (ioc ∷ k) (p ∷ k) = PInt { getPInt :: Int }
-  deriving (Read,Show,Eq,Ord,Enum,Num,Integral,Real,Generic,Data,Typeable,Ix)
+  deriving stock (Read,Show,Eq,Ord,Generic,Data,Typeable,Ix)
+  deriving newtype (Real,Num,Enum,Integral)
 
 pIntI :: Int -> PInt I p
 pIntI = PInt

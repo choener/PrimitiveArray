@@ -28,7 +28,8 @@ import           Data.PrimitiveArray.Index.IOC
 -- these to reduce programming overhead.
 
 newtype Boundary boundaryType ioc = Boundary { getBoundary ∷ Int }
-  deriving (Eq,Ord,Generic,Num)
+  deriving stock (Eq,Ord,Generic)
+  deriving newtype (Num)
 
 -- | Whenever we can not set the boundary we should have for a set, we use this
 -- pattern. All legal boundaries are @>=0@. We also need to set the undefined

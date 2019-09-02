@@ -98,6 +98,8 @@ common deps
                     , DefaultSignatures
                     , DeriveDataTypeable
                     , DeriveGeneric
+                    , DerivingStrategies
+                    , DerivingVia
                     , FlexibleContexts
                     , FlexibleInstances
                     , FunctionalDependencies

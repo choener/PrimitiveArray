@@ -33,7 +33,8 @@ import           Data.PrimitiveArray.Index.BitSetClasses
 -- consider moving to @Word@-based indexing, if possible.
 
 newtype BitSet t = BitSet { _bitSet :: Int }
-  deriving (Eq,Ord,Generic,FiniteBits,Ranked,Num,Bits)
+  deriving stock (Eq,Ord,Generic)
+  deriving newtype (FiniteBits,Ranked,Num,Bits)
 makeLenses ''BitSet
 
 instance FromJSON     (BitSet t)

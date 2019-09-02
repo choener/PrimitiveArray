@@ -166,7 +166,8 @@ newtype SizeError = SizeError String
 -- | The total number of cells that are allocated.
 
 newtype CellSize = CellSize Word
-  deriving (Eq,Ord,Show,Num,Bounded,Integral,Real,Enum)
+  deriving stock (Eq,Ord,Show)
+  deriving newtype (Num,Bounded,Integral,Real,Enum)
 
 
 
