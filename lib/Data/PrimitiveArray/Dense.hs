@@ -99,7 +99,9 @@ instance
   fromListM h xs = do
     ma ← newM h
     let (MDense _ mba) = ma
-    SM.zipWithM_ (\k x → assert (length (take (size h+1) xs) == size h) $ unsafeWrite mba k x) (SM.enumFromTo 0 (size h -1)) (SM.fromList xs)
+    -- there need to be at least as many elements, as we want to fill. There could be more, in debug
+    -- tests, we like to do @[0..]@ and this should not trigger the assert.
+    SM.zipWithM_ (\k x → assert (length (Prelude.take (size h) xs) == size h) $ unsafeWrite mba k x) (SM.enumFromTo 0 (size h -1)) (SM.fromList xs)
     return ma
   {-# Inline newM #-}     -- TODO was NoInline, check if anything breaks!
   newM h = MDense h `liftM` new (size h)
