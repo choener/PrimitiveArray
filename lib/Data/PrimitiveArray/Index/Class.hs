@@ -138,6 +138,10 @@ class Index i where
   -- | The list of cell sizes for each dimension. its product yields the total
   -- size.
   totalSize ∷ LimitType i → [Integer]
+  -- | Pretty-print all upper bounds
+  showBound :: LimitType i -> [String]
+  -- | Pretty-print all indices
+  showIndex :: i -> [String]
 
 -- | Given the maximal number of cells (@Word@, because this is the pointer
 -- limit for the machine), and the list of sizes, will check if this is still
@@ -208,6 +212,8 @@ instance Index Z where
   {-# Inline zeroBound' #-}
   totalSize ZZ = [1]
   {-# Inline [1] totalSize #-}
+  showBound ZZ = [show ZZ]
+  showIndex Z = [show Z]
 
 instance IndexStream Z where
   streamUp ZZ ZZ = SM.singleton Z
@@ -232,6 +238,8 @@ instance (Index zs, Index z) => Index (zs:.z) where
         tsh  = totalSize h
     in tshs ++ tsh
   {-# Inline totalSize #-}
+  showBound (zs:..z) = showBound zs ++ showBound z
+  showIndex (zs:.z) = showIndex zs ++ showIndex z
 
 deriving instance Eq       (LimitType Z)
 deriving instance Generic  (LimitType Z)

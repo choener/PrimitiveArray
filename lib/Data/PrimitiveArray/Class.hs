@@ -20,6 +20,7 @@ import           Debug.Trace
 import           GHC.Generics (Generic)
 import           Prelude as P
 import qualified Data.Vector.Fusion.Stream.Monadic as SM
+import           GHC.Stack
 
 import           Data.PrimitiveArray.Index.Class
 
@@ -101,7 +102,7 @@ class (Index sh) => PrimArrayMap arr sh e e' where
 
 data PAErrors
   = PAEUpperBound
-  deriving (Eq,Generic)
+  deriving stock (Eq,Generic)
 
 instance Show PAErrors where
   show (PAEUpperBound) = "Upper bound is too large for @Int@ size!"
@@ -110,10 +111,26 @@ instance Show PAErrors where
 
 -- | Infix index operator. Performs minimal bounds-checking using assert in
 -- non-optimized code.
+--
+-- @(!)@ is rewritten from phase @[1]@ onwards into an optimized form. Before, it uses a very slow
+-- form, that does bounds checking.
 
-(!) :: PrimArrayOps arr sh elm => arr sh elm -> sh -> elm
-(!) arr idx = assert (inBounds (upperBound arr) idx) $ unsafeIndex arr idx
-{-# INLINE (!) #-}
+--(!) :: (HasCallStack, PrimArrayOps arr sh elm) => arr sh elm -> sh -> elm
+(!) :: (PrimArrayOps arr sh elm) => arr sh elm -> sh -> elm
+{-# Inline [1] (!) #-}
+{-# Rules "unsafeIndex" [2] (!) = unsafeIndex #-}
+(!) = \arr idx ->
+  let a = inBounds (upperBound arr) idx
+      i = unsafeIndex arr idx
+  in if a then i else traceShow (showBound (upperBound arr), showIndex idx) $ assert a i
+
+
+
+-- | Return value at an index that might not exist.
+
+(!?) :: PrimArrayOps arr sh elm => arr sh elm -> sh -> Maybe elm
+{-# Inline (!?) #-}
+(!?) arr idx = if inBounds (upperBound arr) idx then Just (arr ! idx) else Nothing
 
 -- | Returns true if the index is valid for the array.
 
