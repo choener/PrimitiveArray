@@ -114,6 +114,8 @@ instance Show PAErrors where
 --
 -- @(!)@ is rewritten from phase @[1]@ onwards into an optimized form. Before, it uses a very slow
 -- form, that does bounds checking.
+--
+-- TODO use @(!?)@ and fail on @Nothing@. Still rewrites in optimized code!
 
 --(!) :: (HasCallStack, PrimArrayOps arr sh elm) => arr sh elm -> sh -> elm
 (!) :: (PrimArrayOps arr sh elm) => arr sh elm -> sh -> elm
@@ -127,6 +129,8 @@ instance Show PAErrors where
 
 
 -- | Return value at an index that might not exist.
+--
+-- TODO implement @maybeIndex@ in the @Ops@ class, helps with sparse arrays too.
 
 (!?) :: PrimArrayOps arr sh elm => arr sh elm -> sh -> Maybe elm
 {-# Inline (!?) #-}

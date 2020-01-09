@@ -109,7 +109,8 @@ instance
   newWithM h def = do
     ma ← newM h
     let (MDense _ mba) = ma
-    SM.mapM_ (\k → unsafeWrite mba k def) $ SM.enumFromTo 0 (size h -1)
+    GM.set mba def
+    -- SM.mapM_ (\k → unsafeWrite mba k def) $ SM.enumFromTo 0 (size h -1)
     return ma
   {-# Inline readM #-}
   readM  (MDense h mba) idx     = assert (inBounds h idx) $ unsafeRead  mba (linearIndex h idx)
