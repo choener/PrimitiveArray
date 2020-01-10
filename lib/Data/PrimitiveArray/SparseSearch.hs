@@ -132,6 +132,8 @@ class MPrimArrayVarOps (arr :: * -> * -> *) sh e where
   --
   -- TODO we will have to check CORE to see if the @Maybe@ is successfully eliminated.
   vreadM :: (Monad m, PrimMonad m) => MutArr m (arr sh e) -> sh -> m (Maybe e)
+  -- | Index into immutable array, testing to have only a single class
+  vunsafeIndex :: arr sh e -> sh -> Maybe e
 
 vnewWithPA
   ∷ (PrimMonad m, MPrimArrayVarOps arr sh elm, PrimArrayOps arr sh elm)
@@ -230,6 +232,7 @@ instance
   , VG.Vector w (Int, sh)
   , VG.Vector w (Int, (Int, sh))
   , VGM.MVector (VG.Mutable v) e
+  , VG.Vector v e
   ) => MPrimArrayVarOps (Sparse w v) sh e where
   {-# Inline vnewM #-}
   vnewM h fs' = do
@@ -256,6 +259,7 @@ instance
   vreadM MSparse{..} sh = case manhattanIndex msparseUpperBound mmanhattanStart msparseIndices sh of
       Nothing -> return Nothing
       Just v  -> Just <$> VGM.unsafeRead msparseData v
+  vunsafeIndex Sparse{..} = fmap (VG.unsafeIndex sparseData) . manhattanIndex sparseUpperBound manhattanStart sparseIndices
 
 
 
