@@ -247,6 +247,7 @@ instance
         mmanhattanStart = VG.modify go $ VG.replicate (manhattanMax h +1) (VG.length fs)
     msparseData <- VGM.new $ VG.length msparseIndices
     return $ MSparse {..}
+  {-# Inline vnewWithM #-}
   vnewWithM h fs' e = do
     mv <- vnewM h fs'
     VGM.set (msparseData mv) e
@@ -259,6 +260,7 @@ instance
   vreadM MSparse{..} sh = case manhattanIndex msparseUpperBound mmanhattanStart msparseIndices sh of
       Nothing -> return Nothing
       Just v  -> Just <$> VGM.unsafeRead msparseData v
+  {-# Inline vunsafeIndex #-}
   vunsafeIndex Sparse{..} = fmap (VG.unsafeIndex sparseData) . manhattanIndex sparseUpperBound manhattanStart sparseIndices
 
 
