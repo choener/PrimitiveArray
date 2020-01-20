@@ -1,8 +1,10 @@
 0.11.0.0
 --------
 
-- introduction of @Data.PrimitiveArray.Hashed@ which uses the @hashtables@ package and provides
-  sparsified tables.
+- introduction of @Data.PrimitiveArray.Sparse@ which uses different sparsification options. The
+  default is @D.P.S.Search@ based on binary search.
+- All array operations, pure or mutable are now based on a single, unified class. Mostly because
+  mutable operations go via a data family anyway.
 
 0.10.0.0
 --------

@@ -116,24 +116,9 @@ data instance MutArr m (Sparse w v sh e) = MSparse
 --  deriving (Generic,Typeable)
 
 
-type family FillStruc arr :: *
-
 type instance FillStruc (Sparse w v sh e) = (w sh)
 
-class MPrimArrayVarOps (arr :: * -> * -> *) sh e where
-  -- | Variant of 'newM' that requires a fill structure.
-  vnewM :: (Monad m, PrimMonad m) => LimitType sh -> FillStruc (arr sh e) -> m (MutArr m (arr sh e))
-  -- | Variant of 'newWithM'
-  vnewWithM :: (Monad m, PrimMonad m) => LimitType sh -> FillStruc (arr sh e) -> e -> m (MutArr m (arr sh e))
-  -- | Write into the mutable array, but if the index @sh@ does not exist, silently continue.
-  vwriteM :: (Monad m, PrimMonad m) => MutArr m (arr sh e) -> sh -> e -> m ()
-  -- | Read from the mutable array, but return @Nothing@ in case @sh@ does not exist. This will
-  -- allow streaming DP combinators to "jump" over missing elements.
-  --
-  -- TODO we will have to check CORE to see if the @Maybe@ is successfully eliminated.
-  vreadM :: (Monad m, PrimMonad m) => MutArr m (arr sh e) -> sh -> m (Maybe e)
-  -- | Index into immutable array, testing to have only a single class
-  vunsafeIndex :: arr sh e -> sh -> Maybe e
+-- class MPrimArrayVarOps (arr :: * -> * -> *) sh e where
 
 vnewWithPA
   ∷ (PrimMonad m, MPrimArrayVarOps arr sh elm, PrimArrayOps arr sh elm)
