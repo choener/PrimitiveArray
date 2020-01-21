@@ -1,10 +1,10 @@
 
--- | Vastly extended primitive arrays. Some basic ideas are now modeled after
--- the vector package, especially the monadic mutable / pure immutable array
--- system.
+-- | Vastly extended primitive arrays. Some basic ideas are now modeled after the vector package,
+-- especially the monadic mutable / pure immutable array system.
 --
--- NOTE all operations in MPrimArrayOps and PrimArrayOps are highly unsafe. No
--- bounds-checking is performed at all.
+-- Note that in general only bulk operations should error out, error handling for index/read/write
+-- is too costly. General usage should be to create data structures and run the DP code within an
+-- error monad, but keep error handling to high-level operations.
 
 module Data.PrimitiveArray.Class where
 
@@ -56,7 +56,11 @@ class (Index sh) => PrimArrayOps arr sh elm where
   safeIndex :: arr sh elm -> sh -> Maybe elm
 
   -- | Savely transform the shape space of a table.
-  transformShape :: (Index sh') => (LimitType sh -> LimitType sh') -> arr sh elm -> arr sh' elm
+  transformShape :: Index sh' => (LimitType sh -> LimitType sh') -> arr sh elm -> arr sh' elm
+
+  -- | Map a function of type @elm -> e@ over the primitive array, returning another primitive array
+  -- of same type and shape but different element.
+  mapArray :: PrimArrayOps a sh e => (elm -> e) -> arr sh elm -> a sh e
 
   -- ** Monadic operations
 
@@ -106,15 +110,7 @@ class (Index sh) => PrimArrayOps arr sh elm where
 
 
 
-
-
-class (Index sh) => PrimArrayMap arr sh e e' where
-
-  -- | Map a function over each element, keeping the shape intact.
-
-  map :: (e -> e') -> arr sh e -> arr sh e'
-
-
+-- | Sum type of errors that can happen when using primitive arrays.
 
 data PAErrors
   = PAEUpperBound
