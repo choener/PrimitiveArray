@@ -21,7 +21,7 @@ module Data.PrimitiveArray.Dense where
 
 import           Control.DeepSeq
 import           Control.Exception (assert)
-import           Control.Monad (liftM, forM_, zipWithM_)
+import           Control.Monad (liftM, forM_, zipWithM_, when)
 import           Control.Monad.Primitive (PrimState)
 import           Data.Aeson (ToJSON,FromJSON)
 import           Data.Binary (Binary)
@@ -86,6 +86,7 @@ instance (NFData (LimitType sh), NFData (VG.Mutable v (PrimState m) e), VG.Mutab
   rnf (MDense h xs) = rnf h `seq` rnf xs
   {-# Inline rnf #-}
 
+{-
 instance
   ( Index sh, MutArr m (Dense v sh e) ~ mv
   , GM.MVector (VG.Mutable v) e
@@ -93,6 +94,35 @@ instance
   , Show sh, Show (LimitType sh), Show e
 #endif
   ) ⇒ MPrimArrayOps (Dense v) sh e where
+-}
+
+instance
+  ( Index sh, VG.Vector v e
+#if ADPFUSION_DEBUGOUTPUT
+  , Show sh, Show (LimitType sh), Show e
+#endif
+  ) ⇒ PrimArrayOps (Dense v) sh e where
+
+  -- ** pure operations
+
+  {-# Inline upperBound #-}
+  upperBound (Dense h _) = h
+  {-# Inline unsafeFreezeM #-}
+  unsafeFreezeM (MDense h mba) = Dense h `liftM` VG.unsafeFreeze mba
+  {-# Inline unsafeThawM #-}
+  unsafeThawM   (Dense h ba) = MDense h `liftM` VG.unsafeThaw ba
+  {-# Inline unsafeIndex #-}
+  unsafeIndex  (Dense h ba) idx = VG.unsafeIndex ba (linearIndex h idx)
+  {-# Inline safeIndex #-}
+  safeIndex (Dense h ba) idx = if inBounds h idx then Just $ unsafeIndex (Dense h ba) idx else Nothing
+  {-# Inline transformShape #-}
+  transformShape tr (Dense h ba) = Dense (tr h) ba
+  --{-# Inline mapArray #-}
+  --mapArray :: (VG.Vector v i, PrimArrayOps (Dense v) sh i) => (e -> i) -> Dense v sh e -> Dense v sh i
+  --mapArray f (Dense h xs) = Dense h (VG.map f xs)
+
+  -- ** monadic operations
+
   {-# Inline upperBoundM #-}
   upperBoundM (MDense h _) = h
   {-# Inline fromListM #-}
@@ -105,37 +135,30 @@ instance
     return ma
   {-# Inline newM #-}     -- TODO was NoInline, check if anything breaks!
   newM h = MDense h `liftM` new (size h)
+  {-# Inline newSM #-}
+  newSM = error "not implemented, use newM for dense arrays"
   {-# Inline newWithM #-}
   newWithM h def = do
     ma ← newM h
     let (MDense _ mba) = ma
     GM.set mba def
-    -- SM.mapM_ (\k → unsafeWrite mba k def) $ SM.enumFromTo 0 (size h -1)
     return ma
+  {-# Inline newWithSM #-}
+  newWithSM = error "not implemented, use newWithSM for dense arrays"
   {-# Inline readM #-}
   readM  (MDense h mba) idx     = assert (inBounds h idx) $ unsafeRead  mba (linearIndex h idx)
+  {-# Inline safeReadM #-}
+  safeReadM dense idx = if inBoundsM dense idx then Just <$> readM dense idx else undefined
   {-# Inline writeM #-}
   writeM (MDense h mba) idx elm =
 #if ADPFUSION_DEBUGOUTPUT
     (if inBounds h idx then id else traceShow ("writeM", h, idx, elm, size h, linearIndex h idx, inBounds h idx))
 #endif
     assert (inBounds h idx) $ unsafeWrite mba (linearIndex h idx) elm
+  {-# Inline safeWriteM #-}
+  safeWriteM dense idx elm = when (inBoundsM dense idx) $ writeM dense idx elm
 
-instance (Index sh, VG.Vector v e) ⇒ PrimArrayOps (Dense v) sh e where
-  {-# Inline upperBound #-}
-  upperBound (Dense h _) = h
-  {-# Inline unsafeFreeze #-}
-  unsafeFreeze (MDense h mba) = Dense h `liftM` VG.unsafeFreeze mba
-  {-# Inline unsafeThaw #-}
-  unsafeThaw   (Dense h ba) = MDense h `liftM` VG.unsafeThaw ba
-  {-# Inline unsafeIndex #-}
-  unsafeIndex  (Dense h ba) idx = VG.unsafeIndex ba (linearIndex h idx)
-  {-# Inline transformShape #-}
-  transformShape tr (Dense h ba) = Dense (tr h) ba
-
-instance (Index sh, VG.Vector v e, VG.Vector v e') ⇒ PrimArrayMap (Dense v) sh e e' where
-  map f (Dense h xs) = Dense h (VG.map f xs)
-  {-# Inline map #-}
+-- instance (Index sh, VG.Vector v e, VG.Vector v e') ⇒ PrimArrayMap (Dense v) sh e e' where
 
 
 

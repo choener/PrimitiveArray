@@ -21,6 +21,7 @@ import           GHC.Generics (Generic)
 import           Prelude as P
 import qualified Data.Vector.Fusion.Stream.Monadic as SM
 import           GHC.Stack
+import           Data.Kind (Constraint)
 
 import           Data.PrimitiveArray.Index.Class
 
@@ -58,9 +59,9 @@ class (Index sh) => PrimArrayOps arr sh elm where
   -- | Savely transform the shape space of a table.
   transformShape :: Index sh' => (LimitType sh -> LimitType sh') -> arr sh elm -> arr sh' elm
 
-  -- | Map a function of type @elm -> e@ over the primitive array, returning another primitive array
-  -- of same type and shape but different element.
-  mapArray :: PrimArrayOps a sh e => (elm -> e) -> arr sh elm -> a sh e
+  -- -- | Map a function of type @elm -> e@ over the primitive array, returning another primitive array
+  -- -- of same type and shape but different element.
+  -- mapArray :: PaMapCtx e => (elm -> e) -> arr sh elm -> arr sh e
 
   -- ** Monadic operations
 
@@ -84,7 +85,7 @@ class (Index sh) => PrimArrayOps arr sh elm where
   newWithM :: PrimMonad m => LimitType sh -> elm -> m (MutArr m (arr sh elm))
 
   -- | Variant of 'newWithM'
-  newWithSM :: (Monad m, PrimMonad m) => LimitType sh -> FillStruc (arr sh elm) -> e -> m (MutArr m (arr sh elm))
+  newWithSM :: (Monad m, PrimMonad m) => LimitType sh -> FillStruc (arr sh elm) -> elm -> m (MutArr m (arr sh elm))
 
   -- | Reads a single element in the array.
   readM :: PrimMonad m => MutArr m (arr sh elm) -> sh -> m elm
@@ -93,13 +94,13 @@ class (Index sh) => PrimArrayOps arr sh elm where
   -- allow streaming DP combinators to "jump" over missing elements.
   --
   -- Should be used with @Stream.Monadic.mapMaybe@ to get efficient code.
-  vreadM :: (Monad m, PrimMonad m) => MutArr m (arr sh elm) -> sh -> m (Maybe elm)
+  safeReadM :: (Monad m, PrimMonad m) => MutArr m (arr sh elm) -> sh -> m (Maybe elm)
 
   -- | Writes a single element in the array.
   writeM :: PrimMonad m => MutArr m (arr sh elm) -> sh -> elm -> m ()
 
   -- | Write into the mutable array, but if the index @sh@ does not exist, silently continue.
-  writeSM :: (Monad m, PrimMonad m) => MutArr m (arr sh elm) -> sh -> elm -> m ()
+  safeWriteM :: (Monad m, PrimMonad m) => MutArr m (arr sh elm) -> sh -> elm -> m ()
 
   -- | Freezes a mutable array an returns its immutable version. This operation is /O(1)/ and both
   -- arrays share the same memory. Do not use the mutable array afterwards.
@@ -188,6 +189,19 @@ newWithPA ub def = do
   unsafeFreezeM ma
 {-# Inlinable newWithPA #-}
 
+-- | Initialize an immutable array with a fill structure.
+
+newWithSPA
+  ∷ (PrimMonad m, PrimArrayOps arr sh elm)
+  ⇒ LimitType sh
+  -> FillStruc (arr sh elm)
+  → elm
+  → m (arr sh elm)
+{-# Inlinable newWithSPA #-}
+newWithSPA ub xs def = do
+  ma ← newWithSM ub xs def
+  unsafeFreezeM ma
+
 -- | Safely prepare a primitive array.
 --
 -- TODO Check if having a 'MonadError' instance degrades performance. (We
@@ -246,6 +260,8 @@ toList arr = let ub = upperBound arr in P.map ((!) arr) . unId . SM.toList $ str
 
 
 
+{-
+
 -- * Freeze an inductive stack of tables with a 'Z' at the bottom.
 
 -- | 'freezeTables' freezes a stack of tables.
@@ -263,4 +279,6 @@ instance (Functor m, Applicative m, Monad m, PrimMonad m, FreezeTables m ts, Pri
     type Frozen (ts:.MutArr m (arr sh elm)) = Frozen ts :. arr sh elm
     freezeTables (ts:.t) = (:.) <$> freezeTables ts <*> unsafeFreezeM t
     {-# INLINE freezeTables #-}
+
+-}
 

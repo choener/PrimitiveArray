@@ -123,21 +123,23 @@ instance NFData Z where
 
 class Index i where
   -- | Data structure encoding the upper limit for each array.
-  data LimitType i ∷ *
+  data LimitType i :: *
   -- | Given a maximal size, and a current index, calculate
   -- the linear index.
-  linearIndex ∷ LimitType i → i → Int
+  linearIndex :: LimitType i -> i -> Int
+  -- | Given a maximal size and a valid @Int@, return the index.
+  fromLinearIndex :: LimitType i -> Int -> i
   -- | Given the 'LimitType', return the number of cells required for storage.
-  size ∷ LimitType i → Int
+  size :: LimitType i -> Int
   -- | Check if an index is within the bounds.
-  inBounds ∷ LimitType i → i → Bool
+  inBounds :: LimitType i -> i -> Bool
   -- | A lower bound of @zero@
-  zeroBound ∷ i
+  zeroBound :: i
   -- | A lower bound of @zero@ but for a @LimitType i@.
-  zeroBound' ∷ LimitType i
+  zeroBound' :: LimitType i
   -- | The list of cell sizes for each dimension. its product yields the total
   -- size.
-  totalSize ∷ LimitType i → [Integer]
+  totalSize :: LimitType i -> [Integer]
   -- | Pretty-print all upper bounds
   showBound :: LimitType i -> [String]
   -- | Pretty-print all indices
@@ -150,7 +152,7 @@ class Index i where
 --
 -- One list should be given for each array.
 
-sizeIsValid ∷ Monad m ⇒ Word → [[Integer]] → ExceptT SizeError m CellSize
+sizeIsValid :: Monad m => Word -> [[Integer]] -> ExceptT SizeError m CellSize
 sizeIsValid maxCells cells = do
   let ps = map product cells
       s  = sum ps
@@ -179,7 +181,7 @@ newtype CellSize = CellSize Word
 -- Since the stream generators require @concatMap@ / @flatten@ we have to
 -- write more specialized code for @(z:.IX)@ stuff.
 
-class (Index i) ⇒ IndexStream i where
+class (Index i) => IndexStream i where
   -- | Generate an index stream using 'LimitType's. This prevents having to
   -- figure out how the actual limits for complicated index types (like @Set@)
   -- would look like, since for @Set@, for example, the @LimitType Set == Int@
@@ -189,12 +191,12 @@ class (Index i) ⇒ IndexStream i where
   -- The first index is the smallest (or the first indices considered are all
   -- equally small in partially ordered sets). Larger indices follow up until
   -- the largest one.
-  streamUp ∷ Monad m ⇒ LimitType i → LimitType i → Stream m i
+  streamUp :: Monad m => LimitType i -> LimitType i -> Stream m i
   -- | If 'streamUp' generates indices from smallest to largest, then
   -- 'streamDown' generates indices from largest to smallest. Outside grammars
   -- make implicit use of this. Asking for an axiom in backtracking requests
   -- the first element from this stream.
-  streamDown ∷ Monad m ⇒ LimitType i → LimitType i → Stream m i
+  streamDown :: Monad m => LimitType i -> LimitType i -> Stream m i
 
 
 
@@ -202,6 +204,8 @@ instance Index Z where
   data LimitType Z = ZZ
   linearIndex _ _ = 0
   {-# INLINE linearIndex #-}
+  fromLinearIndex _ _ = Z
+  {-# Inline fromLinearIndex #-}
   size _ = 1
   {-# INLINE size #-}
   inBounds _ _ = True
@@ -225,6 +229,9 @@ instance (Index zs, Index z) => Index (zs:.z) where
   data LimitType (zs:.z) = !(LimitType zs) :.. !(LimitType z)
   linearIndex (hs:..h) (zs:.z) = linearIndex hs zs * size h + linearIndex h z
   {-# INLINE linearIndex #-}
+  fromLinearIndex (hs:..h) k = let z = k `mod` (size h)
+    in  fromLinearIndex hs (k-z) :. fromLinearIndex h z
+  {-# Inline fromLinearIndex #-}
   size (hs:..h) = size hs * size h
   {-# INLINE size #-}
   inBounds (hs:..h) (zs:.z) = inBounds hs zs && inBounds h z
@@ -248,20 +255,20 @@ deriving instance Show     (LimitType Z)
 deriving instance Data     (LimitType Z)
 deriving instance Typeable (LimitType Z)
 
-deriving instance (Eq (LimitType zs)     , Eq (LimitType z)     ) ⇒ Eq      (LimitType (zs:.z))
-deriving instance (Generic (LimitType zs), Generic (LimitType z)) ⇒ Generic (LimitType (zs:.z))
-deriving instance (Read (LimitType zs)   , Read (LimitType z)   ) ⇒ Read    (LimitType (zs:.z))
-deriving instance (Show (LimitType zs)   , Show (LimitType z)   ) ⇒ Show    (LimitType (zs:.z))
+deriving instance (Eq (LimitType zs)     , Eq (LimitType z)     ) => Eq      (LimitType (zs:.z))
+deriving instance (Generic (LimitType zs), Generic (LimitType z)) => Generic (LimitType (zs:.z))
+deriving instance (Read (LimitType zs)   , Read (LimitType z)   ) => Read    (LimitType (zs:.z))
+deriving instance (Show (LimitType zs)   , Show (LimitType z)   ) => Show    (LimitType (zs:.z))
 deriving instance
   ( Data zs, Data (LimitType zs), Typeable zs
   , Data z , Data (LimitType z) , Typeable z
-  ) ⇒ Data    (LimitType (zs:.z))
+  ) => Data    (LimitType (zs:.z))
 
 --instance (Index zs, Index z) => Index (zs:>z) where
 --  type LimitType (zs:>z) = LimitType zs:>LimitType z
---  linearIndex (hs:>h) (zs:>z) = linearIndex hs zs * (size (Proxy ∷ Proxy z) h) + linearIndex h z
+--  linearIndex (hs:>h) (zs:>z) = linearIndex hs zs * (size (Proxy :: Proxy z) h) + linearIndex h z
 --  {-# INLINE linearIndex #-}
---  size Proxy (ss:>s) = size (Proxy ∷ Proxy zs) ss * (size (Proxy ∷ Proxy z) s)
+--  size Proxy (ss:>s) = size (Proxy :: Proxy zs) ss * (size (Proxy :: Proxy z) s)
 --  {-# INLINE size #-}
 --  inBounds (hs:>h) (zs:>z) = inBounds hs zs && inBounds h z
 --  {-# INLINE inBounds #-}
@@ -275,27 +282,27 @@ deriving instance
 
 instance Field1 (Z:.a) (Z:.a') a a' where
   {-# Inline _1 #-}
-  _1 = lens (\(Z:.a) → a) (\(Z:._) a → (Z:.a))
+  _1 = lens (\(Z:.a) -> a) (\(Z:._) a -> (Z:.a))
 
 instance Field1 (Z:.a:.b) (Z:.a':.b) a a' where
   {-# Inline _1 #-}
-  _1 = lens (\(Z:.a:.b) → a) (\(Z:._:.b) a → (Z:.a:.b))
+  _1 = lens (\(Z:.a:.b) -> a) (\(Z:._:.b) a -> (Z:.a:.b))
 
 instance Field1 (Z:.a:.b:.c) (Z:.a':.b:.c) a a' where
   {-# Inline _1 #-}
-  _1 = lens (\(Z:.a:.b:.c) → a) (\(Z:._:.b:.c) a → (Z:.a:.b:.c))
+  _1 = lens (\(Z:.a:.b:.c) -> a) (\(Z:._:.b:.c) a -> (Z:.a:.b:.c))
 
 
 instance Field2 (Z:.a:.b) (Z:.a:.b') b b' where
   {-# Inline _2 #-}
-  _2 = lens (\(Z:.a:.b) → b) (\(Z:.a:._) b → (Z:.a:.b))
+  _2 = lens (\(Z:.a:.b) -> b) (\(Z:.a:._) b -> (Z:.a:.b))
 
 instance Field2 (Z:.a:.b:.c) (Z:.a:.b':.c) b b' where
   {-# Inline _2 #-}
-  _2 = lens (\(Z:.a:.b:.c) → b) (\(Z:.a:._:.c) b → (Z:.a:.b:.c))
+  _2 = lens (\(Z:.a:.b:.c) -> b) (\(Z:.a:._:.c) b -> (Z:.a:.b:.c))
 
 
 instance Field3 (Z:.a:.b:.c) (Z:.a:.b:.c') c c' where
   {-# Inline _3 #-}
-  _3 = lens (\(Z:.a:.b:.c) → c) (\(Z:.a:.b:._) c → (Z:.a:.b:.c))
+  _3 = lens (\(Z:.a:.b:.c) -> c) (\(Z:.a:.b:._) c -> (Z:.a:.b:.c))
 

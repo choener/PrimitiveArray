@@ -70,6 +70,8 @@ instance Index (PointL t) where
   newtype LimitType (PointL t) = LtPointL Int
   linearIndex _ (PointL z) = z
   {-# INLINE linearIndex #-}
+  fromLinearIndex (LtPointL h) k = (PointL k)
+  {-# Inline fromLinearIndex #-}
   size (LtPointL h) = h + 1
   {-# INLINE size #-}
   inBounds (LtPointL h) (PointL x) = 0<=x && x<=h

@@ -13,7 +13,7 @@
 -- TODO require @readMaybe@ and @indexMaybe@ to return @Nothing@ on missing elements. This requires
 -- an extension of the @Class@ structure for tables.
 
-module Data.PrimitiveArray.SparseSearch where
+module Data.PrimitiveArray.Sparse.BinSearch where
 
 import           Control.Monad.Primitive (PrimState,PrimMonad)
 import           Control.Monad.ST (ST)
@@ -96,11 +96,11 @@ data Sparse w v sh e = Sparse
   -- larger than the largest index to look up, to always provides a good excluded bound.
   }
 
-type Unboxed w sh e = Sparse w VU.Vector sh e
--- 
--- type Storable sh e = Dense VS.Vector sh e
--- 
--- type Boxed sh e = Dense V.Vector sh e
+type Unboxed  w sh e = Sparse w VU.Vector sh e
+
+type Storable w sh e = Sparse w VS.Vector sh e
+
+type Boxed    w sh e = Sparse w  V.Vector sh e
 
 
 
@@ -118,85 +118,50 @@ data instance MutArr m (Sparse w v sh e) = MSparse
 
 type instance FillStruc (Sparse w v sh e) = (w sh)
 
--- class MPrimArrayVarOps (arr :: * -> * -> *) sh e where
-
-vnewWithPA
-  ∷ (PrimMonad m, MPrimArrayVarOps arr sh elm, PrimArrayOps arr sh elm)
-  ⇒ LimitType sh
-  -> FillStruc (arr sh elm)
-  → elm
-  → m (arr sh elm)
-vnewWithPA ub xs def = do
-  ma ← vnewWithM ub xs def
-  unsafeFreeze ma
-{-# Inlinable vnewWithPA #-}
-
 
 
 instance
   ( Index sh, SparseBucket sh, Eq sh, Ord sh
-  , VG.Vector w sh
+  , VG.Vector w sh , VG.Vector w (Int,sh), VG.Vector w (Int,(Int,sh))
   , VG.Vector v e
-  , Show sh, Show e
+#if ADPFUSION_DEBUGOUTPUT
+  , Show sh, Show (LimitType sh), Show e
+#endif
   ) => PrimArrayOps (Sparse w v) sh e where
+
+  -- ** pure operations
+
   {-# Inline upperBound #-}
   upperBound Sparse{..} = sparseUpperBound
-  {-# Inline unsafeFreeze #-}
-  unsafeFreeze MSparse{..} = do
+  {-# Inline unsafeIndex #-}
+  unsafeIndex Sparse{..} idx = case manhattanIndex sparseUpperBound manhattanStart sparseIndices idx of
+      Nothing -> error "unsafeIndex of non-existing index"
+      Just v  -> VG.unsafeIndex sparseData v
+  {-# Inline safeIndex #-}
+  safeIndex Sparse{..} = fmap (VG.unsafeIndex sparseData) . manhattanIndex sparseUpperBound manhattanStart sparseIndices
+
+  -- ** monadic operations
+
+  {-# Inline unsafeFreezeM #-}
+  unsafeFreezeM MSparse{..} = do
     let sparseUpperBound = msparseUpperBound
         sparseIndices = msparseIndices
         manhattanStart = mmanhattanStart
     sparseData <- VG.unsafeFreeze msparseData
     return Sparse{..}
-  {-# Inline unsafeThaw #-}
-  unsafeThaw Sparse{..} = do
+  {-# Inline unsafeThawM #-}
+  unsafeThawM Sparse{..} = do
     let msparseUpperBound = sparseUpperBound
         msparseIndices = sparseIndices
         mmanhattanStart = manhattanStart
     msparseData <- VG.unsafeThaw sparseData
     return MSparse{..}
-  {-# Inline unsafeIndex #-}
-  unsafeIndex Sparse{..} idx = case manhattanIndex sparseUpperBound manhattanStart sparseIndices idx of
-      Nothing -> error "unsafeIndex of non-existing index"
-      Just v  -> VG.unsafeIndex sparseData v
-
-
-instance
-  ( Index sh, Eq sh, Ord sh, SparseBucket sh
-  , MutArr m (Sparse w v sh e) ~ mv
-  , VGM.MVector (VG.Mutable v) e
-  , VG.Vector w sh
-  , MPrimArrayVarOps (Sparse w v) sh e
-#if ADPFUSION_DEBUGOUTPUT
-  , Show sh, Show (LimitType sh), Show e
-#endif
-  ) ⇒ MPrimArrayOps (Sparse w v) sh e where
   {-# Inline upperBoundM #-}
   upperBoundM MSparse{..} = msparseUpperBound
-{-
-  {-# Inline fromListM #-}
-  fromListM h xs = do
-    ma ← newM h
-    -- TODO provide sparse storage
-    let (MDense _ mba) = ma
-    -- there need to be at least as many elements, as we want to fill. There could be more, in debug
-    -- tests, we like to do @[0..]@ and this should not trigger the assert.
-    SM.zipWithM_ (\k x → assert (length (Prelude.take (size h) xs) == size h) $ unsafeWrite mba k x) (SM.enumFromTo 0 (size h -1)) (SM.fromList xs)
-    return ma
--}
-  -- | @newM@ produces an essentially dense matrix.
-  --
-  -- TODO create a full set of indices
-  {-# Inline newM #-}     -- TODO was NoInline, check if anything breaks!
-  newM h = error "call of newM not supported for sparse matrices, use vnewM!" -- (\nul -> MSparse h nul VG.empty VG.empty) <$> VGM.new 0
-{-
+  {-# Inline newM #-}
+  newM = error "not implemented, use newSM"
   {-# Inline newWithM #-}
-  newWithM h def = do
-    ma ← newM h
-    let (MDense _ mba) = ma
-    SM.mapM_ (\k → unsafeWrite mba k def) $ SM.enumFromTo 0 (size h -1)
-    return ma
--}
+  newWithM = error "not implemented, use newWithSM"
   {-# Inline readM #-}
   readM MSparse{..} idx = do
     case manhattanIndex msparseUpperBound mmanhattanStart msparseIndices idx of
@@ -209,18 +174,8 @@ instance
     case manhattanIndex msparseUpperBound mmanhattanStart msparseIndices idx of
       Nothing -> error "read of non-existing element"
       Just v  -> VGM.unsafeWrite msparseData v elm
-
-
-
-instance
-  ( VG.Vector w sh, SparseBucket sh, Ord sh
-  , VG.Vector w (Int, sh)
-  , VG.Vector w (Int, (Int, sh))
-  , VGM.MVector (VG.Mutable v) e
-  , VG.Vector v e
-  ) => MPrimArrayVarOps (Sparse w v) sh e where
-  {-# Inline vnewM #-}
-  vnewM h fs' = do
+  {-# Inline newSM #-}
+  newSM h fs' = do
     fs <- VG.thaw (VG.map (\i -> (manhattan h i, i)) fs') >>= \v -> VAI.sort v >> VG.unsafeFreeze v
     let msparseUpperBound = h
         msparseIndices = VG.force $ VG.map snd fs
@@ -232,21 +187,21 @@ instance
         mmanhattanStart = VG.modify go $ VG.replicate (manhattanMax h +1) (VG.length fs)
     msparseData <- VGM.new $ VG.length msparseIndices
     return $ MSparse {..}
-  {-# Inline vnewWithM #-}
-  vnewWithM h fs' e = do
-    mv <- vnewM h fs'
+  {-# Inline newWithSM #-}
+  newWithSM h fs' e = do
+    mv <- newSM h fs'
     VGM.set (msparseData mv) e
     return mv
-  {-# Inline vwriteM #-}
-  vwriteM MSparse{..} sh e = case manhattanIndex msparseUpperBound mmanhattanStart msparseIndices sh of
+  {-# Inline safeWriteM #-}
+  safeWriteM MSparse{..} sh e = case manhattanIndex msparseUpperBound mmanhattanStart msparseIndices sh of
       Nothing -> return ()
       Just v  -> VGM.unsafeWrite msparseData v e
-  {-# Inline vreadM #-}
-  vreadM MSparse{..} sh = case manhattanIndex msparseUpperBound mmanhattanStart msparseIndices sh of
+  {-# Inline safeReadM #-}
+  safeReadM MSparse{..} sh = case manhattanIndex msparseUpperBound mmanhattanStart msparseIndices sh of
       Nothing -> return Nothing
       Just v  -> Just <$> VGM.unsafeRead msparseData v
-  {-# Inline vunsafeIndex #-}
-  vunsafeIndex Sparse{..} = fmap (VG.unsafeIndex sparseData) . manhattanIndex sparseUpperBound manhattanStart sparseIndices
+
+
 
 
 
