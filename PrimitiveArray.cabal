@@ -142,7 +142,8 @@ Library
     Data.PrimitiveArray.Checked
     Data.PrimitiveArray.Class
     Data.PrimitiveArray.Dense
-    Data.PrimitiveArray.SparseSearch
+    Data.PrimitiveArray.Sparse
+    Data.PrimitiveArray.Sparse.BinSearch
     Data.PrimitiveArray.HashTable
     Data.PrimitiveArray.Index
     Data.PrimitiveArray.Index.BitSet0
@@ -155,7 +156,7 @@ Library
     Data.PrimitiveArray.Index.Point
     Data.PrimitiveArray.Index.Subword
     Data.PrimitiveArray.Index.Unit
-    Data.PrimitiveArray.ScoreMatrix
+--    Data.PrimitiveArray.ScoreMatrix
   hs-source-dirs:
     lib
 

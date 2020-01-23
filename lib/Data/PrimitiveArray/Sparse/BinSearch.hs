@@ -223,7 +223,6 @@ manhattanIndex
   :: (SparseBucket sh, VG.Vector v sh, Eq sh, Ord sh)
   => LimitType sh -> Vector Int -> v sh -> sh -> Maybe Int
 {-# Inline manhattanIndex #-}
---manhattanIndex ub mstart sixs idx = error "fix adding @l@" $ VG.findIndex (==idx) $ VG.unsafeSlice l (h-l+1) sixs
 manhattanIndex ub mstart sixs idx = fmap (+l) . binarySearch idx $ VG.unsafeSlice l (h-l+1) sixs
   where
     b = manhattan ub idx
