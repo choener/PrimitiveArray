@@ -20,7 +20,7 @@ import Common
 
 -- * Uniqueness tests
 
-prop_PointL_I_unique (xs :: [PointL I]) = uniquenessTest (LtPointL 0) (LtPointL $ maximum $ map fromPointL xs) xs
+-- prop_PointL_I_unique (xs :: [PointL I]) = uniquenessTest (LtPointL 0) (LtPointL $ maximum $ map fromPointL xs) xs
 
 -- prop_Subword_I_unique (xs :: [Subword I]) = uniquenessTest (subword 0 0) (maximumBy (comparing fromSubwordSnd) xs) xs
 

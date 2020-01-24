@@ -33,7 +33,8 @@ import           Data.PrimitiveArray.Index.IOC
 -- position.
 
 newtype PointL t = PointL {fromPointL :: Int}
-  deriving (Eq,Ord,Read,Show,Generic)
+  deriving stock (Eq,Ord,Read,Show,Generic)
+  deriving newtype (Num)
 
 pointLI :: Int -> PointL I
 pointLI = PointL
@@ -82,6 +83,8 @@ instance Index (PointL t) where
   {-# Inline [0] zeroBound' #-}
   totalSize (LtPointL h) = [fromIntegral $ h + 1]
   {-# Inline [0] totalSize #-}
+  showBound (LtPointL h) = ["LtPointL " ++ show h]
+  showIndex (PointL i) = ["PointL " ++ show i]
 
 deriving instance Eq      (LimitType (PointL t))
 deriving instance Generic (LimitType (PointL t))
@@ -149,7 +152,8 @@ instance Monad m => Serial m (PointL t) where
 -- | A point in a right-linear grammars.
 
 newtype PointR t = PointR {fromPointR :: Int}
-  deriving (Eq,Ord,Read,Show,Generic)
+  deriving stock (Eq,Ord,Read,Show,Generic)
+  deriving newtype (Num)
 
 
 
@@ -228,4 +232,23 @@ instance Arbitrary (PointR t) where
 
 --instance Monad m => Serial m (PointR t) where
 --  series = PointR . TS.getNonNegative <$> series
+
+
+
+instance SparseBucket (PointL I) where
+  {-# Inline manhattan #-}
+  manhattan (LtPointL u) (PointL i) = i
+  {-# Inline manhattanMax #-}
+  manhattanMax (LtPointL u) = u
+
+
+-- |
+--
+-- TODO Is this instance correct? Outside indices shrink?
+
+instance SparseBucket (PointL O) where
+  {-# Inline manhattan #-}
+  manhattan (LtPointL u) (PointL i) = u-i
+  {-# Inline manhattanMax #-}
+  manhattanMax (LtPointL u) = u
 

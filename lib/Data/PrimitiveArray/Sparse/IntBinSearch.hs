@@ -1,4 +1,6 @@
 
+{-# Language MagicHash #-}
+
 -- | This solution to holding a sparse set of elements for dynamic programming. The underlying
 -- representation requires @O (log n)@ access time for each read or write, where @n@ is the number
 -- of elements to be stored. It uses an experimental "bucketing" system to provide better lower and
@@ -10,13 +12,13 @@
 -- all-sparse tables for a BigOrder, we have to calculate the union of all indices. This all is
 -- currently not happening...
 --
--- TODO require @readMaybe@ and @indexMaybe@ to return @Nothing@ on missing elements. This requires
--- an extension of the @Class@ structure for tables.
+-- This version requires working @fromLinearIndex@ but is potentially faster.
 
-module Data.PrimitiveArray.Sparse.BinSearch where
+module Data.PrimitiveArray.Sparse.IntBinSearch where
 
 import           Control.Monad.Primitive (PrimState,PrimMonad)
 import           Control.Monad.ST (ST)
+import           Data.Bits.Extras (msb)
 import           Debug.Trace (traceShow)
 import qualified Control.Monad.State.Strict as SS
 import qualified Data.HashMap.Strict as HMS
@@ -28,6 +30,7 @@ import qualified Data.Vector.Generic as VG
 import qualified Data.Vector.Generic.Mutable as VGM
 import qualified Data.Vector.Storable as VS
 import qualified Data.Vector.Unboxed as VU
+import           GHC.Exts ( Int(..), Int#(..), (==#), (-#), (/=#), (*#), (+#), (<=#), remInt#, quotInt#, uncheckedIShiftRA#, (<#) )
 
 import           Data.PrimitiveArray.Class
 import           Data.PrimitiveArray.Index.Class
@@ -43,10 +46,8 @@ data Sparse w v sh e = Sparse
   -- upper bound.
   , sparseData        :: !(v e)
   -- ^ Vector with actually existing data.
-  , sparseIndices     :: !(w sh)
-  -- ^ The index of each @sh@ is the same as of the corresponding @sparseData@ structure. Indices
-  -- should be ordered as required by the @streamUp@ function, to facilitate filling @Sparse@ by
-  -- going from left to right.
+  , sparseIndices     :: !(VU.Vector Int)
+  -- ^ Linearly encoded sparse indices
   , manhattanStart    :: !(VU.Vector Int)
   -- ^ Provides left/right boundaries into @sparseIndices@ to speed up index search. Should be one
   -- larger than the largest index to look up, to always provides a good excluded bound.
@@ -66,8 +67,8 @@ type Boxed    w sh e = Sparse w  V.Vector sh e
 data instance MutArr m (Sparse w v sh e) = MSparse
   { msparseUpperBound :: !(LimitType sh)
   , msparseData       :: !(VG.Mutable v (PrimState m) e)
-  , msparseIndices    :: !(w sh) -- (VG.Mutable w (PrimState m) sh)
-  , mmanhattanStart   :: !(VU.Vector Int) -- (VU.MVector (PrimState m) Int)
+  , msparseIndices    :: !(VU.Vector Int)
+  , mmanhattanStart   :: !(VU.Vector Int)
   }
 --  deriving (Generic,Typeable)
 
@@ -78,7 +79,7 @@ type instance FillStruc (Sparse w v sh e) = (w sh)
 
 instance
   ( Index sh, SparseBucket sh, Eq sh, Ord sh
-  , VG.Vector w sh , VG.Vector w (Int,sh), VG.Vector w (Int,(Int,sh))
+  , VG.Vector w sh , VG.Vector w (Int,sh), VG.Vector w (Int,(Int,sh)), VG.Vector w (Int,Int), VG.Vector w Int
   , VG.Vector v e
 #if ADPFUSION_DEBUGOUTPUT
   , Show sh, Show (LimitType sh), Show e
@@ -132,15 +133,20 @@ instance
       Just v  -> VGM.unsafeWrite msparseData v elm
   {-# Inline newSM #-}
   newSM h fs' = do
-    fs <- VG.thaw (VG.map (\i -> (manhattan h i, i)) fs') >>= \v -> VAI.sort v >> VG.unsafeFreeze v
     let msparseUpperBound = h
-        msparseIndices = VG.force $ VG.map snd fs
-        -- For any manhattan distance not found in the distances, we set to the length of the the
+        -- sort sparse indices by (manhattan, linearIndex)
+        {-# Inline srt #-}
+        srt x y = let ix = fromLinearIndex h x
+                      iy = fromLinearIndex h y
+                  in  compare (manhattan h ix, ix) (manhattan h iy, iy)
+    msparseIndices <- VG.thaw (VU.convert $ VG.map (linearIndex h) fs') >>= \v -> VAI.sortBy srt v >> VG.unsafeFreeze v
+    let -- For any manhattan distance not found in the distances, we set to the length of the the
         -- @msparseIndices@ vector. Perform reverse-scan to update all manhattan start distances.
         go :: VU.MVector s Int -> ST s ()
+        {-# Inline go #-}
         go mv = do
-          VG.forM_ (VG.reverse $ VG.indexed fs) $ \(i,(mh,_)) -> VGM.write mv mh i
-        mmanhattanStart = VG.modify go $ VG.replicate (manhattanMax h +1) (VG.length fs)
+          VG.forM_ (VG.reverse $ VG.indexed msparseIndices) $ \(i,k) -> let lix = fromLinearIndex h k; mh = manhattan h lix in VGM.write mv mh i
+    let mmanhattanStart = VU.modify go $ VG.replicate (manhattanMax h +1) (VG.length msparseIndices)
     msparseData <- VGM.new $ VG.length msparseIndices
     return $ MSparse {..}
   {-# Inline newWithSM #-}
@@ -176,18 +182,53 @@ instance
 -- On a 1000x1000 DP NeedlemanWunsch problem, binary search on slices is at 6,500,000 cells/sec.
 
 manhattanIndex
-  :: (SparseBucket sh, VG.Vector v sh, Eq sh, Ord sh)
-  => LimitType sh -> Vector Int -> v sh -> sh -> Maybe Int
+  :: (SparseBucket sh, Index sh)
+  => LimitType sh -> Vector Int -> VU.Vector Int -> sh -> Maybe Int
 {-# Inline manhattanIndex #-}
-manhattanIndex ub mstart sixs idx = fmap (+l) . binarySearch idx $ VG.unsafeSlice l (h-l+1) sixs
+manhattanIndex ub mstart sixs idx = fmap (+l) . binarySearch (linearIndex ub idx) $ VG.unsafeSlice l (h-l) sixs
   where
     b = manhattan ub idx
     -- lower and upper bucket bounds
     l = mstart `VU.unsafeIndex` b
     h = mstart `VU.unsafeIndex` (b+1)
 
-binarySearch :: (Eq sh, Ord sh, VG.Vector v sh) => sh -> v sh -> Maybe Int
+binarySearch :: Int -> VU.Vector Int -> Maybe Int
 {-# Inline binarySearch #-}
+{-
+binarySearch k xs =
+  let r1 = binarySearch1 k xs
+      r2 = binarySearch2 k xs
+  in if r1==r2 then r1 else error $ show (k,xs,r1,r2)
+-}
+{-
+-- 1000x1000 at @1000 yields 3,050,000 cells / second
+binarySearch (I# e) v = go 0 pp
+  where
+    -- largest index to check
+    (I# r) = VG.length v -1
+    -- largest power of two <= (r+1)
+    pp = (2 ^ (max 0 $ msb $ VG.length v -1))
+    -- wrap the actual non-branching worker function
+    go :: Int -> Int -> Maybe Int
+    {-# Inline go #-}
+    go (I# l) (I# p) = let i = I# (go' l p) in if (VG.length v<1 || i<0) then Nothing else Just i
+    -- @go'@ should be non-branching, and use a minimal number of array reads.
+    go' :: Int# -> Int# -> Int#
+    {-# Inline go' #-}
+    go' l p
+      -- we are done and will return the proposed position of the last element found or -1
+      | 1# <- p ==# 0# = (e ==# x) *# l -# (e /=# x)
+      | otherwise      = let i = go' (l +# (p *# chk *# leq)) (quotInt# p 2#) -- (uncheckedIShiftRA# p 1#)
+                             -- (I# ii) = traceShow (I# l, I# p, I# i2r, I# x, I# leq) (I# i)
+                         in  i -- i
+      where i2r    = l +# (p *# chk) -- index to read
+            (I# x) = VU.unsafeIndex v (I# i2r)
+            leq    = x <=# e
+            newl   = l +# p
+            chk    = newl <=# r
+-}
+--
+-- 1000x1000 at @1000 yields 6,030,000 cells / second
 binarySearch e v = go 0 (VG.length v -1)
   where
     go :: Int -> Int -> Maybe Int
@@ -198,6 +239,7 @@ binarySearch e v = go 0 (VG.length v -1)
                                     LT -> go l (m-1)
                                     EQ -> Just m
                                     GT -> go (m+1) r
+--
 
 
 -- | Given two index vectors of the same shape, will return the correctly ordered vector of

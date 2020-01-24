@@ -16,6 +16,7 @@ import           Data.Typeable
 import           Data.Vector.Fusion.Stream.Monadic (Stream)
 import           Data.Vector.Unboxed.Deriving
 import           Data.Vector.Unboxed (Unbox(..))
+import           GHC.Base (quotRemInt)
 import           GHC.Generics
 import           GHC.TypeNats
 import qualified Data.Vector.Fusion.Stream.Monadic as SM
@@ -229,8 +230,8 @@ instance (Index zs, Index z) => Index (zs:.z) where
   data LimitType (zs:.z) = !(LimitType zs) :.. !(LimitType z)
   linearIndex (hs:..h) (zs:.z) = linearIndex hs zs * size h + linearIndex h z
   {-# INLINE linearIndex #-}
-  fromLinearIndex (hs:..h) k = let z = k `mod` (size h)
-    in  fromLinearIndex hs (k-z) :. fromLinearIndex h z
+  fromLinearIndex (hs:..h) k = let (l , r) = quotRemInt k (size h)
+    in  fromLinearIndex hs l :. fromLinearIndex h r
   {-# Inline fromLinearIndex #-}
   size (hs:..h) = size hs * size h
   {-# INLINE size #-}
@@ -305,4 +306,37 @@ instance Field2 (Z:.a:.b:.c) (Z:.a:.b':.c) b b' where
 instance Field3 (Z:.a:.b:.c) (Z:.a:.b:.c') c c' where
   {-# Inline _3 #-}
   _3 = lens (\(Z:.a:.b:.c) -> c) (\(Z:.a:.b:._) c -> (Z:.a:.b:.c))
+
+
+
+-- * Operations for sparsity.
+
+-- | @manhattan@ turns an index @sh@ into a starting point within 'sparseIndices' of the 'Sparse'
+-- data structure. This should reduce the time required to search @sparseIndices@, because
+-- @manhattanStart[manhattan sh]@ yields a left bound, while @manhattanStart[manhattan sh +1]@ will
+-- yield an excluded right bound.
+--
+-- Uses the @Manhattan@ distance.
+--
+-- TODO This should probably be moved into the @Index@ module.
+
+class SparseBucket sh where
+  -- | The manhattan distance for an index.
+  manhattan :: LimitType sh -> sh -> Int
+  -- | The maximal possible manhattan distance.
+  manhattanMax :: LimitType sh -> Int
+
+instance SparseBucket Z where
+  {-# Inline manhattan #-}
+  manhattan ZZ Z = 0
+  {-# Inline manhattanMax #-}
+  manhattanMax ZZ = 1
+
+-- | Manhattan distances add up.
+
+instance (SparseBucket i, SparseBucket is) => SparseBucket (is:.i) where
+  {-# Inline manhattan #-}
+  manhattan (zz:..z) (is:.i) = manhattan zz is + manhattan z i
+  {-# Inline manhattanMax #-}
+  manhattanMax (zz:..z) = manhattanMax zz + manhattanMax z
 

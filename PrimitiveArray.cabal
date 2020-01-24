@@ -144,6 +144,7 @@ Library
     Data.PrimitiveArray.Dense
     Data.PrimitiveArray.Sparse
     Data.PrimitiveArray.Sparse.BinSearch
+    Data.PrimitiveArray.Sparse.IntBinSearch
     Data.PrimitiveArray.HashTable
     Data.PrimitiveArray.Index
     Data.PrimitiveArray.Index.BitSet0
