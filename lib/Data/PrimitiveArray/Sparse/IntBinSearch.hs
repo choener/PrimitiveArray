@@ -170,6 +170,12 @@ instance
 
 
 
+instance (Index sh, VG.Vector v e, VG.Vector v e') ⇒ PrimArrayMap (Sparse w v) sh e e' where
+  {-# Inline mapArray #-}
+  mapArray f sparse = sparse{sparseData = VG.map f (sparseData sparse)}
+
+
+
 
 
 -- * Helper functions.

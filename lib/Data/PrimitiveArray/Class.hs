@@ -59,10 +59,6 @@ class (Index sh) => PrimArrayOps arr sh elm where
   -- | Savely transform the shape space of a table.
   transformShape :: Index sh' => (LimitType sh -> LimitType sh') -> arr sh elm -> arr sh' elm
 
-  -- -- | Map a function of type @elm -> e@ over the primitive array, returning another primitive array
-  -- -- of same type and shape but different element.
-  -- mapArray :: PaMapCtx e => (elm -> e) -> arr sh elm -> arr sh e
-
   -- ** Monadic operations
 
   -- | Return the bounds of the array. All bounds are inclusive, as in @[lb..ub]@. Technically not
@@ -109,6 +105,11 @@ class (Index sh) => PrimArrayOps arr sh elm where
   -- | Thaw an immutable array into a mutable one. Both versions share memory.
   unsafeThawM :: PrimMonad m => arr sh elm -> m (MutArr m (arr sh elm))
 
+
+class PrimArrayMap arr sh e e' where
+  -- -- | Map a function of type @elm -> e@ over the primitive array, returning another primitive array
+  -- -- of same type and shape but different element.
+  mapArray :: (e -> e') -> arr sh e -> arr sh e'
 
 
 -- | Sum type of errors that can happen when using primitive arrays.

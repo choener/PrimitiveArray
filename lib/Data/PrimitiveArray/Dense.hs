@@ -117,9 +117,6 @@ instance
   safeIndex (Dense h ba) idx = if inBounds h idx then Just $ unsafeIndex (Dense h ba) idx else Nothing
   {-# Inline transformShape #-}
   transformShape tr (Dense h ba) = Dense (tr h) ba
-  --{-# Inline mapArray #-}
-  --mapArray :: (VG.Vector v i, PrimArrayOps (Dense v) sh i) => (e -> i) -> Dense v sh e -> Dense v sh i
-  --mapArray f (Dense h xs) = Dense h (VG.map f xs)
 
   -- ** monadic operations
 
@@ -158,8 +155,9 @@ instance
   {-# Inline safeWriteM #-}
   safeWriteM dense idx elm = when (inBoundsM dense idx) $ writeM dense idx elm
 
--- instance (Index sh, VG.Vector v e, VG.Vector v e') ⇒ PrimArrayMap (Dense v) sh e e' where
-
+instance (Index sh, VG.Vector v e, VG.Vector v e') ⇒ PrimArrayMap (Dense v) sh e e' where
+  {-# Inline mapArray #-}
+  mapArray f (Dense h xs) = Dense h (VG.map f xs)
 
 
 {-
