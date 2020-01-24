@@ -22,7 +22,7 @@ import           Data.Bits.Extras (msb)
 import           Debug.Trace (traceShow)
 import qualified Control.Monad.State.Strict as SS
 import qualified Data.HashMap.Strict as HMS
-import qualified Data.Vector.Algorithms.Intro as VAI
+import qualified Data.Vector.Algorithms.Radix as Sort
 import qualified Data.Vector.Algorithms.Search as VAS
 import qualified Data.Vector as V
 import qualified Data.Vector.Fusion.Stream.Monadic as SM
@@ -138,8 +138,13 @@ instance
         {-# Inline srt #-}
         srt x y = let ix = fromLinearIndex h x
                       iy = fromLinearIndex h y
-                  in  compare (manhattan h ix, ix) (manhattan h iy, iy)
-    msparseIndices <- VG.thaw (VU.convert $ VG.map (linearIndex h) fs') >>= \v -> VAI.sortBy srt v >> VG.unsafeFreeze v
+                  in  compare (manhattan h ix, x) (manhattan h iy, y)
+        {-# Inline radixsrt #-}
+        radixsrt i x = let ix = fromLinearIndex h x in Sort.radix i (manhattan h ix, x)
+    msparseIndices <- do
+      marr <- VG.thaw (VU.convert $ VG.map (linearIndex h) fs')
+      Sort.sortBy (Sort.passes (undefined :: (Int,Int))) (Sort.size (undefined :: Int)) radixsrt marr
+      VG.unsafeFreeze marr
     let -- For any manhattan distance not found in the distances, we set to the length of the the
         -- @msparseIndices@ vector. Perform reverse-scan to update all manhattan start distances.
         go :: VU.MVector s Int -> ST s ()
