@@ -71,6 +71,10 @@ instance Index (BitSet t) where
   {-# Inline zeroBound' #-}
   totalSize (LtBitSet n) = [2 ^ fromIntegral n]
   {-# Inline totalSize #-}
+  fromLinearIndex _ = BitSet
+  {-# Inline [0] fromLinearIndex #-}
+  showBound (LtBitSet b) = ["LtBitSet " ++ show b]
+  showIndex (BitSet b) = ["BitSet " ++ show b]
 
 instance SetPredSucc (BitSet t) where
   setSucc l h s

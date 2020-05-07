@@ -157,8 +157,6 @@ Library
     Data.PrimitiveArray.Index.Point
     Data.PrimitiveArray.Index.Subword
     Data.PrimitiveArray.Index.Unit
-  hs-source-dirs:
-    lib
 
 
 

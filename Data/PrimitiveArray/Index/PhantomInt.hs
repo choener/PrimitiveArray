@@ -61,6 +61,12 @@ instance Index (PInt t p) where
   {-# Inline size #-}
   inBounds (LtPInt h) (PInt k) = 0 <= k && k <= h
   {-# Inline inBounds #-}
+  fromLinearIndex = error "implement me"
+  zeroBound = error "implement me"
+  zeroBound' = error "implement me"
+  totalSize = error "implement me"
+  showBound = error "implement me"
+  showIndex = error "implement me"
 
 deriving instance Show    (LimitType (PInt t p))
 deriving instance Read    (LimitType (PInt t p))

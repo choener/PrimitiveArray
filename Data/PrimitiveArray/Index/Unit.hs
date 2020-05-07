@@ -54,6 +54,10 @@ instance Index (Unit t) where
   {-# Inline zeroBound' #-}
   totalSize LtUnit = return 1
   {-# Inline [0] totalSize #-}
+  fromLinearIndex _ _ = Unit
+  {-# Inline fromLinearIndex #-}
+  showBound _ = ["LtUnit"]
+  showIndex _ = ["Unit"]
 
 deriving instance Eq      (LimitType (Unit t))
 deriving instance Generic (LimitType (Unit t))

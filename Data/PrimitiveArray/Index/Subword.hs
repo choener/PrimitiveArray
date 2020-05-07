@@ -95,6 +95,9 @@ instance Index (Subword t) where
   {-# Inline zeroBound' #-}
   totalSize (LtSubword n) = [fromIntegral (n+1) ^ 2 `div` 2]
   {-# Inline totalSize #-}
+  fromLinearIndex = error "implement me"
+  showBound = error "implement me"
+  showIndex = error "implement me"
 
 deriving instance Eq      (LimitType (Subword t))
 deriving instance Generic (LimitType (Subword t))

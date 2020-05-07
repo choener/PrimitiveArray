@@ -188,6 +188,10 @@ instance Index (PointR t) where
   {-# Inline [0] zeroBound' #-}
   totalSize (LtPointR h) = [fromIntegral $ h + 1]
   {-# Inline [0] totalSize #-}
+  fromLinearIndex _ = PointR
+  {-# Inline [0] fromLinearIndex #-}
+  showBound (LtPointR b) = ["LtPointR " ++ show b]
+  showIndex (PointR p) = ["PointR " ++ show p]
 
 deriving instance Eq      (LimitType (PointR t))
 deriving instance Generic (LimitType (PointR t))

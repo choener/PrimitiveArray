@@ -71,6 +71,10 @@ instance Index (Boundary i t) where
   {-# Inline zeroBound' #-}
   totalSize (LtBoundary n) = [fromIntegral n]
   {-# Inline totalSize #-}
+  fromLinearIndex _ = Boundary
+  {-# Inline fromLinearIndex #-}
+  showBound (LtBoundary b) = ["LtBoundary " ++ show b]
+  showIndex (Boundary b) = ["Boundary " ++ show b]
 
 instance IndexStream z ⇒ IndexStream (z:.Boundary k I) where
   streamUp   (ls:..LtBoundary l) (hs:..LtBoundary h) = SM.flatten (streamUpBndMk   l h) (streamUpBndStep   l h) $ streamUp   ls hs

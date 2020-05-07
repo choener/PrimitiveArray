@@ -21,6 +21,10 @@ instance Index Int where
   {-# Inline [0] zeroBound' #-}
   totalSize (LtInt h) = [fromIntegral $ h+1]
   {-# Inline [0] totalSize #-}
+  fromLinearIndex _ = id
+  {-# Inline [0] fromLinearIndex #-}
+  showBound (LtInt b) = ["LtInt " ++ show b]
+  showIndex i = ["Int " ++ show i]
 
 deriving instance Show (LimitType Int)
 

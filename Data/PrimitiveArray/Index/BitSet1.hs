@@ -77,6 +77,9 @@ instance Index (BitSet1 bnd ioc) where
   totalSize (LtNumBits1 pc) =
     let z = fromIntegral pc
     in  [z * 2 ^ z]
+  fromLinearIndex (LtNumBits1 pc) z = error "implement me"
+  showBound = error "implement me"
+  showIndex = error "implement me"
 
 deriving instance Show (LimitType (BitSet1 bnd ioc))
 
@@ -150,6 +153,7 @@ instance SetPredSucc (BitSet1 t ioc) where
   {-# Inline setPred #-}
 
 instance SetPredSucc (FixedMask (BitSet1 t ioc)) where
+  setPred = error "implement me"
   setSucc pcl pch (FixedMask mask bs1) = undefined
 
 instance Arbitrary (BitSet1 t ioc) where
