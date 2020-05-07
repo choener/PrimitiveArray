@@ -167,6 +167,9 @@ instance
   safeReadM MSparse{..} sh = case manhattanIndex msparseUpperBound mmanhattanStart msparseIndices sh of
       Nothing -> return Nothing
       Just v  -> Just <$> VGM.unsafeRead msparseData v
+  -- ** implement me
+  transformShape = error "implement me"
+  fromListM = error "implement me"
 
 
 
