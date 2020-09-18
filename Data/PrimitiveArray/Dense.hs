@@ -19,6 +19,7 @@
 
 module Data.PrimitiveArray.Dense where
 
+import           Control.Lens (makeLenses)
 import           Control.DeepSeq
 import           Control.Exception (assert)
 import           Control.Monad (liftM, forM_, zipWithM_, when)
@@ -45,7 +46,8 @@ import           Data.PrimitiveArray.Index.Class
 
 
 
-data Dense v sh e = Dense !(LimitType sh) !(v e)
+data Dense v sh e = Dense { _denseLimit :: !(LimitType sh), _denseV :: !(v e) }
+makeLenses ''Dense
 
 type Unboxed sh e = Dense VU.Vector sh e
 
@@ -55,14 +57,15 @@ type Boxed sh e = Dense V.Vector sh e
 
 
 
-deriving instance (Eq      (LimitType sh), Eq (v e)     ) ⇒ Eq      (Dense v sh e)
-deriving instance (Generic (LimitType sh), Generic (v e)) ⇒ Generic (Dense v sh e)
-deriving instance (Read    (LimitType sh), Read (v e)   ) ⇒ Read    (Dense v sh e)
-deriving instance (Show    (LimitType sh), Show (v e)   ) ⇒ Show    (Dense v sh e)
+deriving instance (Eq      (LimitType sh), Eq (v e)     ) => Eq      (Dense v sh e)
+deriving instance (Generic (LimitType sh), Generic (v e)) => Generic (Dense v sh e)
+deriving instance (Read    (LimitType sh), Read (v e)   ) => Read    (Dense v sh e)
+deriving instance (Show    (LimitType sh), Show (v e)   ) => Show    (Dense v sh e)
+deriving instance (Functor v)                             => Functor (Dense v sh)
 
 deriving instance Typeable (Dense v sh e)
 
-deriving instance (Data (v e), Data (LimitType sh), Data e, Data sh, Typeable sh, Typeable e, Typeable v) ⇒ Data (Dense v sh e)
+deriving instance (Data (v e), Data (LimitType sh), Data e, Data sh, Typeable sh, Typeable e, Typeable v) => Data (Dense v sh e)
 
 instance (Binary    (LimitType sh), Binary    (v e), Generic (LimitType sh), Generic (v e)) => Binary    (Dense v sh e)
 instance (Serialize (LimitType sh), Serialize (v e), Generic (LimitType sh), Generic (v e)) => Serialize (Dense v sh e)
