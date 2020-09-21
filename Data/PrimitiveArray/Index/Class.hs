@@ -96,7 +96,7 @@ instance (NFData a, NFData b) => NFData (a:>b) where
 -- | Base data constructor for multi-dimensional indices.
 
 data Z = Z
-  deriving (Eq,Ord,Read,Show,Generic,Data,Typeable)
+  deriving (Eq,Ord,Read,Show,Generic,Data,Typeable,Bounded)
 
 derivingUnbox "Z"
   [t| Z -> () |]
@@ -226,6 +226,14 @@ instance IndexStream Z where
   streamDown ZZ ZZ = SM.singleton Z
   {-# Inline streamDown #-}
 
+deriving instance Eq       (LimitType Z)
+deriving instance Generic  (LimitType Z)
+deriving instance Read     (LimitType Z)
+deriving instance Show     (LimitType Z)
+deriving instance Data     (LimitType Z)
+deriving instance Typeable (LimitType Z)
+deriving instance Bounded  (LimitType Z)
+
 instance (Index zs, Index z) => Index (zs:.z) where
   data LimitType (zs:.z) = !(LimitType zs) :.. !(LimitType z)
   linearIndex (hs:..h) (zs:.z) = linearIndex hs zs * size h + linearIndex h z
@@ -249,13 +257,6 @@ instance (Index zs, Index z) => Index (zs:.z) where
   showBound (zs:..z) = showBound zs ++ showBound z
   showIndex (zs:.z) = showIndex zs ++ showIndex z
 
-deriving instance Eq       (LimitType Z)
-deriving instance Generic  (LimitType Z)
-deriving instance Read     (LimitType Z)
-deriving instance Show     (LimitType Z)
-deriving instance Data     (LimitType Z)
-deriving instance Typeable (LimitType Z)
-
 deriving instance (Eq (LimitType zs)     , Eq (LimitType z)     ) => Eq      (LimitType (zs:.z))
 deriving instance (Generic (LimitType zs), Generic (LimitType z)) => Generic (LimitType (zs:.z))
 deriving instance (Read (LimitType zs)   , Read (LimitType z)   ) => Read    (LimitType (zs:.z))
@@ -264,6 +265,7 @@ deriving instance
   ( Data zs, Data (LimitType zs), Typeable zs
   , Data z , Data (LimitType z) , Typeable z
   ) => Data    (LimitType (zs:.z))
+deriving instance (Bounded (LimitType zs), Bounded (LimitType z)) => Bounded (LimitType (zs:.z))
 
 --instance (Index zs, Index z) => Index (zs:>z) where
 --  type LimitType (zs:>z) = LimitType zs:>LimitType z
