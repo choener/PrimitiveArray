@@ -100,6 +100,7 @@ common deps
                     , DataKinds
                     , DefaultSignatures
                     , DeriveDataTypeable
+                    , DeriveFunctor
                     , DeriveGeneric
                     , DerivingStrategies
                     , FlexibleContexts
