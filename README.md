@@ -1,4 +1,4 @@
-[![Build Status](https://travis-ci.org/choener/PrimitiveArray.svg?branch=master)](https://travis-ci.org/choener/PrimitiveArray)
+![github action: master](https://github.com/choener/PrimitiveArray/actions/workflows/action.yml/badge.svg)
 
 # PrimitiveArray
 
