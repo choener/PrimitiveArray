@@ -1,4 +1,8 @@
-0.11.0.0
+0.11.1.1
+
+- version bump on DPutils
+
+0.10.1.0
 --------
 
 - introduction of @Data.PrimitiveArray.Sparse@ which uses different sparsification options. The

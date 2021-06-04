@@ -1,6 +1,6 @@
 Cabal-version:  2.2
 Name:           PrimitiveArray
-Version:        0.10.1.0
+Version:        0.10.1.1
 License:        BSD-3-Clause
 License-file:   LICENSE
 Maintainer:     choener@bioinf.uni-leipzig.de
@@ -93,7 +93,7 @@ common deps
                , vector-binary-instances  >= 0.2
                , vector-th-unbox          >= 0.2
                --
-               , DPutils                  == 0.1.0.*
+               , DPutils                  == 0.1.1.*
                , OrderedBits              == 0.0.2.*
   default-extensions: BangPatterns
                     , CPP
