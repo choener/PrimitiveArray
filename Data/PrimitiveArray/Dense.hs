@@ -79,7 +79,7 @@ instance (NFData (LimitType sh), NFData (v e)) ⇒ NFData (Dense v sh e) where
 
 
 
-data instance MutArr m (Dense v sh e) = MDense !(LimitType sh) !(VG.Mutable v (PrimState m) e)
+data instance MutArr m (Dense (v :: * -> *) sh e) = MDense !(LimitType sh) !(VG.Mutable v (PrimState m) e)
   deriving (Generic,Typeable)
 
 instance (Show (LimitType sh), Show (VG.Mutable v (PrimState m) e), VG.Mutable v (PrimState m) e ~ mv) ⇒ Show (MutArr m (Dense v sh e)) where

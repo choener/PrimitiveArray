@@ -63,7 +63,7 @@ type Boxed    w sh e = Sparse w  V.Vector sh e
 -- | Currently, our mutable variant of sparse matrices will keep indices and manhattan starts
 -- immutable as well.
 
-data instance MutArr m (Sparse w v sh e) = MSparse
+data instance MutArr m (Sparse w (v :: * -> *) sh e) = MSparse
   { msparseUpperBound :: !(LimitType sh)
   , msparseData       :: !(VG.Mutable v (PrimState m) e)
   , msparseIndices    :: !(w sh) -- (VG.Mutable w (PrimState m) sh)
